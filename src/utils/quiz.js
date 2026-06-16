@@ -2,6 +2,10 @@ export const DAILY_QUIZ_LIMIT = 20;
 export const MAX_CONFIDENCE = 4;
 export const QUIZ_STORAGE_KEY = "french-learning-daily-quiz-v1";
 
+function getQuizStorageKey(userId) {
+  return userId ? `${QUIZ_STORAGE_KEY}:${userId}` : QUIZ_STORAGE_KEY;
+}
+
 export function getTodayKey() {
   const today = new Date();
   const year = today.getFullYear();
@@ -34,10 +38,10 @@ export function createDailyQuizState(items, date = getTodayKey()) {
   };
 }
 
-export function loadDailyQuizState(items) {
+export function loadDailyQuizState(items, userId) {
   try {
     const today = getTodayKey();
-    const saved = JSON.parse(localStorage.getItem(QUIZ_STORAGE_KEY));
+    const saved = JSON.parse(localStorage.getItem(getQuizStorageKey(userId)));
     if (!saved || saved.date !== today || !Array.isArray(saved.queueIds)) {
       return createDailyQuizState(items, today);
     }
@@ -53,8 +57,8 @@ export function loadDailyQuizState(items) {
   }
 }
 
-export function saveDailyQuizState(state) {
-  localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(state));
+export function saveDailyQuizState(state, userId) {
+  localStorage.setItem(getQuizStorageKey(userId), JSON.stringify(state));
 }
 
 export function normalizeAnswer(value) {

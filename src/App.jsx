@@ -1,11 +1,24 @@
 import React, { useEffect, useMemo, useState } from "react";
+import {
+  signInWithEmail,
+  signOut as signOutUser,
+  signUpWithEmail,
+} from "./api/auth";
+import {
+  createNote,
+  deleteNote as deleteStoredNote,
+  listNotes,
+  updateNote,
+} from "./api/notes";
 import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
 import { FrenchInTheWild } from "./components/FrenchInTheWild";
 import { PracticeQueue } from "./components/PracticeQueue";
 import { Sidebar } from "./components/Sidebar";
 import { categories } from "./data/categories";
-import { legacySampleIds, loadItems, saveItems } from "./data/storage";
+import { hasSupabaseConfig, supabase } from "./lib/supabase";
+import { SetupPage } from "./pages/SetupPage";
+import { SignInPage } from "./pages/SignInPage";
 import { normalizeTags } from "./utils/tags";
 import { MAX_CONFIDENCE } from "./utils/quiz";
 import { GrammarView } from "./views/GrammarView";
@@ -38,8 +51,27 @@ const viewBySection = {
   review: ReviewView,
 };
 
+function getFriendlyAuthError(error) {
+  const message = error?.message ?? "Something went wrong.";
+
+  if (message.toLowerCase().includes("invalid login credentials")) {
+    return "The username or password is incorrect.";
+  }
+
+  if (message.toLowerCase().includes("user already registered")) {
+    return "That username is already taken.";
+  }
+
+  return message;
+}
+
 export default function App() {
-  const [items, setItems] = useState(loadItems);
+  const [items, setItems] = useState([]);
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(hasSupabaseConfig);
+  const [authError, setAuthError] = useState("");
+  const [dataLoading, setDataLoading] = useState(false);
+  const [dataError, setDataError] = useState("");
   const [activeSection, setActiveSection] = useState("today");
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
@@ -50,17 +82,62 @@ export default function App() {
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
-    saveItems(items);
-  }, [items]);
+    if (!hasSupabaseConfig) return undefined;
+
+    let isMounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!isMounted) return;
+      setUser(data.session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+      setAuthError("");
+      if (!session?.user) {
+        setItems([]);
+        setSelectedIds([]);
+        setActiveSection("today");
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
-    if (items.some((item) => legacySampleIds.has(item.id))) {
-      setItems([]);
-      setQuery("");
-      setSelectedTag("all");
-      setActiveSection("today");
-    }
-  }, [items]);
+    if (!user) return;
+
+    let isMounted = true;
+    setDataLoading(true);
+    setDataError("");
+
+    listNotes(user.id)
+      .then((savedNotes) => {
+        if (!isMounted) return;
+        setItems(savedNotes);
+        setSelectedIds([]);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setDataError(error.message);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setDataLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const tags = useMemo(() => {
     const unique = new Set(items.flatMap((item) => item.tags ?? []));
@@ -132,8 +209,42 @@ export default function App() {
     setIsEditorOpen(true);
   }
 
-  function saveItem(event) {
+  async function handleAuthSubmit({ email, mode, password, username }) {
+    setAuthLoading(true);
+    setAuthError("");
+
+    try {
+      const authenticatedUser =
+        mode === "sign-up"
+          ? await signUpWithEmail(username, email, password)
+          : await signInWithEmail(username, password);
+      setUser(authenticatedUser);
+    } catch (error) {
+      setAuthError(getFriendlyAuthError(error));
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleSignOut() {
+    setAuthLoading(true);
+    setDataError("");
+
+    try {
+      await signOutUser();
+      setUser(null);
+      setItems([]);
+    } catch (error) {
+      setDataError(error.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function saveItem(event) {
     event.preventDefault();
+    if (!user) return;
+
     const normalizedFrench = form.french.trim().toLocaleLowerCase("fr");
     const duplicate = items.find(
       (item) =>
@@ -158,44 +269,84 @@ export default function App() {
       lastReviewed: editingItem?.lastReviewed ?? "Not reviewed",
     };
 
-    setItems((current) =>
-      editingItem
-        ? current.map((item) => (item.id === editingItem.id ? nextItem : item))
-        : [nextItem, ...current]
-    );
-    setSelectedIds((current) => current.filter((id) => id !== nextItem.id));
-    setEditorError("");
-    setIsEditorOpen(false);
+    try {
+      const savedItem = editingItem
+        ? await updateNote(editingItem.id, nextItem, user.id)
+        : await createNote(nextItem, user.id);
+
+      setItems((current) =>
+        editingItem
+          ? current.map((item) => (item.id === editingItem.id ? savedItem : item))
+          : [savedItem, ...current]
+      );
+      setSelectedIds((current) => current.filter((id) => id !== savedItem.id));
+      setEditorError("");
+      setDataError("");
+      setIsEditorOpen(false);
+    } catch (error) {
+      setEditorError(error.message);
+    }
   }
 
-  function markReviewed(item, delta) {
+  async function markReviewed(item, delta) {
+    if (!user) return;
+
+    const nextItem = {
+      ...item,
+      confidence: Math.min(4, Math.max(1, Number(item.confidence) + delta)),
+      lastReviewed: "Today",
+    };
+
     setItems((current) =>
       current.map((entry) =>
-        entry.id === item.id
-          ? {
-              ...entry,
-              confidence: Math.min(4, Math.max(1, entry.confidence + delta)),
-              lastReviewed: "Today",
-            }
-          : entry
+        entry.id === item.id ? nextItem : entry
       )
     );
+
+    try {
+      const savedItem = await updateNote(item.id, nextItem, user.id);
+      setItems((current) =>
+        current.map((entry) => (entry.id === item.id ? savedItem : entry))
+      );
+      setDataError("");
+    } catch (error) {
+      setDataError(error.message);
+      setItems((current) =>
+        current.map((entry) => (entry.id === item.id ? item : entry))
+      );
+    }
   }
 
-  function handleQuizAnswer(itemId, isCorrect) {
-    if (!isCorrect) return;
+  async function handleQuizAnswer(itemId, isCorrect) {
+    if (!isCorrect || !user) return;
+
+    const currentItem = items.find((item) => item.id === itemId);
+    if (!currentItem) return;
+
+    const nextItem = {
+      ...currentItem,
+      confidence: Math.min(4, Number(currentItem.confidence) + 1),
+      lastReviewed: "Today",
+    };
 
     setItems((current) =>
       current.map((entry) =>
-        entry.id === itemId
-          ? {
-              ...entry,
-              confidence: Math.min(4, Number(entry.confidence) + 1),
-              lastReviewed: "Today",
-            }
-          : entry
+        entry.id === itemId ? nextItem : entry
       )
     );
+
+    try {
+      const savedItem = await updateNote(itemId, nextItem, user.id);
+      setItems((current) =>
+        current.map((entry) => (entry.id === itemId ? savedItem : entry))
+      );
+      setDataError("");
+    } catch (error) {
+      setDataError(error.message);
+      setItems((current) =>
+        current.map((entry) => (entry.id === itemId ? currentItem : entry))
+      );
+    }
   }
 
   function toggleSelected(id) {
@@ -220,25 +371,41 @@ export default function App() {
     setSelectedIds([]);
   }
 
-  function deleteItem(item) {
+  async function deleteItem(item) {
+    if (!user) return;
+
     const shouldDelete = window.confirm(`Delete "${item.french}"?`);
     if (!shouldDelete) return;
 
-    setItems((current) => current.filter((entry) => entry.id !== item.id));
-    setSelectedIds((current) => current.filter((id) => id !== item.id));
+    try {
+      await deleteStoredNote(item.id, user.id);
+      setItems((current) => current.filter((entry) => entry.id !== item.id));
+      setSelectedIds((current) => current.filter((id) => id !== item.id));
+      setDataError("");
+    } catch (error) {
+      setDataError(error.message);
+    }
   }
 
-  function deleteSelected() {
-    if (selectedIds.length === 0) return;
+  async function deleteSelected() {
+    if (selectedIds.length === 0 || !user) return;
     const shouldDelete = window.confirm(
       `Delete ${selectedIds.length} selected note${selectedIds.length === 1 ? "" : "s"}?`
     );
     if (!shouldDelete) return;
 
-    setItems((current) =>
-      current.filter((entry) => !selectedIds.includes(entry.id))
-    );
-    setSelectedIds([]);
+    try {
+      await Promise.all(
+        selectedIds.map((id) => deleteStoredNote(id, user.id))
+      );
+      setItems((current) =>
+        current.filter((entry) => !selectedIds.includes(entry.id))
+      );
+      setSelectedIds([]);
+      setDataError("");
+    } catch (error) {
+      setDataError(error.message);
+    }
   }
 
   const ActiveView = viewBySection[activeSection] ?? TodayView;
@@ -269,7 +436,32 @@ export default function App() {
     stats,
     tags,
     weakItems,
+    user,
   };
+
+  if (!hasSupabaseConfig) {
+    return <SetupPage />;
+  }
+
+  if (authLoading && !user) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-cloud px-4 text-ink">
+        <div className="rounded-md border border-frenchBlue/10 bg-paper p-5 font-semibold shadow-soft">
+          Loading your French workspace...
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <SignInPage
+        error={authError}
+        isLoading={authLoading}
+        onAuthSubmit={handleAuthSubmit}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cloud text-ink">
@@ -283,8 +475,10 @@ export default function App() {
         <main className="min-w-0">
           <AppHeader
             activeSection={activeSection}
+            onSignOut={handleSignOut}
             openNewItem={openNewItem}
             pageTitle={pageTitle}
+            user={user}
           />
 
           <section
@@ -296,6 +490,16 @@ export default function App() {
                 : "xl:grid-cols-[1fr_320px]"
             }`}
           >
+            {dataError && (
+              <div className="rounded-md border border-frenchRed/20 bg-frenchRed/10 p-3 text-sm font-semibold text-frenchRed xl:col-span-2">
+                {dataError}
+              </div>
+            )}
+            {dataLoading && (
+              <div className="rounded-md border border-frenchBlue/10 bg-paper p-3 text-sm font-semibold text-slate-600 xl:col-span-2">
+                Loading notes...
+              </div>
+            )}
             <ActiveView {...viewProps} />
 
             {activeSection !== "today" &&

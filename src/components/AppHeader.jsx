@@ -1,6 +1,12 @@
-import { Plus } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 
-export function AppHeader({ openNewItem, activeSection, pageTitle }) {
+export function AppHeader({
+  activeSection,
+  onSignOut,
+  openNewItem,
+  pageTitle,
+  user,
+}) {
   return (
     <header className="border-b border-frenchBlue/10 bg-paper/70 px-4 py-4 backdrop-blur md:px-7">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -13,6 +19,11 @@ export function AppHeader({ openNewItem, activeSection, pageTitle }) {
           </h2>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
+          {user && (
+            <div className="flex h-10 items-center rounded-md border border-frenchBlue/10 bg-white px-3 text-sm font-semibold text-slate-600">
+              {user.user_metadata?.name || user.email?.split("@")[0] || "Learner"}
+            </div>
+          )}
           <button
             className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchRed px-4 text-sm font-semibold text-white hover:bg-frenchRed/90"
             onClick={() =>
@@ -26,6 +37,14 @@ export function AppHeader({ openNewItem, activeSection, pageTitle }) {
           >
             <Plus size={17} />
             Add note
+          </button>
+          <button
+            className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:text-frenchRed"
+            onClick={onSignOut}
+            type="button"
+          >
+            <LogOut size={17} />
+            Sign out
           </button>
         </div>
       </div>

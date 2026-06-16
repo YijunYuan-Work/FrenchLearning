@@ -12,8 +12,10 @@ import {
   saveDailyQuizState,
 } from "../utils/quiz";
 
-export function QuizView({ items, onQuizAnswer, openNewItem }) {
-  const [quizState, setQuizState] = useState(() => loadDailyQuizState(items));
+export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
+  const [quizState, setQuizState] = useState(() =>
+    loadDailyQuizState(items, user?.id)
+  );
   const [answer, setAnswer] = useState("");
   const [lastResult, setLastResult] = useState(null);
 
@@ -46,8 +48,8 @@ export function QuizView({ items, onQuizAnswer, openNewItem }) {
   }, [items]);
 
   useEffect(() => {
-    saveDailyQuizState(quizState);
-  }, [quizState]);
+    saveDailyQuizState(quizState, user?.id);
+  }, [quizState, user?.id]);
 
   const quizItems = useMemo(() => {
     const byId = new Map(items.map((item) => [item.id, item]));
