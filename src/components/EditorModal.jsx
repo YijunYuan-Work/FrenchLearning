@@ -10,7 +10,7 @@ import {
   genderOptions,
   partOfSpeechOptions,
 } from "../data/wordFields";
-import { lookupFrenchWord } from "../services/wiktionary";
+import { autoFillFrenchVocabulary } from "../services/vocabularyAutofill";
 
 export function EditorModal({
   error,
@@ -86,11 +86,11 @@ export function EditorModal({
   async function handleAutoFill() {
     setAutoFillState({
       status: "loading",
-      message: "Looking up Wiktionary...",
+      message: "Asking AI to build the vocabulary note...",
     });
 
     try {
-      const result = await lookupFrenchWord(form.french);
+      const result = await autoFillFrenchVocabulary(form.french);
       setForm((current) => ({
         ...current,
         category: result.category,
@@ -103,7 +103,7 @@ export function EditorModal({
         english: result.english,
         example: result.example,
         notes: result.notes,
-        tags: "",
+        tags: (result.tags ?? []).join(", "),
       }));
       setAutoFillState({
         status: "success",
