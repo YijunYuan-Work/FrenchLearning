@@ -1,0 +1,34 @@
+import { Plus } from "lucide-react";
+
+export function AppHeader({ openNewItem, activeSection, pageTitle }) {
+  return (
+    <header className="border-b border-frenchBlue/10 bg-paper/70 px-4 py-4 backdrop-blur md:px-7">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-frenchRed">
+            Personal French workspace
+          </p>
+          <h2 className="max-w-3xl text-2xl font-bold leading-tight md:text-3xl">
+            {pageTitle}
+          </h2>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchRed px-4 text-sm font-semibold text-white hover:bg-frenchRed/90"
+            onClick={() =>
+              openNewItem(
+                activeSection === "today" || activeSection === "review"
+                  ? "vocabulary"
+                  : activeSection
+              )
+            }
+            type="button"
+          >
+            <Plus size={17} />
+            Add note
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}

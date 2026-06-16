@@ -1,0 +1,253 @@
+import { ChevronLeft, ChevronRight, Edit3, Plus, RotateCcw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { categories } from "../data/categories";
+import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
+import { MAX_CONFIDENCE } from "../utils/quiz";
+
+function confidenceLabel(value) {
+  if (value >= 4) return "Strong";
+  if (value === 3) return "Familiar";
+  if (value === 2) return "Learning";
+  return "Needs practice";
+}
+
+function DetailBlock({ label, children }) {
+  if (!children) return null;
+
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <div className="mt-1 text-sm leading-6 text-slate-800">{children}</div>
+    </div>
+  );
+}
+
+export function ReviewView({ items, openEditItem, openNewItem }) {
+  const studyItems = useMemo(
+    () =>
+      items
+        .filter((item) => Number(item.confidence) < MAX_CONFIDENCE)
+        .sort((a, b) => {
+          const confidenceGap = Number(a.confidence) - Number(b.confidence);
+          if (confidenceGap !== 0) return confidenceGap;
+          return a.french.localeCompare(b.french, "fr");
+        }),
+    [items]
+  );
+  const [cardIndex, setCardIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  useEffect(() => {
+    setCardIndex((current) =>
+      Math.min(current, Math.max(0, studyItems.length - 1))
+    );
+    setIsFlipped(false);
+  }, [studyItems.length]);
+
+  const currentItem = studyItems[cardIndex];
+
+  function moveToCard(nextIndex) {
+    setCardIndex(nextIndex);
+    setIsFlipped(false);
+  }
+
+  if (!currentItem) {
+    return (
+      <div className="rounded-md border border-dashed border-frenchBlue/25 bg-paper p-8 text-center">
+        <p className="font-semibold">No study cards are due.</p>
+        <p className="mt-1 text-sm text-slate-600">
+          Add a new note or edit an existing note if you want something in the
+          Study deck.
+        </p>
+        <button
+          className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
+          onClick={() => openNewItem("vocabulary")}
+          type="button"
+        >
+          <Plus size={17} />
+          Add note
+        </button>
+      </div>
+    );
+  }
+
+  const CategoryIcon = categories[currentItem.category].icon;
+  const isLastCard = cardIndex === studyItems.length - 1;
+  const hasConjugation =
+    currentItem.partOfSpeech === "verb" &&
+    conjugationPronouns.some((pronoun) => currentItem.conjugation?.[pronoun]);
+  const hasAdjectiveForms =
+    currentItem.partOfSpeech === "adjective" &&
+    Object.values(currentItem.adjectiveForms ?? {}).some(Boolean);
+
+  return (
+    <div className="mx-auto w-full max-w-4xl">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-frenchRed">Study mode</p>
+          <h2 className="text-2xl font-bold">Flashcards</h2>
+        </div>
+        <div className="rounded-md border border-frenchBlue/10 bg-paper px-3 py-2 text-sm font-semibold text-slate-600">
+          Card {cardIndex + 1} of {studyItems.length}
+        </div>
+      </div>
+
+      <div className="rounded-md border border-frenchBlue/10 bg-paper p-3 shadow-sm">
+        {!isFlipped ? (
+          <button
+            aria-label={`Reveal details for ${currentItem.french}`}
+            className="focus-ring grid min-h-[360px] w-full place-items-center rounded-md border border-dashed border-frenchBlue/25 bg-white p-6 text-center hover:border-frenchBlue/45"
+            onClick={() => setIsFlipped(true)}
+            type="button"
+          >
+            <span className="break-words text-4xl font-bold leading-tight text-ink md:text-6xl">
+              {currentItem.french}
+            </span>
+          </button>
+        ) : (
+          <div className="min-h-[360px] rounded-md border border-frenchBlue/15 bg-white p-5">
+            <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-frenchBlue/8 px-2 py-1 text-xs font-semibold text-frenchBlue">
+                    <CategoryIcon size={13} />
+                    {categories[currentItem.category].label}
+                  </span>
+                  <span className="rounded-md bg-sage/10 px-2 py-1 text-xs font-semibold text-sage">
+                    {confidenceLabel(Number(currentItem.confidence))}
+                  </span>
+                </div>
+                <h3 className="mt-3 text-3xl font-bold leading-tight">
+                  {currentItem.french}
+                </h3>
+                <p className="mt-2 text-lg font-semibold text-slate-700">
+                  {currentItem.english}
+                </p>
+              </div>
+              <button
+                className="focus-ring inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:text-frenchBlue"
+                onClick={() => openEditItem(currentItem)}
+                type="button"
+              >
+                <Edit3 size={15} />
+                Edit note
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <DetailBlock label="Example">
+                {currentItem.example || "No example yet."}
+              </DetailBlock>
+              <DetailBlock label="Notes">
+                <p className="whitespace-pre-line">
+                  {currentItem.notes || "No notes yet."}
+                </p>
+              </DetailBlock>
+              {(currentItem.partOfSpeech || currentItem.ipa || currentItem.gender) && (
+                <DetailBlock label="Word details">
+                  <div className="grid gap-1">
+                    {currentItem.partOfSpeech && (
+                      <p>
+                        <span className="font-semibold">Type:</span>{" "}
+                        {partOfSpeechLabel(currentItem.partOfSpeech)}
+                      </p>
+                    )}
+                    {currentItem.ipa && (
+                      <p>
+                        <span className="font-semibold">IPA:</span>{" "}
+                        {currentItem.ipa}
+                      </p>
+                    )}
+                    {currentItem.gender && (
+                      <p>
+                        <span className="font-semibold">Gender:</span>{" "}
+                        {currentItem.gender}
+                      </p>
+                    )}
+                  </div>
+                </DetailBlock>
+              )}
+              {hasConjugation && (
+                <DetailBlock label="Conjugation">
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {conjugationPronouns.map((pronoun) =>
+                      currentItem.conjugation?.[pronoun] ? (
+                        <div className="flex gap-2" key={pronoun}>
+                          <dt className="font-semibold">{pronoun}</dt>
+                          <dd>{currentItem.conjugation[pronoun]}</dd>
+                        </div>
+                      ) : null
+                    )}
+                  </dl>
+                </DetailBlock>
+              )}
+              {hasAdjectiveForms && (
+                <DetailBlock label="Adjective forms">
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {[
+                      ["masculine", "masc."],
+                      ["feminine", "fem."],
+                      ["masculinePlural", "masc. pl."],
+                      ["femininePlural", "fem. pl."],
+                    ].map(([field, label]) =>
+                      currentItem.adjectiveForms?.[field] ? (
+                        <div className="flex gap-2" key={field}>
+                          <dt className="font-semibold">{label}</dt>
+                          <dd>{currentItem.adjectiveForms[field]}</dd>
+                        </div>
+                      ) : null
+                    )}
+                  </dl>
+                </DetailBlock>
+              )}
+              {(currentItem.tags ?? []).length > 0 && (
+                <DetailBlock label="Tags">
+                  <div className="flex flex-wrap gap-2">
+                    {currentItem.tags.map((tag) => (
+                      <span
+                        className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600"
+                        key={tag}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </DetailBlock>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:text-frenchBlue disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={cardIndex === 0}
+          onClick={() => moveToCard(cardIndex - 1)}
+          type="button"
+        >
+          <ChevronLeft size={17} />
+          Previous
+        </button>
+        <button
+          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:text-frenchBlue"
+          onClick={() => setIsFlipped((current) => !current)}
+          type="button"
+        >
+          <RotateCcw size={17} />
+          {isFlipped ? "Show front" : "Show details"}
+        </button>
+        <button
+          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
+          onClick={() => moveToCard(isLastCard ? 0 : cardIndex + 1)}
+          type="button"
+        >
+          {isLastCard ? "Start over" : "Next"}
+          <ChevronRight size={17} />
+        </button>
+      </div>
+    </div>
+  );
+}
