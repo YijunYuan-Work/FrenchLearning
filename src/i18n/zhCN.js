@@ -165,4 +165,5 @@ export const zhCN = {
   working: "处理中...",
   createAccount: "创建账号",
   learningHub: "学习中心",
+  english: "中文释义",
 };

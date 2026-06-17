@@ -13,6 +13,8 @@ const allowedPartsOfSpeech = [
   "numeral",
 ];
 
+const allowedOutputLanguages = new Set(["en", "zh"]);
+
 const requestLog = new Map();
 const maxRequestsPerWindow = 40;
 const rateWindowMs = 24 * 60 * 60 * 1000;
@@ -214,7 +216,7 @@ function cleanAutofillResult(value, requestedWord) {
           String(tag)
             .trim()
             .toLowerCase()
-            .replace(/[^a-z0-9 -]/g, "")
+            .replace(/[^a-z0-9\u4E00-\u9FFF -]/g, "")
             .replace(/\s+/g, " ")
         )
         .filter((tag) => tag.length > 1 && tag.length <= 24)
@@ -337,6 +339,19 @@ export default async function handler(request, response) {
   }
 
   const word = normalizeWord(body.word);
+  const outputLanguage = allowedOutputLanguages.has(body.language)
+    ? body.language
+    : "en";
+  const outputLanguageName =
+    outputLanguage === "zh" ? "Simplified Chinese" : "English";
+  const learnerDescription =
+    outputLanguage === "zh"
+      ? "a Simplified Chinese-speaking learner"
+      : "an English-speaking learner";
+  const tagExamples =
+    outputLanguage === "zh"
+      ? "学校、工作、食物、旅行、家庭、情绪、日常生活、购物、健康、时间、天气、科技、正式表达"
+      : "school, work, food, travel, family, emotions, daily life, shopping, health, time, weather, technology, or formal speech";
   if (!isSingleFrenchEntry(word)) {
     sendJson(response, 400, {
       error: "Enter one French word or short expression.",
@@ -372,8 +387,7 @@ export default async function handler(request, response) {
       input: [
         {
           role: "developer",
-          content:
-            "You are a careful French teacher creating beginner-friendly vocabulary notes for an English-speaking learner. All explanations, notes, definitions, and labels must be in English unless you are showing the French word, French forms, IPA, or a French example sentence. Return only verified, concise French learning data. If a field is not applicable, return an empty string or empty object fields.",
+          content: `You are a careful French teacher creating beginner-friendly vocabulary notes for ${learnerDescription}. All explanations, definitions, notes, tags, and the example translation must be in ${outputLanguageName}, unless you are showing the French word, French forms, IPA, or a French example sentence. Return only verified, concise French learning data. If a field is not applicable, return an empty string or empty object fields. Keep the JSON property names exactly as requested, even when the values are in ${outputLanguageName}.`,
         },
         {
           role: "user",
@@ -385,10 +399,10 @@ Rules:
 - For verbs, include present tense conjugation for je, tu, il/elle, nous, vous, ils/elles.
 - For adjectives, include masculine, feminine, masculine plural, and feminine plural forms.
 - Include IPA if you are confident; otherwise use an empty string.
-- English should be a short definition.
-- Example should be one natural French sentence plus a short English translation.
-- Notes must be written in English. Keep them brief and useful for a beginner.
-- Tags should describe usage topics, contexts, or themes such as school, work, food, travel, family, emotions, daily life, shopping, health, time, weather, technology, or formal speech.
+- The "english" JSON field should contain a short definition in ${outputLanguageName}.
+- Example should be one natural French sentence plus a short ${outputLanguageName} translation.
+- Notes must be written in ${outputLanguageName}. Keep them brief and useful for a beginner.
+- Tags should be written in ${outputLanguageName} and should describe usage topics, contexts, or themes such as ${tagExamples}.
 - Do not use the word type, gender, or grammar category as a tag.`,
         },
       ],

@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase";
 
-export async function autoFillFrenchVocabulary(word) {
+export async function autoFillFrenchVocabulary(word, language = "en") {
   const normalizedWord = word.trim();
   if (!normalizedWord) {
     throw new Error("Enter a French word first.");
@@ -19,7 +19,7 @@ export async function autoFillFrenchVocabulary(word) {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ word: normalizedWord }),
+    body: JSON.stringify({ word: normalizedWord, language }),
   });
 
   const payload = await response.json().catch(() => ({}));

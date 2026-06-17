@@ -22,7 +22,7 @@ export function EditorModal({
   setForm,
   title,
 }) {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const frenchInputRef = useRef(null);
   const [autoFillState, setAutoFillState] = useState({
     status: "idle",
@@ -92,7 +92,7 @@ export function EditorModal({
     });
 
     try {
-      const result = await autoFillFrenchVocabulary(form.french);
+      const result = await autoFillFrenchVocabulary(form.french, language);
       setForm((current) => ({
         ...current,
         category: result.category,
