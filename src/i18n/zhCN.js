@@ -114,7 +114,7 @@ export const zhCN = {
   studyDeck: "学习卡组",
   studyMode: "学习模式",
   tags: "标签",
-  todayTitle: "Bonjour, John. 准备好学 12 分钟法语了吗？",
+  todayTitle: "Bonjour, {username}. 准备好学 12 分钟法语了吗？",
   type: "类型",
   unselectPage: "取消选择本页",
   vocabularyDue: "到期词汇",

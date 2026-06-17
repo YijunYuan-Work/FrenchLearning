@@ -79,6 +79,10 @@ function wait(ms) {
   });
 }
 
+function getDisplayName(user) {
+  return user?.user_metadata?.name || user?.email?.split("@")[0] || "Learner";
+}
+
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
   const [items, setItems] = useState([]);
@@ -567,9 +571,12 @@ export default function App() {
   }
 
   const ActiveView = viewBySection[activeSection] ?? TodayView;
+  const displayName = getDisplayName(user);
   const pageTitle =
     activeSection === "today"
-      ? t("todayTitle", "Bonjour, John. Ready for 12 minutes of French?")
+      ? t("todayTitle", "Bonjour, {username}. Ready for 12 minutes of French?", {
+          username: displayName,
+        })
       : t(categories[activeSection].labelKey, categories[activeSection].label);
 
   const viewProps = {
