@@ -160,6 +160,29 @@ function stripLeadingFrenchArticle(value) {
     .trim();
 }
 
+function capitalizeFirstLetter(value) {
+  return value.replace(/^\p{Letter}/u, (letter) =>
+    letter.toLocaleUpperCase("fr-FR")
+  );
+}
+
+function titleCaseFrenchProperNoun(value) {
+  return value.replace(/(^|[\s-])(\p{Letter})/gu, (match, separator, letter) =>
+    `${separator}${letter.toLocaleUpperCase("fr-FR")}`
+  );
+}
+
+function createWiktionaryPageCandidates(word) {
+  const page = stripLeadingFrenchArticle(word);
+  return Array.from(
+    new Set([
+      page,
+      capitalizeFirstLetter(page),
+      titleCaseFrenchProperNoun(page),
+    ].filter(Boolean))
+  );
+}
+
 function extractLanguageSection(wikitext, language) {
   const lines = wikitext.split("\n");
   const start = lines.findIndex((line) => line.trim() === `==${language}==`);
@@ -179,41 +202,54 @@ function sleep(ms) {
 }
 
 async function verifyFrenchWiktionaryEntry(word) {
-  const page = stripLeadingFrenchArticle(word);
-  const url = new URL("https://en.wiktionary.org/w/api.php");
-  url.search = new URLSearchParams({
-    action: "parse",
-    page,
-    prop: "wikitext",
-    format: "json",
-    formatversion: "2",
-    origin: "*",
-  }).toString();
+  const pages = createWiktionaryPageCandidates(word);
 
   let lastStatus = 0;
-  for (let attempt = 1; attempt <= 4; attempt += 1) {
-    const response = await fetch(url, { headers: wiktionaryHeaders });
-    lastStatus = response.status;
+  for (const page of pages) {
+    const url = new URL("https://en.wiktionary.org/w/api.php");
+    url.search = new URLSearchParams({
+      action: "parse",
+      page,
+      prop: "wikitext",
+      format: "json",
+      formatversion: "2",
+      origin: "*",
+    }).toString();
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data.error) {
-        return false;
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      const response = await fetch(url, { headers: wiktionaryHeaders });
+      lastStatus = response.status;
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.error) {
+          break;
+        }
+
+        const rawWikitext = data.parse?.wikitext;
+        const wikitext =
+          typeof rawWikitext === "string"
+            ? rawWikitext
+            : rawWikitext?.["*"] ?? "";
+        const frenchSection = extractLanguageSection(wikitext, "French");
+
+        if (frenchSection.trim()) {
+          return true;
+        }
+
+        break;
       }
 
-      const rawWikitext = data.parse?.wikitext;
-      const wikitext =
-        typeof rawWikitext === "string" ? rawWikitext : rawWikitext?.["*"] ?? "";
-      const frenchSection = extractLanguageSection(wikitext, "French");
+      if (![429, 500, 502, 503, 504].includes(response.status)) {
+        break;
+      }
 
-      return Boolean(frenchSection.trim());
+      await sleep(600 * attempt);
     }
+  }
 
-    if (![429, 500, 502, 503, 504].includes(response.status)) {
-      break;
-    }
-
-    await sleep(600 * attempt);
+  if (!lastStatus || lastStatus === 200 || lastStatus === 404) {
+    return false;
   }
 
   throw new Error(
