@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { zhCN } from "./zhCN";
 
 const dictionaries = {
@@ -17,14 +17,14 @@ export function LanguageProvider({ children }) {
     }
   });
 
-  function changeLanguage(nextLanguage) {
+  const changeLanguage = useCallback((nextLanguage) => {
     setLanguage(nextLanguage);
     try {
       localStorage.setItem("french-learning-language", nextLanguage);
     } catch {
       // Ignore storage failures; the in-memory toggle still works.
     }
-  }
+  }, []);
 
   const value = useMemo(
     () => ({

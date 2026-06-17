@@ -10,6 +10,10 @@ import {
   listNotes,
   updateNote,
 } from "./api/notes";
+import {
+  getLanguagePreference,
+  updateLanguagePreference,
+} from "./api/preferences";
 import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
 import { FrenchInTheWild } from "./components/FrenchInTheWild";
@@ -67,13 +71,14 @@ function getFriendlyAuthError(error) {
 }
 
 export default function App() {
-  const { t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [items, setItems] = useState([]);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(hasSupabaseConfig);
   const [authError, setAuthError] = useState("");
   const [dataLoading, setDataLoading] = useState(false);
   const [dataError, setDataError] = useState("");
+  const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(false);
   const [activeSection, setActiveSection] = useState("today");
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
@@ -104,6 +109,7 @@ export default function App() {
         setItems([]);
         setSelectedIds([]);
         setActiveSection("today");
+        setLanguagePreferenceLoaded(false);
       }
     });
 
@@ -140,6 +146,42 @@ export default function App() {
       isMounted = false;
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setLanguagePreferenceLoaded(false);
+      return undefined;
+    }
+
+    let isMounted = true;
+    setLanguagePreferenceLoaded(false);
+
+    getLanguagePreference(user.id)
+      .then((savedLanguage) => {
+        if (!isMounted) return;
+        if (savedLanguage) {
+          setLanguage(savedLanguage);
+        }
+        setLanguagePreferenceLoaded(true);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setDataError(error.message);
+        setLanguagePreferenceLoaded(true);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [setLanguage, user]);
+
+  useEffect(() => {
+    if (!user || !languagePreferenceLoaded) return;
+
+    updateLanguagePreference(user.id, language).catch((error) => {
+      setDataError(error.message);
+    });
+  }, [language, languagePreferenceLoaded, user]);
 
   const tags = useMemo(() => {
     const unique = new Set(items.flatMap((item) => item.tags ?? []));
@@ -236,6 +278,7 @@ export default function App() {
       await signOutUser();
       setUser(null);
       setItems([]);
+      setLanguagePreferenceLoaded(false);
     } catch (error) {
       setDataError(error.message);
     } finally {
