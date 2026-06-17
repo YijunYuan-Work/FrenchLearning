@@ -4,6 +4,7 @@ import { LearningCard } from "../components/LearningCard";
 import { Metric } from "../components/Metric";
 import { PaginationControls } from "../components/PaginationControls";
 import { SelectionToolbar } from "../components/SelectionToolbar";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
 
@@ -31,6 +32,7 @@ export function NotesView({
   tags,
   topContent,
 }) {
+  const { t } = useLanguage();
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
   const safePage = Math.min(page, totalPages);
@@ -47,10 +49,10 @@ export function NotesView({
     <div className="min-w-0">
       {showMetrics && (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Saved notes" value={stats.total} />
-          <Metric label="Needs practice" value={stats.weak} tone="red" />
-          <Metric label="Active tags" value={stats.tags} tone="blue" />
-          <Metric label="Confidence" value={`${stats.average}%`} tone="green" />
+          <Metric label={t("savedNotes", "Saved notes")} value={stats.total} />
+          <Metric label={t("needsPractice", "Needs practice")} value={stats.weak} tone="red" />
+          <Metric label={t("activeTags", "Active tags")} value={stats.tags} tone="blue" />
+          <Metric label={t("confidence", "Confidence")} value={`${stats.average}%`} tone="green" />
         </div>
       )}
 
@@ -63,7 +65,7 @@ export function NotesView({
           <input
             className="focus-ring h-11 w-full rounded-md border border-slate-200 bg-white pl-10 pr-3 text-sm"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search words, phrases, grammar, tags..."
+            placeholder={t("searchPlaceholder", "Search words, phrases, grammar, tags...")}
             value={query}
           />
         </label>
@@ -76,7 +78,7 @@ export function NotesView({
           >
             {tags.map((tag) => (
               <option key={tag} value={tag}>
-                {tag === "all" ? "All tags" : tag}
+                {tag === "all" ? t("allTags", "All tags") : tag}
               </option>
             ))}
           </select>
@@ -120,13 +122,16 @@ export function NotesView({
             <div className="rounded-md border border-dashed border-frenchBlue/25 bg-paper p-8 text-center">
               <p className="font-semibold">
                 {items.length === 0
-                  ? "Your French notebook is ready."
-                  : "No notes match this view."}
+                  ? t("yourNotebookReady", "Your French notebook is ready.")
+                  : t("noNotesMatch", "No notes match this view.")}
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 {items.length === 0
-                  ? "Add your first vocabulary word, phrase, grammar note, or pronunciation reminder."
-                  : "Try another tag or add a new French note."}
+                  ? t(
+                      "addFirstNoteCopy",
+                      "Add your first vocabulary word, phrase, grammar note, or pronunciation reminder."
+                    )
+                  : t("tryAnotherTag", "Try another tag or add a new French note.")}
               </p>
               {items.length === 0 && (
                 <button
@@ -135,7 +140,7 @@ export function NotesView({
                   type="button"
                 >
                   <Plus size={17} />
-                  Add first note
+                  {t("addFirstNote", "Add first note")}
                 </button>
               )}
             </div>

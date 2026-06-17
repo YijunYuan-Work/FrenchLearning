@@ -11,6 +11,7 @@ import {
   partOfSpeechOptions,
 } from "../data/wordFields";
 import { autoFillFrenchVocabulary } from "../services/vocabularyAutofill";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function EditorModal({
   error,
@@ -21,6 +22,7 @@ export function EditorModal({
   setForm,
   title,
 }) {
+  const { t } = useLanguage();
   const frenchInputRef = useRef(null);
   const [autoFillState, setAutoFillState] = useState({
     status: "idle",
@@ -86,7 +88,7 @@ export function EditorModal({
   async function handleAutoFill() {
     setAutoFillState({
       status: "loading",
-      message: "Asking AI to build the vocabulary note...",
+      message: t("autoFillLoading", "Asking AI to build the vocabulary note..."),
     });
 
     try {
@@ -107,7 +109,10 @@ export function EditorModal({
       }));
       setAutoFillState({
         status: "success",
-        message: "Auto-filled. Review the details before saving.",
+        message: t(
+          "autoFillSuccess",
+          "Auto-filled. Review the details before saving."
+        ),
       });
     } catch (error) {
       setAutoFillState({
@@ -143,7 +148,7 @@ export function EditorModal({
           )}
 
           <label className="grid gap-1 text-sm font-semibold">
-            Section
+            {t("section", "Section")}
             <select
               className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
               onChange={(event) => updateField("category", event.target.value)}
@@ -151,13 +156,13 @@ export function EditorModal({
             >
               {categoryOptions.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(option.labelKey, option.label)}
                 </option>
               ))}
             </select>
           </label>
           <label className="grid gap-1 text-sm font-semibold">
-            Confidence
+            {t("confidence", "Confidence")}
             <select
               className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
               onChange={(event) =>
@@ -165,15 +170,15 @@ export function EditorModal({
               }
               value={form.confidence}
             >
-              <option value="1">Needs practice</option>
-              <option value="2">Learning</option>
-              <option value="3">Familiar</option>
-              <option value="4">Strong</option>
+              <option value="1">{t("confidenceNeedsPractice", "Needs practice")}</option>
+              <option value="2">{t("confidenceLearning", "Learning")}</option>
+              <option value="3">{t("confidenceFamiliar", "Familiar")}</option>
+              <option value="4">{t("confidenceStrong", "Strong")}</option>
             </select>
           </label>
           <label className="grid gap-1 text-sm font-semibold">
             <span className="flex items-center justify-between gap-3">
-              French
+              {t("french", "French")}
               {form.category === "vocabulary" && (
                 <button
                   className="focus-ring inline-flex h-8 items-center justify-center gap-2 rounded-md border border-frenchBlue/20 bg-white px-3 text-xs font-semibold text-frenchBlue hover:bg-frenchBlue/5 disabled:cursor-not-allowed disabled:opacity-60"
@@ -188,7 +193,7 @@ export function EditorModal({
                   ) : (
                     <Sparkles size={14} />
                   )}
-                  Auto-fill
+                  {t("autoFill", "Auto-fill")}
                 </button>
               )}
             </span>
@@ -202,7 +207,7 @@ export function EditorModal({
             />
           </label>
           <label className="grid gap-1 text-sm font-semibold">
-            English
+            {t("english", "English")}
             <input
               className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
               onChange={(event) => updateField("english", event.target.value)}
@@ -216,7 +221,7 @@ export function EditorModal({
           {form.category === "vocabulary" && (
             <>
               <label className="grid gap-1 text-sm font-semibold md:col-span-2">
-                Word type
+                {t("wordType", "Word type")}
                 <select
                   className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
                   onChange={(event) =>
@@ -226,14 +231,14 @@ export function EditorModal({
                 >
                   {partOfSpeechOptions.map((option) => (
                     <option key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.labelKey, option.label)}
                     </option>
                   ))}
                 </select>
               </label>
 
               <label className="grid gap-1 text-sm font-semibold md:col-span-2">
-                IPA pronunciation
+                {t("ipaPronunciation", "IPA pronunciation")}
                 <input
                   className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
                   onChange={(event) => updateField("ipa", event.target.value)}
@@ -244,7 +249,7 @@ export function EditorModal({
 
               {form.partOfSpeech === "noun" && (
                 <label className="grid gap-1 text-sm font-semibold md:col-span-2">
-                  Gender
+                  {t("gender", "Gender")}
                   <select
                     className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
                     onChange={(event) => updateField("gender", event.target.value)}
@@ -252,7 +257,7 @@ export function EditorModal({
                   >
                     {genderOptions.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        {t(option.labelKey, option.label)}
                       </option>
                     ))}
                   </select>
@@ -261,7 +266,9 @@ export function EditorModal({
 
               {form.partOfSpeech === "verb" && (
                 <div className="grid gap-3 rounded-md border border-frenchBlue/10 bg-white p-3 md:col-span-2">
-                  <p className="text-sm font-semibold">Present tense conjugation</p>
+                  <p className="text-sm font-semibold">
+                    {t("presentTenseConjugation", "Present tense conjugation")}
+                  </p>
                   <div className="grid gap-3 md:grid-cols-2">
                     {conjugationPronouns.map((pronoun) => (
                       <label
@@ -284,13 +291,15 @@ export function EditorModal({
 
               {form.partOfSpeech === "adjective" && (
                 <div className="grid gap-3 rounded-md border border-frenchBlue/10 bg-white p-3 md:col-span-2">
-                  <p className="text-sm font-semibold">Adjective forms</p>
+                  <p className="text-sm font-semibold">
+                    {t("adjectiveForms", "Adjective forms")}
+                  </p>
                   <div className="grid gap-3 md:grid-cols-2">
                     {[
-                      ["masculine", "Masculine"],
-                      ["feminine", "Feminine"],
-                      ["masculinePlural", "Masculine plural"],
-                      ["femininePlural", "Feminine plural"],
+                      ["masculine", t("masculine", "Masculine")],
+                      ["feminine", t("feminine", "Feminine")],
+                      ["masculinePlural", t("masculinePlural", "Masculine plural")],
+                      ["femininePlural", t("femininePlural", "Feminine plural")],
                     ].map(([field, label]) => (
                       <label className="grid gap-1 text-sm font-semibold" key={field}>
                         {label}
@@ -322,7 +331,7 @@ export function EditorModal({
             </p>
           )}
           <label className="grid gap-1 text-sm font-semibold md:col-span-2">
-            Example
+            {t("example", "Example")}
             <textarea
               className="focus-ring min-h-20 rounded-md border border-slate-200 bg-white px-3 py-2 font-normal"
               onChange={(event) => updateField("example", event.target.value)}
@@ -330,7 +339,7 @@ export function EditorModal({
             />
           </label>
           <label className="grid gap-1 text-sm font-semibold md:col-span-2">
-            Notes
+            {t("notes", "Notes")}
             <textarea
               className="focus-ring min-h-24 rounded-md border border-slate-200 bg-white px-3 py-2 font-normal"
               onChange={(event) => updateField("notes", event.target.value)}
@@ -338,7 +347,7 @@ export function EditorModal({
             />
           </label>
           <label className="grid gap-1 text-sm font-semibold md:col-span-2">
-            Tags
+            {t("tags", "Tags")}
             <input
               className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
               onChange={(event) => updateField("tags", event.target.value)}
@@ -354,13 +363,13 @@ export function EditorModal({
             onClick={onClose}
             type="button"
           >
-            Cancel
+            {t("cancel", "Cancel")}
           </button>
           <button
             className="focus-ring h-10 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white"
             type="submit"
           >
-            Save note
+            {t("saveNote", "Save note")}
           </button>
         </div>
       </form>

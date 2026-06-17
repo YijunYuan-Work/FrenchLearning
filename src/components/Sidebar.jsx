@@ -1,7 +1,10 @@
 import { Gauge, Sparkles } from "lucide-react";
 import { categories } from "../data/categories";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function Sidebar({ activeSection, setActiveSection, stats }) {
+  const { t } = useLanguage();
+
   return (
     <aside className="border-b border-frenchBlue/10 bg-paper px-4 py-4 lg:border-b-0 lg:border-r lg:px-5">
       <div className="mb-6 flex items-center gap-3">
@@ -10,9 +13,9 @@ export function Sidebar({ activeSection, setActiveSection, stats }) {
         </div>
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-frenchRed">
-            French Desk
+            {t("frenchDesk", "French Desk")}
           </p>
-          <h1 className="text-xl font-bold">Learning Hub</h1>
+          <h1 className="text-xl font-bold">{t("learningHub", "Learning Hub")}</h1>
         </div>
       </div>
 
@@ -32,7 +35,7 @@ export function Sidebar({ activeSection, setActiveSection, stats }) {
               type="button"
             >
               <Icon size={18} />
-              {item.label}
+              {t(item.labelKey, item.label)}
             </button>
           );
         })}
@@ -41,7 +44,7 @@ export function Sidebar({ activeSection, setActiveSection, stats }) {
       <div className="mt-6 rounded-md border border-frenchBlue/10 bg-white p-3">
         <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
           <Gauge size={17} className="text-sage" />
-          Weekly pulse
+          {t("weeklyPulse", "Weekly pulse")}
         </div>
         <div className="h-2 rounded-full bg-slate-100">
           <div
@@ -50,7 +53,11 @@ export function Sidebar({ activeSection, setActiveSection, stats }) {
           />
         </div>
         <p className="mt-2 text-xs text-slate-600">
-          {stats.average}% confidence across {stats.total} saved notes.
+          {t(
+            "weeklyPulseCopy",
+            "{average}% confidence across {total} saved notes.",
+            { average: stats.average, total: stats.total }
+          )}
         </p>
       </div>
     </aside>

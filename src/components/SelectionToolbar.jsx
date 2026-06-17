@@ -1,4 +1,5 @@
 import { CheckSquare, Square, Trash2, X } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function SelectionToolbar({
   onClearSelection,
@@ -7,6 +8,7 @@ export function SelectionToolbar({
   selectedIds,
   visibleItems,
 }) {
+  const { t } = useLanguage();
   if (!visibleItems.length) return null;
 
   const visibleIds = visibleItems.map((item) => item.id);
@@ -21,10 +23,12 @@ export function SelectionToolbar({
           type="button"
         >
           {allVisibleSelected ? <CheckSquare size={16} /> : <Square size={16} />}
-          {allVisibleSelected ? "Unselect page" : "Select page"}
+          {allVisibleSelected
+            ? t("unselectPage", "Unselect page")
+            : t("selectPage", "Select page")}
         </button>
         <span className="text-sm text-slate-600">
-          {selectedIds.length} selected
+          {t("selectedCount", "{count} selected", { count: selectedIds.length })}
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -35,7 +39,7 @@ export function SelectionToolbar({
           type="button"
         >
           <X size={16} />
-          Clear selection
+          {t("clearSelection", "Clear selection")}
         </button>
         <button
           className="focus-ring inline-flex h-9 items-center gap-2 rounded-md bg-frenchRed px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
@@ -44,7 +48,7 @@ export function SelectionToolbar({
           type="button"
         >
           <Trash2 size={16} />
-          Delete selected
+          {t("deleteSelected", "Delete selected")}
         </button>
       </div>
     </div>

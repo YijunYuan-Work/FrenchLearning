@@ -1,12 +1,13 @@
 import { Check, CheckSquare, Edit3, Square, Trash2 } from "lucide-react";
 import { categories } from "../data/categories";
 import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
+import { useLanguage } from "../i18n/LanguageContext";
 
-function confidenceLabel(value) {
-  if (value >= 4) return "Strong";
-  if (value === 3) return "Familiar";
-  if (value === 2) return "Learning";
-  return "Needs practice";
+function confidenceLabel(value, t) {
+  if (value >= 4) return t("confidenceStrong", "Strong");
+  if (value === 3) return t("confidenceFamiliar", "Familiar");
+  if (value === 2) return t("confidenceLearning", "Learning");
+  return t("confidenceNeedsPractice", "Needs practice");
 }
 
 export function LearningCard({
@@ -18,6 +19,7 @@ export function LearningCard({
   onToggleSelected,
   openEditItem,
 }) {
+  const { t } = useLanguage();
   const CategoryIcon = categories[item.category].icon;
   const hasConjugation =
     item.partOfSpeech === "verb" &&
@@ -53,10 +55,10 @@ export function LearningCard({
             </button>
             <span className="inline-flex items-center gap-1 rounded-md bg-frenchBlue/8 px-2 py-1 text-xs font-semibold text-frenchBlue">
               <CategoryIcon size={13} />
-              {categories[item.category].label}
+              {t(categories[item.category].labelKey, categories[item.category].label)}
             </span>
             <span className="rounded-md bg-sage/10 px-2 py-1 text-xs font-semibold text-sage">
-              {confidenceLabel(item.confidence)}
+              {confidenceLabel(item.confidence, t)}
             </span>
           </div>
           <h3 className="text-xl font-bold leading-snug">{item.french}</h3>
@@ -87,7 +89,7 @@ export function LearningCard({
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Example
+            {t("example", "Example")}
           </p>
           <p className="mt-1 text-sm leading-6 text-slate-800">
             {item.example}
@@ -96,13 +98,13 @@ export function LearningCard({
         {hasGrammarDetails && (
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Grammar details
+              {t("grammarDetails", "Grammar details")}
             </p>
             <div className="mt-1 grid gap-2 text-sm leading-6 text-slate-800">
               {item.partOfSpeech && (
                 <p>
-                  <span className="font-semibold">Type:</span>{" "}
-                  {partOfSpeechLabel(item.partOfSpeech)}
+                  <span className="font-semibold">{t("type", "Type")}:</span>{" "}
+                  {partOfSpeechLabel(item.partOfSpeech, t)}
                 </p>
               )}
               {item.ipa && (
@@ -112,7 +114,7 @@ export function LearningCard({
               )}
               {item.gender && (
                 <p>
-                  <span className="font-semibold">Gender:</span> {item.gender}
+                  <span className="font-semibold">{t("gender", "Gender")}:</span> {item.gender}
                 </p>
               )}
               {hasConjugation && (
@@ -149,7 +151,7 @@ export function LearningCard({
         )}
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Notes
+            {t("notes", "Notes")}
           </p>
           <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-800">
             {item.notes}
@@ -175,7 +177,7 @@ export function LearningCard({
               onClick={() => markReviewed(item, -1)}
               type="button"
             >
-              Needs practice
+              {t("needsPractice", "Needs practice")}
             </button>
             <button
               className="focus-ring inline-flex h-9 items-center gap-2 rounded-md bg-sage px-3 text-xs font-semibold text-white hover:bg-sage/90"
@@ -183,12 +185,12 @@ export function LearningCard({
               type="button"
             >
               <Check size={15} />
-              I know this
+            {t("iKnowThis", "I know this")}
             </button>
           </div>
         ) : (
           <p className="text-xs font-semibold text-slate-500">
-            Confidence changes in Quiz or Edit.
+            {t("confidenceChangesInQuiz", "Confidence changes in Quiz or Edit.")}
           </p>
         )}
       </div>

@@ -1,10 +1,13 @@
 import { frenchCharacterRows } from "../data/frenchCharacters";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function FrenchCharacterKeyboard({ onInsert }) {
+  const { t } = useLanguage();
+
   return (
     <div className="rounded-md border border-frenchBlue/10 bg-white p-3">
       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-        French characters
+        {t("frenchCharacters", "French characters")}
       </p>
       <div className="grid gap-2">
         {frenchCharacterRows.map((row) => (

@@ -11,8 +11,10 @@ import {
   MAX_CONFIDENCE,
   saveDailyQuizState,
 } from "../utils/quiz";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
+  const { t } = useLanguage();
   const [quizState, setQuizState] = useState(() =>
     loadDailyQuizState(items, user?.id)
   );
@@ -110,10 +112,10 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
   return (
     <div className="min-w-0">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Today's quiz" value={`${answeredCount}/${quizItems.length}`} />
-        <Metric label="Correct" value={correctCount} tone="green" />
-        <Metric label="Remaining" value={remainingCount} tone="blue" />
-        <Metric label="Daily goal" value={DAILY_QUIZ_LIMIT} />
+        <Metric label={t("todaysQuiz", "Today's quiz")} value={`${answeredCount}/${quizItems.length}`} />
+        <Metric label={t("correct", "Correct")} value={correctCount} tone="green" />
+        <Metric label={t("remaining", "Remaining")} value={remainingCount} tone="blue" />
+        <Metric label={t("dailyGoal", "Daily goal")} value={DAILY_QUIZ_LIMIT} />
       </div>
 
       <section className="mt-5 rounded-md border border-frenchBlue/10 bg-paper p-5 shadow-sm">
@@ -123,21 +125,23 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
           </div>
           <div>
             <p className="text-sm font-semibold text-frenchRed">
-              Vocabulary quiz
+              {t("vocabularyQuiz", "Vocabulary quiz")}
             </p>
-            <h3 className="text-xl font-bold">Write the English meaning.</h3>
+            <h3 className="text-xl font-bold">{t("writeEnglishMeaning", "Write the English meaning.")}</h3>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Correct answers move the word up one confidence level. Words at
-              max confidence are skipped in future daily quizzes.
+              {t(
+                "quizRuleCopy",
+                "Correct answers move the word up one confidence level. Words at max confidence are skipped in future daily quizzes."
+              )}
             </p>
           </div>
         </div>
 
         {eligibleItems.length === 0 ? (
           <div className="rounded-md border border-dashed border-frenchBlue/25 bg-white p-8 text-center">
-            <p className="font-semibold">No vocabulary is due today.</p>
+            <p className="font-semibold">{t("noVocabularyDueTitle", "No vocabulary is due today.")}</p>
             <p className="mt-1 text-sm text-slate-600">
-              Add vocabulary or lower-confidence words to build a daily quiz.
+              {t("noVocabularyDueCopy", "Add vocabulary or lower-confidence words to build a daily quiz.")}
             </p>
             <button
               className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
@@ -145,22 +149,24 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
               type="button"
             >
               <Plus size={17} />
-              Add vocabulary
+              {t("addVocabulary", "Add vocabulary")}
             </button>
           </div>
         ) : !currentItem ? (
           <div className="rounded-md bg-sage/10 p-6 text-center text-sage">
             <CheckCircle2 className="mx-auto mb-2" size={28} />
-            <p className="font-semibold">Today's quiz is complete.</p>
+            <p className="font-semibold">{t("quizComplete", "Today's quiz is complete.")}</p>
             <p className="mt-1 text-sm">
-              You tested {answeredCount} word{answeredCount === 1 ? "" : "s"}.
+              {t("quizCompleteCopy", "You tested {count} words.", {
+                count: answeredCount,
+              })}
             </p>
           </div>
         ) : (
           <form className="grid gap-4" onSubmit={submitAnswer}>
             <div className="rounded-md bg-white p-5">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                French
+                {t("french", "French")}
               </p>
               <p className="mt-1 text-3xl font-bold text-ink">
                 {currentItem.french}
@@ -171,12 +177,12 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
             </div>
 
             <label className="grid gap-1 text-sm font-semibold">
-              Your answer
+              {t("yourAnswer", "Your answer")}
               <input
                 className="focus-ring h-11 rounded-md border border-slate-200 bg-white px-3 font-normal"
                 disabled={Boolean(lastResult)}
                 onChange={(event) => setAnswer(event.target.value)}
-                placeholder="Type the English meaning"
+                placeholder={t("typeEnglishMeaning", "Type the English meaning")}
                 value={answer}
               />
             </label>
@@ -195,14 +201,16 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
                   ) : (
                     <XCircle size={18} />
                   )}
-                  {lastResult.correct ? "Correct" : "Not quite"}
+                  {lastResult.correct ? t("correct", "Correct") : t("notQuite", "Not quite")}
                 </div>
                 <p className="mt-2 text-sm">
-                  Meaning: <span className="font-semibold">{currentItem.english}</span>
+                  {t("meaning", "Meaning")}: <span className="font-semibold">{currentItem.english}</span>
                 </p>
                 {lastResult.correct && (
                   <p className="mt-1 text-sm">
-                    Confidence advanced to {Math.min(Number(currentItem.confidence) + 1, MAX_CONFIDENCE)}.
+                    {t("confidenceAdvanced", "Confidence advanced to {value}.", {
+                      value: Math.min(Number(currentItem.confidence) + 1, MAX_CONFIDENCE),
+                    })}
                   </p>
                 )}
               </div>
@@ -215,7 +223,7 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
                   onClick={continueQuiz}
                   type="button"
                 >
-                  Next word
+                  {t("nextWord", "Next word")}
                 </button>
               ) : (
                 <button
@@ -223,7 +231,7 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
                   disabled={!answer.trim()}
                   type="submit"
                 >
-                  Check answer
+                  {t("checkAnswer", "Check answer")}
                 </button>
               )}
             </div>

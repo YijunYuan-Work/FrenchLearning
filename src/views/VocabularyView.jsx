@@ -4,16 +4,18 @@ import { Metric } from "../components/Metric";
 import { PaginationControls } from "../components/PaginationControls";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { partOfSpeechOptions } from "../data/wordFields";
+import { useLanguage } from "../i18n/LanguageContext";
 import { NotesView } from "./NotesView";
 
 const WORDS_PER_PAGE = 10;
 const vocabularyTabs = [
-  { value: "all", label: "All" },
+  { value: "all", label: "All", labelKey: "all" },
   ...partOfSpeechOptions.filter((option) => option.value),
-  { value: "uncategorized", label: "Uncategorized" },
+  { value: "uncategorized", label: "Uncategorized", labelKey: "uncategorized" },
 ];
 
 export function VocabularyView(props) {
+  const { t } = useLanguage();
   const [activeWordType, setActiveWordType] = useState("all");
   const [page, setPage] = useState(1);
 
@@ -56,10 +58,10 @@ export function VocabularyView(props) {
   return (
     <div className="min-w-0">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Vocabulary" value={props.filteredItems.length} />
-        <Metric label="Current type" value={typeCounts[activeWordType] ?? 0} tone="blue" />
-        <Metric label="Per page" value={WORDS_PER_PAGE} />
-        <Metric label="Page" value={`${safePage}/${totalPages}`} tone="green" />
+        <Metric label={t("categoryVocabulary", "Vocabulary")} value={props.filteredItems.length} />
+        <Metric label={t("currentType", "Current type")} value={typeCounts[activeWordType] ?? 0} tone="blue" />
+        <Metric label={t("perPage", "Per page")} value={WORDS_PER_PAGE} />
+        <Metric label={t("page", "Page")} value={`${safePage}/${totalPages}`} tone="green" />
       </div>
 
       <NotesView
@@ -85,7 +87,7 @@ export function VocabularyView(props) {
                     onClick={() => selectWordType(tab.value)}
                     type="button"
                   >
-                    {tab.label}
+                    {t(tab.labelKey, tab.label)}
                     <span
                       className={`rounded px-1.5 py-0.5 text-xs ${
                         isActive ? "bg-white/20" : "bg-slate-100 text-slate-500"
@@ -103,7 +105,7 @@ export function VocabularyView(props) {
 
       <div className="mt-5 grid gap-3">
         <PaginationControls
-          itemLabel="words"
+          itemLabel={t("words", "words")}
           itemsPerPage={WORDS_PER_PAGE}
           onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
           onPrevious={() => setPage((current) => Math.max(1, current - 1))}
@@ -133,9 +135,9 @@ export function VocabularyView(props) {
 
         {visibleItems.length === 0 && (
           <div className="rounded-md border border-dashed border-frenchBlue/25 bg-paper p-8 text-center">
-            <p className="font-semibold">No words in this type yet.</p>
+            <p className="font-semibold">{t("noWordsInType", "No words in this type yet.")}</p>
             <p className="mt-1 text-sm text-slate-600">
-              Add a word or choose another word-type tab.
+              {t("noWordsInTypeCopy", "Add a word or choose another word-type tab.")}
             </p>
           </div>
         )}
@@ -143,7 +145,7 @@ export function VocabularyView(props) {
 
       <div className="mt-4">
         <PaginationControls
-          itemLabel="words"
+          itemLabel={t("words", "words")}
           itemsPerPage={WORDS_PER_PAGE}
           onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
           onPrevious={() => setPage((current) => Math.max(1, current - 1))}

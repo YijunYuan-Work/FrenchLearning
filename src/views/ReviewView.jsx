@@ -2,13 +2,14 @@ import { ChevronLeft, ChevronRight, Edit3, Plus, RotateCcw } from "lucide-react"
 import { useEffect, useMemo, useState } from "react";
 import { categories } from "../data/categories";
 import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
+import { useLanguage } from "../i18n/LanguageContext";
 import { MAX_CONFIDENCE } from "../utils/quiz";
 
-function confidenceLabel(value) {
-  if (value >= 4) return "Strong";
-  if (value === 3) return "Familiar";
-  if (value === 2) return "Learning";
-  return "Needs practice";
+function confidenceLabel(value, t) {
+  if (value >= 4) return t("confidenceStrong", "Strong");
+  if (value === 3) return t("confidenceFamiliar", "Familiar");
+  if (value === 2) return t("confidenceLearning", "Learning");
+  return t("confidenceNeedsPractice", "Needs practice");
 }
 
 function DetailBlock({ label, children }) {
@@ -25,6 +26,7 @@ function DetailBlock({ label, children }) {
 }
 
 export function ReviewView({ items, openEditItem, openNewItem }) {
+  const { t } = useLanguage();
   const studyItems = useMemo(
     () =>
       items
@@ -56,10 +58,12 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
   if (!currentItem) {
     return (
       <div className="rounded-md border border-dashed border-frenchBlue/25 bg-paper p-8 text-center">
-        <p className="font-semibold">No study cards are due.</p>
+        <p className="font-semibold">{t("noStudyCards", "No study cards are due.")}</p>
         <p className="mt-1 text-sm text-slate-600">
-          Add a new note or edit an existing note if you want something in the
-          Study deck.
+          {t(
+            "noStudyCardsCopy",
+            "Add a new note or edit an existing note if you want something in the Study deck."
+          )}
         </p>
         <button
           className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
@@ -67,7 +71,7 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
           type="button"
         >
           <Plus size={17} />
-          Add note
+          {t("addNote", "Add note")}
         </button>
       </div>
     );
@@ -86,11 +90,14 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
     <div className="mx-auto w-full max-w-4xl">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-frenchRed">Study mode</p>
-          <h2 className="text-2xl font-bold">Flashcards</h2>
+          <p className="text-sm font-semibold text-frenchRed">{t("studyMode", "Study mode")}</p>
+          <h2 className="text-2xl font-bold">{t("flashcards", "Flashcards")}</h2>
         </div>
         <div className="rounded-md border border-frenchBlue/10 bg-paper px-3 py-2 text-sm font-semibold text-slate-600">
-          Card {cardIndex + 1} of {studyItems.length}
+          {t("cardProgress", "Card {current} of {total}", {
+            current: cardIndex + 1,
+            total: studyItems.length,
+          })}
         </div>
       </div>
 
@@ -113,10 +120,10 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1 rounded-md bg-frenchBlue/8 px-2 py-1 text-xs font-semibold text-frenchBlue">
                     <CategoryIcon size={13} />
-                    {categories[currentItem.category].label}
+                    {t(categories[currentItem.category].labelKey, categories[currentItem.category].label)}
                   </span>
                   <span className="rounded-md bg-sage/10 px-2 py-1 text-xs font-semibold text-sage">
-                    {confidenceLabel(Number(currentItem.confidence))}
+                    {confidenceLabel(Number(currentItem.confidence), t)}
                   </span>
                 </div>
                 <h3 className="mt-3 text-3xl font-bold leading-tight">
@@ -132,26 +139,26 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
                 type="button"
               >
                 <Edit3 size={15} />
-                Edit note
+                {t("editNote", "Edit note")}
               </button>
             </div>
 
             <div className="mt-5 grid gap-5 md:grid-cols-2">
-              <DetailBlock label="Example">
-                {currentItem.example || "No example yet."}
+              <DetailBlock label={t("example", "Example")}>
+                {currentItem.example || t("noExampleYet", "No example yet.")}
               </DetailBlock>
-              <DetailBlock label="Notes">
+              <DetailBlock label={t("notes", "Notes")}>
                 <p className="whitespace-pre-line">
-                  {currentItem.notes || "No notes yet."}
+                  {currentItem.notes || t("noNotesYet", "No notes yet.")}
                 </p>
               </DetailBlock>
               {(currentItem.partOfSpeech || currentItem.ipa || currentItem.gender) && (
-                <DetailBlock label="Word details">
+                <DetailBlock label={t("wordDetails", "Word details")}>
                   <div className="grid gap-1">
                     {currentItem.partOfSpeech && (
                       <p>
-                        <span className="font-semibold">Type:</span>{" "}
-                        {partOfSpeechLabel(currentItem.partOfSpeech)}
+                        <span className="font-semibold">{t("type", "Type")}:</span>{" "}
+                        {partOfSpeechLabel(currentItem.partOfSpeech, t)}
                       </p>
                     )}
                     {currentItem.ipa && (
@@ -162,7 +169,7 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
                     )}
                     {currentItem.gender && (
                       <p>
-                        <span className="font-semibold">Gender:</span>{" "}
+                        <span className="font-semibold">{t("gender", "Gender")}:</span>{" "}
                         {currentItem.gender}
                       </p>
                     )}
@@ -170,7 +177,7 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
                 </DetailBlock>
               )}
               {hasConjugation && (
-                <DetailBlock label="Conjugation">
+                <DetailBlock label={t("conjugation", "Conjugation")}>
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
                     {conjugationPronouns.map((pronoun) =>
                       currentItem.conjugation?.[pronoun] ? (
@@ -184,7 +191,7 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
                 </DetailBlock>
               )}
               {hasAdjectiveForms && (
-                <DetailBlock label="Adjective forms">
+                <DetailBlock label={t("adjectiveForms", "Adjective forms")}>
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
                     {[
                       ["masculine", "masc."],
@@ -203,7 +210,7 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
                 </DetailBlock>
               )}
               {(currentItem.tags ?? []).length > 0 && (
-                <DetailBlock label="Tags">
+                <DetailBlock label={t("tags", "Tags")}>
                   <div className="flex flex-wrap gap-2">
                     {currentItem.tags.map((tag) => (
                       <span
@@ -229,7 +236,7 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
           type="button"
         >
           <ChevronLeft size={17} />
-          Previous
+          {t("previous", "Previous")}
         </button>
         <button
           className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:text-frenchBlue"
@@ -237,14 +244,14 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
           type="button"
         >
           <RotateCcw size={17} />
-          {isFlipped ? "Show front" : "Show details"}
+          {isFlipped ? t("showFront", "Show front") : t("showDetails", "Show details")}
         </button>
         <button
           className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
           onClick={() => moveToCard(isLastCard ? 0 : cardIndex + 1)}
           type="button"
         >
-          {isLastCard ? "Start over" : "Next"}
+          {isLastCard ? t("startOver", "Start over") : t("next", "Next")}
           <ChevronRight size={17} />
         </button>
       </div>

@@ -17,6 +17,7 @@ import { PracticeQueue } from "./components/PracticeQueue";
 import { Sidebar } from "./components/Sidebar";
 import { categories } from "./data/categories";
 import { hasSupabaseConfig, supabase } from "./lib/supabase";
+import { useLanguage } from "./i18n/LanguageContext";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
 import { normalizeTags } from "./utils/tags";
@@ -66,6 +67,7 @@ function getFriendlyAuthError(error) {
 }
 
 export default function App() {
+  const { t } = useLanguage();
   const [items, setItems] = useState([]);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(hasSupabaseConfig);
@@ -255,7 +257,13 @@ export default function App() {
 
     if (duplicate) {
       setEditorError(
-        `"${form.french.trim()}" already exists in ${categories[form.category].label}.`
+        t("duplicateNote", '"{word}" already exists in {category}.', {
+          word: form.french.trim(),
+          category: t(
+            categories[form.category].labelKey,
+            categories[form.category].label
+          ),
+        })
       );
       return;
     }
@@ -411,8 +419,8 @@ export default function App() {
   const ActiveView = viewBySection[activeSection] ?? TodayView;
   const pageTitle =
     activeSection === "today"
-      ? "Bonjour, John. Ready for 12 minutes of French?"
-      : categories[activeSection].label;
+      ? t("todayTitle", "Bonjour, John. Ready for 12 minutes of French?")
+      : t(categories[activeSection].labelKey, categories[activeSection].label);
 
   const viewProps = {
     filteredItems,
@@ -447,7 +455,7 @@ export default function App() {
     return (
       <div className="grid min-h-screen place-items-center bg-cloud px-4 text-ink">
         <div className="rounded-md border border-frenchBlue/10 bg-paper p-5 font-semibold shadow-soft">
-          Loading your French workspace...
+          {t("loadingWorkspace", "Loading your French workspace...")}
         </div>
       </div>
     );
@@ -497,7 +505,7 @@ export default function App() {
             )}
             {dataLoading && (
               <div className="rounded-md border border-frenchBlue/10 bg-paper p-3 text-sm font-semibold text-slate-600 xl:col-span-2">
-                Loading notes...
+                {t("loadingNotes", "Loading notes...")}
               </div>
             )}
             <ActiveView {...viewProps} />
@@ -522,7 +530,11 @@ export default function App() {
           setForm={setForm}
           onClose={() => setIsEditorOpen(false)}
           onSave={saveItem}
-          title={editingItem ? "Edit learning note" : "Add learning note"}
+          title={
+            editingItem
+              ? t("editLearningNote", "Edit learning note")
+              : t("addLearningNote", "Add learning note")
+          }
         />
       )}
     </div>

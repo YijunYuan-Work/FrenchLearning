@@ -1,7 +1,10 @@
 import { BookOpen } from "lucide-react";
 import { useState } from "react";
+import { LanguageToggle } from "../components/LanguageToggle";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export function SignInPage({ error, isLoading, onAuthSubmit }) {
+  const { t } = useLanguage();
   const [mode, setMode] = useState("sign-in");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -21,20 +24,27 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
 
   return (
     <main className="grid min-h-screen place-items-center bg-cloud px-4 py-8 text-ink">
+      <div className="fixed right-4 top-4">
+        <LanguageToggle />
+      </div>
       <section className="w-full max-w-md rounded-md border border-frenchBlue/10 bg-paper p-6 shadow-soft">
         <div className="mb-6">
           <div className="mb-4 grid size-11 place-items-center rounded-md bg-frenchBlue text-white">
             <BookOpen size={22} />
           </div>
           <p className="text-sm font-semibold uppercase tracking-wide text-frenchRed">
-            French Desk
+            {t("frenchDesk", "French Desk")}
           </p>
           <h1 className="mt-1 text-3xl font-bold">
-            {isSignUp ? "Create your workspace." : "Sign in to your workspace."}
+            {isSignUp
+              ? t("signUpTitle", "Create your workspace.")
+              : t("signInTitle", "Sign in to your workspace.")}
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Keep your vocabulary, grammar, pronunciation rules, quizzes, and
-            study cards attached to your own account.
+            {t(
+              "signInCopy",
+              "Keep your vocabulary, grammar, pronunciation rules, quizzes, and study cards attached to your own account."
+            )}
           </p>
         </div>
 
@@ -49,7 +59,7 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
               onClick={() => setMode("sign-in")}
               type="button"
             >
-              Sign in
+              {t("signIn", "Sign in")}
             </button>
             <button
               className={`focus-ring h-10 rounded-md text-sm font-semibold ${
@@ -60,12 +70,12 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
               onClick={() => setMode("sign-up")}
               type="button"
             >
-              Sign up
+              {t("signUp", "Sign up")}
             </button>
           </div>
 
           <label className="grid gap-1 text-sm font-semibold">
-            Username
+            {t("username", "Username")}
             <input
               className="focus-ring h-11 rounded-md border border-slate-200 bg-white px-3 font-normal"
               onChange={(event) => setUsername(event.target.value)}
@@ -77,7 +87,7 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
 
           {isSignUp && (
             <label className="grid gap-1 text-sm font-semibold">
-              Recovery email optional
+              {t("recoveryEmailOptional", "Recovery email optional")}
               <input
                 className="focus-ring h-11 rounded-md border border-slate-200 bg-white px-3 font-normal"
                 onChange={(event) => setEmail(event.target.value)}
@@ -86,13 +96,16 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
                 value={email}
               />
               <span className="text-xs font-normal text-slate-500">
-                Stored only so we can add password recovery later.
+                {t(
+                  "recoveryEmailHint",
+                  "Stored only so we can add password recovery later."
+                )}
               </span>
             </label>
           )}
 
           <label className="grid gap-1 text-sm font-semibold">
-            Password
+            {t("password", "Password")}
             <input
               className="focus-ring h-11 rounded-md border border-slate-200 bg-white px-3 font-normal"
               onChange={(event) => setPassword(event.target.value)}
@@ -114,7 +127,11 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
             disabled={isLoading}
             type="submit"
           >
-            {isLoading ? "Working..." : isSignUp ? "Create account" : "Sign in"}
+            {isLoading
+              ? t("working", "Working...")
+              : isSignUp
+                ? t("createAccount", "Create account")
+                : t("signIn", "Sign in")}
           </button>
         </form>
       </section>

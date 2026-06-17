@@ -1,22 +1,26 @@
 export const partOfSpeechOptions = [
-  { value: "", label: "Select word type" },
-  { value: "noun", label: "Noun" },
-  { value: "verb", label: "Verb" },
-  { value: "adjective", label: "Adjective" },
-  { value: "adverb", label: "Adverb" },
-  { value: "pronoun", label: "Pronoun" },
-  { value: "preposition", label: "Preposition" },
-  { value: "conjunction", label: "Conjunction" },
-  { value: "interjection", label: "Interjection" },
-  { value: "article", label: "Article" },
-  { value: "numeral", label: "Numeral" },
+  { value: "", label: "Select word type", labelKey: "selectWordType" },
+  { value: "noun", label: "Noun", labelKey: "categoryNoun" },
+  { value: "verb", label: "Verb", labelKey: "categoryVerb" },
+  { value: "adjective", label: "Adjective", labelKey: "categoryAdjective" },
+  { value: "adverb", label: "Adverb", labelKey: "categoryAdverb" },
+  { value: "pronoun", label: "Pronoun", labelKey: "categoryPronoun" },
+  { value: "preposition", label: "Preposition", labelKey: "categoryPreposition" },
+  { value: "conjunction", label: "Conjunction", labelKey: "categoryConjunction" },
+  { value: "interjection", label: "Interjection", labelKey: "categoryInterjection" },
+  { value: "article", label: "Article", labelKey: "categoryArticle" },
+  { value: "numeral", label: "Numeral", labelKey: "categoryNumeral" },
 ];
 
 export const genderOptions = [
-  { value: "", label: "Unknown" },
-  { value: "masculine", label: "Masculine" },
-  { value: "feminine", label: "Feminine" },
-  { value: "masculine or feminine", label: "Masculine or feminine" },
+  { value: "", label: "Unknown", labelKey: "unknown" },
+  { value: "masculine", label: "Masculine", labelKey: "masculine" },
+  { value: "feminine", label: "Feminine", labelKey: "feminine" },
+  {
+    value: "masculine or feminine",
+    label: "Masculine or feminine",
+    labelKey: "masculineOrFeminine",
+  },
 ];
 
 export const conjugationPronouns = [
@@ -71,6 +75,8 @@ export function normalizeWordDetails(item) {
   };
 }
 
-export function partOfSpeechLabel(value) {
-  return partOfSpeechOptions.find((option) => option.value === value)?.label ?? "";
+export function partOfSpeechLabel(value, t) {
+  const option = partOfSpeechOptions.find((option) => option.value === value);
+  if (!option) return "";
+  return t ? t(option.labelKey, option.label) : option.label;
 }
