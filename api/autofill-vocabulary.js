@@ -16,8 +16,11 @@ const allowedPartsOfSpeech = [
 const allowedOutputLanguages = new Set(["en", "zh"]);
 
 const requestLog = new Map();
-const maxRequestsPerWindow = 40;
+const maxRequestsPerWindow = 250;
 const rateWindowMs = 24 * 60 * 60 * 1000;
+const wiktionaryHeaders = {
+  "User-Agent": "FrenchLearning/0.1 vocabulary import and lookup",
+};
 
 const emptyConjugation = {
   je: "",
@@ -138,6 +141,7 @@ async function readRequestBody(request) {
 function normalizeWord(value) {
   return String(value ?? "")
     .trim()
+    .replace(/[’]/g, "'")
     .normalize("NFC");
 }
 
@@ -145,9 +149,15 @@ function isSingleFrenchEntry(value) {
   return (
     value.length > 0 &&
     value.length <= 48 &&
-    /^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF' -]+$/.test(value) &&
+    /^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF'\u2019 -]+$/.test(value) &&
     value.split(/\s+/).length <= 4
   );
+}
+
+function stripLeadingFrenchArticle(value) {
+  return value
+    .replace(/^(l['’]|le\s+|la\s+|les\s+|un\s+|une\s+|des\s+)/i, "")
+    .trim();
 }
 
 function extractLanguageSection(wikitext, language) {
@@ -162,33 +172,53 @@ function extractLanguageSection(wikitext, language) {
   return lines.slice(start + 1, end === -1 ? undefined : end).join("\n");
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 async function verifyFrenchWiktionaryEntry(word) {
+  const page = stripLeadingFrenchArticle(word);
   const url = new URL("https://en.wiktionary.org/w/api.php");
   url.search = new URLSearchParams({
     action: "parse",
-    page: word,
+    page,
     prop: "wikitext",
     format: "json",
     formatversion: "2",
     origin: "*",
   }).toString();
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Could not verify the word with Wiktionary. Try again.");
+  let lastStatus = 0;
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    const response = await fetch(url, { headers: wiktionaryHeaders });
+    lastStatus = response.status;
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.error) {
+        return false;
+      }
+
+      const rawWikitext = data.parse?.wikitext;
+      const wikitext =
+        typeof rawWikitext === "string" ? rawWikitext : rawWikitext?.["*"] ?? "";
+      const frenchSection = extractLanguageSection(wikitext, "French");
+
+      return Boolean(frenchSection.trim());
+    }
+
+    if (![429, 500, 502, 503, 504].includes(response.status)) {
+      break;
+    }
+
+    await sleep(600 * attempt);
   }
 
-  const data = await response.json();
-  if (data.error) {
-    return false;
-  }
-
-  const rawWikitext = data.parse?.wikitext;
-  const wikitext =
-    typeof rawWikitext === "string" ? rawWikitext : rawWikitext?.["*"] ?? "";
-  const frenchSection = extractLanguageSection(wikitext, "French");
-
-  return Boolean(frenchSection.trim());
+  throw new Error(
+    `Wiktionary verification is temporarily unavailable${lastStatus ? ` (${lastStatus})` : ""}. Try importing again later.`
+  );
 }
 
 function checkRateLimit(userId) {

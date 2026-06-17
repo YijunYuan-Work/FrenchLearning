@@ -72,6 +72,18 @@ export function normalizeAnswer(value) {
     .trim();
 }
 
+export function normalizeMeaningText(value) {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[，。！？、；：（）《》“”‘’]/g, " ")
+    .replace(/['â€™]/g, "")
+    .replace(/[^\p{Letter}\p{Number}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function getAcceptedMeanings(english) {
   return english
     .split(/;|,|\/|\bor\b/i)
@@ -80,13 +92,51 @@ export function getAcceptedMeanings(english) {
 }
 
 export function isMeaningCorrect(answer, english) {
-  const normalizedAnswer = normalizeAnswer(answer);
+  const normalizedAnswer = normalizeMeaningText(answer);
   if (!normalizedAnswer) return false;
 
-  const accepted = getAcceptedMeanings(english);
+  const accepted = String(english ?? "")
+    .split(/;|,|\/|\bor\b|，|、|；|或/g)
+    .map(normalizeMeaningText)
+    .filter(Boolean);
+
   return accepted.some(
     (meaning) =>
       normalizedAnswer === meaning ||
       (normalizedAnswer.length >= 3 && meaning.includes(normalizedAnswer))
   );
+}
+
+export function normalizeGenderAnswer(value) {
+  return normalizeMeaningText(value)
+    .replace(/\b(le|la|un|une|the|a|an|noun|nom|n)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function isGenderCorrect(answer, gender) {
+  const normalizedAnswer = normalizeGenderAnswer(answer);
+  const normalizedGender = normalizeGenderAnswer(gender);
+
+  if (!normalizedAnswer || !normalizedGender) return false;
+
+  if (normalizedGender === "masculine or feminine") {
+    return (
+      normalizedAnswer.includes("masculine") &&
+      normalizedAnswer.includes("feminine")
+    );
+  }
+
+  const masculineAnswers = new Set(["masculine", "m", "male", "阳性"]);
+  const feminineAnswers = new Set(["feminine", "f", "female", "阴性"]);
+
+  if (normalizedGender === "masculine") {
+    return masculineAnswers.has(normalizedAnswer);
+  }
+
+  if (normalizedGender === "feminine") {
+    return feminineAnswers.has(normalizedAnswer);
+  }
+
+  return normalizedAnswer === normalizedGender;
 }

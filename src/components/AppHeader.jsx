@@ -33,7 +33,10 @@ export function AppHeader({
             className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchRed px-4 text-sm font-semibold text-white hover:bg-frenchRed/90"
             onClick={() =>
               openNewItem(
-                activeSection === "today" || activeSection === "review"
+                activeSection === "today" ||
+                  activeSection === "review" ||
+                  activeSection === "quiz" ||
+                  activeSection === "import"
                   ? "vocabulary"
                   : activeSection
               )

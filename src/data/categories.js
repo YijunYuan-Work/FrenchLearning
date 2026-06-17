@@ -6,6 +6,7 @@ import {
   Languages,
   ListChecks,
   Mic2,
+  Upload,
 } from "lucide-react";
 
 export const categories = {
@@ -24,8 +25,16 @@ export const categories = {
     labelKey: "categoryPronunciation",
     icon: Mic2,
   },
+  import: {
+    label: "Import",
+    labelKey: "categoryImport",
+    icon: Upload,
+  },
 };
 
 export const categoryOptions = Object.entries(categories)
-  .filter(([key]) => key !== "today" && key !== "quiz" && key !== "review")
+  .filter(
+    ([key]) =>
+      key !== "today" && key !== "quiz" && key !== "review" && key !== "import"
+  )
   .map(([value, item]) => ({ value, label: item.label, labelKey: item.labelKey }));

@@ -1,11 +1,13 @@
 import { CheckCircle2, CircleHelp, Plus, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Metric } from "../components/Metric";
+import { genderOptions } from "../data/wordFields";
 import {
   DAILY_QUIZ_LIMIT,
   createDailyQuizState,
   getEligibleVocabulary,
   getTodayKey,
+  isGenderCorrect,
   isMeaningCorrect,
   loadDailyQuizState,
   MAX_CONFIDENCE,
@@ -19,6 +21,7 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
     loadDailyQuizState(items, user?.id)
   );
   const [answer, setAnswer] = useState("");
+  const [genderAnswer, setGenderAnswer] = useState("");
   const [lastResult, setLastResult] = useState(null);
 
   const eligibleItems = useMemo(() => getEligibleVocabulary(items), [items]);
@@ -80,18 +83,27 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
     (result) => result.correct
   ).length;
   const remainingCount = Math.max(quizItems.length - answeredCount, 0);
+  const currentItemNeedsGender =
+    currentItem?.partOfSpeech === "noun" && Boolean(currentItem.gender);
 
   function submitAnswer(event) {
     event.preventDefault();
     if (!currentItem || lastResult) return;
 
-    const correct = isMeaningCorrect(answer, currentItem.english);
+    const meaningCorrect = isMeaningCorrect(answer, currentItem.english);
+    const needsGender =
+      currentItem.partOfSpeech === "noun" && Boolean(currentItem.gender);
+    const genderCorrect = needsGender
+      ? isGenderCorrect(genderAnswer, currentItem.gender)
+      : true;
+    const correct = meaningCorrect && genderCorrect;
     setQuizState((current) => ({
       ...current,
       answered: {
         ...current.answered,
         [currentItem.id]: {
           answer,
+          genderAnswer,
           correct,
         },
       },
@@ -101,11 +113,20 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
       onQuizAnswer(currentItem.id, true);
     }
 
-    setLastResult({ answer, correct, item: currentItem });
+    setLastResult({
+      answer,
+      correct,
+      genderAnswer,
+      genderCorrect,
+      item: currentItem,
+      meaningCorrect,
+      needsGender,
+    });
   }
 
   function continueQuiz() {
     setAnswer("");
+    setGenderAnswer("");
     setLastResult(null);
   }
 
@@ -187,6 +208,24 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
               />
             </label>
 
+            {currentItemNeedsGender && (
+              <label className="grid gap-1 text-sm font-semibold">
+                {t("genderAnswer", "Gender")}
+                <select
+                  className="focus-ring h-11 rounded-md border border-slate-200 bg-white px-3 font-normal"
+                  disabled={Boolean(lastResult)}
+                  onChange={(event) => setGenderAnswer(event.target.value)}
+                  value={genderAnswer}
+                >
+                  {genderOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {t(option.labelKey, option.label)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
             {lastResult && (
               <div
                 className={`rounded-md p-4 ${
@@ -206,6 +245,30 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
                 <p className="mt-2 text-sm">
                   {t("meaning", "Meaning")}: <span className="font-semibold">{currentItem.english}</span>
                 </p>
+                {lastResult.needsGender && (
+                  <p className="mt-1 text-sm">
+                    {t("gender", "Gender")}:{" "}
+                    <span className="font-semibold">{currentItem.gender}</span>
+                  </p>
+                )}
+                {!lastResult.correct && (
+                  <div className="mt-2 grid gap-1 text-sm">
+                    <p>
+                      {t("meaning", "Meaning")}:{" "}
+                      {lastResult.meaningCorrect
+                        ? t("correct", "Correct")
+                        : t("notQuite", "Not quite")}
+                    </p>
+                    {lastResult.needsGender && (
+                      <p>
+                        {t("gender", "Gender")}:{" "}
+                        {lastResult.genderCorrect
+                          ? t("correct", "Correct")
+                          : t("notQuite", "Not quite")}
+                      </p>
+                    )}
+                  </div>
+                )}
                 {lastResult.correct && (
                   <p className="mt-1 text-sm">
                     {t("confidenceAdvanced", "Confidence advanced to {value}.", {
@@ -228,7 +291,10 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
               ) : (
                 <button
                   className="focus-ring h-10 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={!answer.trim()}
+                  disabled={
+                    !answer.trim() ||
+                    (currentItemNeedsGender && !genderAnswer.trim())
+                  }
                   type="submit"
                 >
                   {t("checkAnswer", "Check answer")}

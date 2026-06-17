@@ -24,9 +24,11 @@ import { hasSupabaseConfig, supabase } from "./lib/supabase";
 import { useLanguage } from "./i18n/LanguageContext";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
+import { autoFillFrenchVocabulary } from "./services/vocabularyAutofill";
 import { normalizeTags } from "./utils/tags";
 import { MAX_CONFIDENCE } from "./utils/quiz";
 import { GrammarView } from "./views/GrammarView";
+import { ImportView } from "./views/ImportView";
 import { PhrasesView } from "./views/PhrasesView";
 import { PronunciationView } from "./views/PronunciationView";
 import { QuizView } from "./views/QuizView";
@@ -54,6 +56,7 @@ const viewBySection = {
   grammar: GrammarView,
   pronunciation: PronunciationView,
   review: ReviewView,
+  import: ImportView,
 };
 
 function getFriendlyAuthError(error) {
@@ -68,6 +71,12 @@ function getFriendlyAuthError(error) {
   }
 
   return message;
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 export default function App() {
@@ -196,9 +205,11 @@ export default function App() {
   const filteredItems = useMemo(() => {
     const searchable = query.trim().toLowerCase();
     return items.filter((item) => {
-      const matchesSection =
+    const matchesSection =
         activeSection === "today"
           ? true
+          : activeSection === "import"
+            ? true
           : activeSection === "review"
             ? Number(item.confidence) < MAX_CONFIDENCE
             : item.category === activeSection;
@@ -339,6 +350,102 @@ export default function App() {
     }
   }
 
+  async function importVocabularyWords(words, onProgress) {
+    if (!user) return [];
+
+    const results = [];
+    const seenInFile = new Set();
+    const knownWords = new Set(
+      items
+        .filter((item) => item.category === "vocabulary")
+        .map((item) => item.french.trim().toLocaleLowerCase("fr"))
+    );
+
+    for (const [index, rawWord] of words.entries()) {
+      const word = rawWord.trim();
+      const normalizedWord = word.toLocaleLowerCase("fr");
+      onProgress?.(index + 1, words.length);
+
+      if (!word) {
+        results.push({
+          word: rawWord,
+          status: "skipped",
+          reason: t("importReasonEmpty", "Empty entry."),
+        });
+        continue;
+      }
+
+      if (seenInFile.has(normalizedWord)) {
+        results.push({
+          word,
+          status: "skipped",
+          reason: t("importReasonDuplicateFile", "Duplicate in this file."),
+        });
+        continue;
+      }
+      seenInFile.add(normalizedWord);
+
+      if (knownWords.has(normalizedWord)) {
+        results.push({
+          word,
+          status: "skipped",
+          reason: t("importReasonDuplicate", "Already exists in Vocabulary."),
+        });
+        continue;
+      }
+
+      try {
+        const result = await autoFillFrenchVocabulary(word, language);
+        const resultWordKey = result.word.trim().toLocaleLowerCase("fr");
+        if (knownWords.has(resultWordKey)) {
+          results.push({
+            word,
+            status: "skipped",
+            reason: t("importReasonDuplicate", "Already exists in Vocabulary."),
+          });
+          continue;
+        }
+
+        const nextItem = {
+          ...emptyForm,
+          category: "vocabulary",
+          french: result.word,
+          partOfSpeech: result.partOfSpeech,
+          ipa: result.ipa,
+          gender: result.gender,
+          conjugation: result.conjugation ?? createEmptyWordDetails().conjugation,
+          adjectiveForms:
+            result.adjectiveForms ?? createEmptyWordDetails().adjectiveForms,
+          english: result.english,
+          example: result.example,
+          notes: result.notes,
+          tags: result.tags ?? [],
+          confidence: 1,
+          lastReviewed: "Not reviewed",
+        };
+        const savedItem = await createNote(nextItem, user.id);
+
+        knownWords.add(savedItem.french.trim().toLocaleLowerCase("fr"));
+        setItems((current) => [savedItem, ...current]);
+        results.push({
+          word,
+          status: "added",
+          reason: t("importReasonAdded", "Added successfully."),
+        });
+      } catch (error) {
+        results.push({
+          word,
+          status: "failed",
+          reason: error.message,
+        });
+      } finally {
+        await wait(350);
+      }
+    }
+
+    return results;
+  }
+
   async function markReviewed(item, delta) {
     if (!user) return;
 
@@ -477,6 +584,7 @@ export default function App() {
     openEditItem,
     openNewItem,
     onQuizAnswer: handleQuizAnswer,
+    onImportVocabulary: importVocabularyWords,
     onStartStudy: () => setActiveSection("review"),
     onStartQuiz: () => setActiveSection("quiz"),
     query,
@@ -536,7 +644,8 @@ export default function App() {
             className={`grid gap-5 px-4 py-5 md:px-7 ${
               activeSection === "today" ||
               activeSection === "quiz" ||
-              activeSection === "review"
+              activeSection === "review" ||
+              activeSection === "import"
                 ? ""
                 : "xl:grid-cols-[1fr_320px]"
             }`}
@@ -555,7 +664,8 @@ export default function App() {
 
             {activeSection !== "today" &&
               activeSection !== "quiz" &&
-              activeSection !== "review" && (
+              activeSection !== "review" &&
+              activeSection !== "import" && (
               <aside className="grid content-start gap-4">
                 <PracticeQueue items={weakItems} markReviewed={markReviewed} />
                 <FrenchInTheWild />
