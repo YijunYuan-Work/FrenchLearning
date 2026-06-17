@@ -34,7 +34,12 @@ function DetailBlock({ label, children }) {
   );
 }
 
-export function ReviewView({ items, openEditItem, openNewItem }) {
+export function ReviewView({
+  items,
+  onStudyComplete,
+  openEditItem,
+  openNewItem,
+}) {
   const { t } = useLanguage();
   const studyItems = useMemo(
     () =>
@@ -86,6 +91,11 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
     setCardIndex(0);
     setIsFlipped(false);
     setIsStudyComplete(false);
+  }
+
+  function finishStudyCycle() {
+    setIsStudyComplete(true);
+    onStudyComplete?.();
   }
 
   if (!currentItem) {
@@ -311,7 +321,7 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
         <button
           className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
           onClick={() =>
-            isLastCard ? setIsStudyComplete(true) : moveToCard(cardIndex + 1)
+            isLastCard ? finishStudyCycle() : moveToCard(cardIndex + 1)
           }
           type="button"
         >

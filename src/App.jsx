@@ -25,8 +25,13 @@ import { useLanguage } from "./i18n/LanguageContext";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
 import { autoFillFrenchVocabulary } from "./services/vocabularyAutofill";
+import {
+  createDailyProgress,
+  loadDailyProgress,
+  saveDailyProgress,
+} from "./utils/dailyProgress";
 import { normalizeTags } from "./utils/tags";
-import { MAX_CONFIDENCE } from "./utils/quiz";
+import { getTodayKey, MAX_CONFIDENCE } from "./utils/quiz";
 import { GrammarView } from "./views/GrammarView";
 import { ImportView } from "./views/ImportView";
 import { PhrasesView } from "./views/PhrasesView";
@@ -91,6 +96,10 @@ export default function App() {
   const [authError, setAuthError] = useState("");
   const [dataLoading, setDataLoading] = useState(false);
   const [dataError, setDataError] = useState("");
+  const [dailyProgress, setDailyProgress] = useState(() =>
+    createDailyProgress()
+  );
+  const [dailyProgressLoaded, setDailyProgressLoaded] = useState(false);
   const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(false);
   const [activeSection, setActiveSection] = useState("today");
   const [query, setQuery] = useState("");
@@ -108,6 +117,7 @@ export default function App() {
 
     supabase.auth.getSession().then(({ data }) => {
       if (!isMounted) return;
+      setDailyProgressLoaded(false);
       setUser(data.session?.user ?? null);
       setAuthLoading(false);
     });
@@ -115,6 +125,7 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      setDailyProgressLoaded(false);
       setUser(session?.user ?? null);
       setAuthLoading(false);
       setAuthError("");
@@ -122,6 +133,8 @@ export default function App() {
         setItems([]);
         setSelectedIds([]);
         setActiveSection("today");
+        setDailyProgress(createDailyProgress());
+        setDailyProgressLoaded(false);
         setLanguagePreferenceLoaded(false);
       }
     });
@@ -134,6 +147,8 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
+    setDailyProgress(loadDailyProgress(user.id));
+    setDailyProgressLoaded(true);
 
     let isMounted = true;
     setDataLoading(true);
@@ -159,6 +174,20 @@ export default function App() {
       isMounted = false;
     };
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const today = getTodayKey();
+    setDailyProgress((current) =>
+      current.date === today ? current : createDailyProgress(today)
+    );
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !dailyProgressLoaded) return;
+    saveDailyProgress(user.id, dailyProgress);
+  }, [dailyProgress, dailyProgressLoaded, user]);
 
   useEffect(() => {
     if (!user) {
@@ -268,6 +297,16 @@ export default function App() {
     setIsEditorOpen(true);
   }
 
+  function completeDailyTask(task) {
+    setDailyProgress((current) => ({
+      ...(current.date === getTodayKey()
+        ? current
+        : createDailyProgress(getTodayKey())),
+      date: getTodayKey(),
+      [task]: true,
+    }));
+  }
+
   async function handleAuthSubmit({ email, mode, password, username }) {
     setAuthLoading(true);
     setAuthError("");
@@ -345,6 +384,9 @@ export default function App() {
           ? current.map((item) => (item.id === editingItem.id ? savedItem : item))
           : [savedItem, ...current]
       );
+      if (!editingItem) {
+        completeDailyTask("addNote");
+      }
       setSelectedIds((current) => current.filter((id) => id !== savedItem.id));
       setEditorError("");
       setDataError("");
@@ -431,6 +473,7 @@ export default function App() {
 
         knownWords.add(savedItem.french.trim().toLocaleLowerCase("fr"));
         setItems((current) => [savedItem, ...current]);
+        completeDailyTask("addNote");
         results.push({
           word,
           status: "added",
@@ -592,8 +635,10 @@ export default function App() {
     openNewItem,
     onQuizAnswer: handleQuizAnswer,
     onImportVocabulary: importVocabularyWords,
+    onQuizComplete: () => completeDailyTask("quiz"),
     onStartStudy: () => setActiveSection("review"),
     onStartQuiz: () => setActiveSection("quiz"),
+    onStudyComplete: () => completeDailyTask("study"),
     query,
     selectedTag,
     selectedIds,
@@ -634,8 +679,8 @@ export default function App() {
       <div className="grid min-h-screen lg:grid-cols-[260px_1fr]">
         <Sidebar
           activeSection={activeSection}
+          dailyProgress={dailyProgress}
           setActiveSection={setActiveSection}
-          stats={stats}
         />
 
         <main className="min-w-0">

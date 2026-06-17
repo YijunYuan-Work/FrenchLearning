@@ -1,9 +1,28 @@
-import { Gauge, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, Gauge, Sparkles } from "lucide-react";
 import { categories } from "../data/categories";
 import { useLanguage } from "../i18n/LanguageContext";
 
-export function Sidebar({ activeSection, setActiveSection, stats }) {
+export function Sidebar({ activeSection, dailyProgress, setActiveSection }) {
   const { t } = useLanguage();
+  const dailyTasks = [
+    {
+      key: "addNote",
+      label: t("dailyTaskAddNote", "Add a note"),
+      done: Boolean(dailyProgress?.addNote),
+    },
+    {
+      key: "study",
+      label: t("dailyTaskStudy", "Complete daily study"),
+      done: Boolean(dailyProgress?.study),
+    },
+    {
+      key: "quiz",
+      label: t("dailyTaskQuiz", "Complete daily quiz"),
+      done: Boolean(dailyProgress?.quiz),
+    },
+  ];
+  const completedTasks = dailyTasks.filter((task) => task.done).length;
+  const progressPercent = Math.round((completedTasks / dailyTasks.length) * 100);
 
   return (
     <aside className="border-b border-frenchBlue/10 bg-paper px-4 py-4 lg:border-b-0 lg:border-r lg:px-5">
@@ -44,21 +63,37 @@ export function Sidebar({ activeSection, setActiveSection, stats }) {
       <div className="mt-6 rounded-md border border-frenchBlue/10 bg-white p-3">
         <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
           <Gauge size={17} className="text-sage" />
-          {t("weeklyPulse", "Weekly pulse")}
+          {t("dailyProgress", "Daily progress")}
         </div>
         <div className="h-2 rounded-full bg-slate-100">
           <div
             className="h-2 rounded-full bg-sage"
-            style={{ width: `${stats.average}%` }}
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <p className="mt-2 text-xs text-slate-600">
+        <p className="mt-2 text-xs font-semibold text-slate-700">
           {t(
-            "weeklyPulseCopy",
-            "{average}% confidence across {total} saved notes.",
-            { average: stats.average, total: stats.total }
+            "dailyProgressCopy",
+            "{completed}/3 tasks complete today.",
+            { completed: completedTasks }
           )}
         </p>
+        <div className="mt-3 grid gap-2">
+          {dailyTasks.map((task) => {
+            const Icon = task.done ? CheckCircle2 : Circle;
+            return (
+              <div
+                className={`flex items-center gap-2 text-xs ${
+                  task.done ? "font-semibold text-sage" : "text-slate-600"
+                }`}
+                key={task.key}
+              >
+                <Icon size={15} />
+                <span>{task.label}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </aside>
   );

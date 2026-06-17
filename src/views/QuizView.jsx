@@ -1,5 +1,5 @@
 import { CheckCircle2, CircleHelp, Plus, RotateCcw, XCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Metric } from "../components/Metric";
 import { genderOptions } from "../data/wordFields";
 import {
@@ -15,7 +15,13 @@ import {
 } from "../utils/quiz";
 import { useLanguage } from "../i18n/LanguageContext";
 
-export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
+export function QuizView({
+  items,
+  onQuizAnswer,
+  onQuizComplete,
+  openNewItem,
+  user,
+}) {
   const { t } = useLanguage();
   const [quizState, setQuizState] = useState(() =>
     loadDailyQuizState(items, user?.id)
@@ -23,6 +29,7 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
   const [answer, setAnswer] = useState("");
   const [genderAnswer, setGenderAnswer] = useState("");
   const [lastResult, setLastResult] = useState(null);
+  const reportedCompletionRef = useRef(false);
 
   const eligibleItems = useMemo(() => getEligibleVocabulary(items), [items]);
 
@@ -86,6 +93,16 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
     quizItems.length > 0 && answeredCount >= quizItems.length && !lastResult;
   const currentItemNeedsGender =
     currentItem?.partOfSpeech === "noun" && Boolean(currentItem.gender);
+
+  useEffect(() => {
+    reportedCompletionRef.current = false;
+  }, [quizState.date, quizState.queueIds.join("|")]);
+
+  useEffect(() => {
+    if (!isQuizComplete || reportedCompletionRef.current) return;
+    reportedCompletionRef.current = true;
+    onQuizComplete?.();
+  }, [isQuizComplete, onQuizComplete]);
 
   function submitAnswer(event) {
     event.preventDefault();
