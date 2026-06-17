@@ -1,9 +1,18 @@
-import { ChevronLeft, ChevronRight, Edit3, Plus, RotateCcw } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
+  Plus,
+  RotateCcw,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { categories } from "../data/categories";
 import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
 import { MAX_CONFIDENCE } from "../utils/quiz";
+
+const STUDY_CYCLE_LIMIT = 50;
 
 function confidenceLabel(value, t) {
   if (value >= 4) return t("confidenceStrong", "Strong");
@@ -39,20 +48,44 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
     [items]
   );
   const [cardIndex, setCardIndex] = useState(0);
+  const [cycleIndex, setCycleIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isStudyComplete, setIsStudyComplete] = useState(false);
+  const totalCycles = Math.max(
+    1,
+    Math.ceil(studyItems.length / STUDY_CYCLE_LIMIT)
+  );
+  const cycleStart = cycleIndex * STUDY_CYCLE_LIMIT;
+  const cycleItems = studyItems.slice(
+    cycleStart,
+    cycleStart + STUDY_CYCLE_LIMIT
+  );
 
   useEffect(() => {
     setCardIndex((current) =>
-      Math.min(current, Math.max(0, studyItems.length - 1))
+      Math.min(current, Math.max(0, cycleItems.length - 1))
     );
     setIsFlipped(false);
-  }, [studyItems.length]);
+  }, [cycleItems.length]);
 
-  const currentItem = studyItems[cardIndex];
+  useEffect(() => {
+    setCycleIndex((current) => Math.min(current, totalCycles - 1));
+    setIsStudyComplete(false);
+  }, [studyItems.length, totalCycles]);
+
+  const currentItem = cycleItems[cardIndex];
 
   function moveToCard(nextIndex) {
     setCardIndex(nextIndex);
     setIsFlipped(false);
+  }
+
+  function startNewStudyCycle() {
+    const hasNextCycle = (cycleIndex + 1) * STUDY_CYCLE_LIMIT < studyItems.length;
+    setCycleIndex(hasNextCycle ? cycleIndex + 1 : 0);
+    setCardIndex(0);
+    setIsFlipped(false);
+    setIsStudyComplete(false);
   }
 
   if (!currentItem) {
@@ -78,7 +111,36 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
   }
 
   const CategoryIcon = categories[currentItem.category].icon;
-  const isLastCard = cardIndex === studyItems.length - 1;
+  if (isStudyComplete) {
+    return (
+      <div className="mx-auto w-full max-w-4xl rounded-md border border-frenchBlue/10 bg-paper p-8 text-center shadow-sm">
+        <div className="mx-auto grid size-12 place-items-center rounded-md bg-sage text-white">
+          <CheckCircle2 size={26} />
+        </div>
+        <p className="mt-4 text-sm font-semibold text-frenchRed">
+          {t("studyComplete", "Study complete")}
+        </p>
+        <h2 className="mt-1 text-2xl font-bold">
+          {t("studyCompleteTitle", "Nice work. You finished this study cycle.")}
+        </h2>
+        <p className="mt-2 text-sm text-slate-600">
+          {t("studyCompleteCopy", "You reviewed {count} cards.", {
+            count: cycleItems.length,
+          })}
+        </p>
+        <button
+          className="focus-ring mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
+          onClick={startNewStudyCycle}
+          type="button"
+        >
+          <RotateCcw size={17} />
+          {t("startNewStudy", "Start a new study cycle")}
+        </button>
+      </div>
+    );
+  }
+
+  const isLastCard = cardIndex === cycleItems.length - 1;
   const hasConjugation =
     currentItem.partOfSpeech === "verb" &&
     conjugationPronouns.some((pronoun) => currentItem.conjugation?.[pronoun]);
@@ -96,7 +158,7 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
         <div className="rounded-md border border-frenchBlue/10 bg-paper px-3 py-2 text-sm font-semibold text-slate-600">
           {t("cardProgress", "Card {current} of {total}", {
             current: cardIndex + 1,
-            total: studyItems.length,
+            total: cycleItems.length,
           })}
         </div>
       </div>
@@ -248,10 +310,12 @@ export function ReviewView({ items, openEditItem, openNewItem }) {
         </button>
         <button
           className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
-          onClick={() => moveToCard(isLastCard ? 0 : cardIndex + 1)}
+          onClick={() =>
+            isLastCard ? setIsStudyComplete(true) : moveToCard(cardIndex + 1)
+          }
           type="button"
         >
-          {isLastCard ? t("startOver", "Start over") : t("next", "Next")}
+          {isLastCard ? t("finishStudy", "Finish study") : t("next", "Next")}
           <ChevronRight size={17} />
         </button>
       </div>

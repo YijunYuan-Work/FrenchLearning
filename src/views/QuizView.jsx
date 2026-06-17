@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleHelp, Plus, XCircle } from "lucide-react";
+import { CheckCircle2, CircleHelp, Plus, RotateCcw, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Metric } from "../components/Metric";
 import { genderOptions } from "../data/wordFields";
@@ -68,9 +68,10 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
       );
   }, [items, quizState]);
 
-  const answeredCount = quizItems.filter(
-    (item) => quizState.answered[item.id]
-  ).length;
+  const answeredResults = quizItems
+    .map((item) => quizState.answered[item.id])
+    .filter(Boolean);
+  const answeredCount = answeredResults.length;
   const currentItem =
     lastResult?.item ??
     quizItems.find(
@@ -79,10 +80,10 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
         Number(item.confidence) < MAX_CONFIDENCE
     ) ??
     null;
-  const correctCount = Object.values(quizState.answered).filter(
-    (result) => result.correct
-  ).length;
+  const correctCount = answeredResults.filter((result) => result.correct).length;
   const remainingCount = Math.max(quizItems.length - answeredCount, 0);
+  const isQuizComplete =
+    quizItems.length > 0 && answeredCount >= quizItems.length && !lastResult;
   const currentItemNeedsGender =
     currentItem?.partOfSpeech === "noun" && Boolean(currentItem.gender);
 
@@ -130,6 +131,13 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
     setLastResult(null);
   }
 
+  function startNewQuiz() {
+    setAnswer("");
+    setGenderAnswer("");
+    setLastResult(null);
+    setQuizState(createDailyQuizState(items, getTodayKey()));
+  }
+
   return (
     <div className="min-w-0">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -158,7 +166,46 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
           </div>
         </div>
 
-        {eligibleItems.length === 0 ? (
+        {isQuizComplete ? (
+          <div className="rounded-md bg-white p-6 text-center">
+            <div className="mx-auto grid size-12 place-items-center rounded-md bg-sage text-white">
+              <CheckCircle2 size={26} />
+            </div>
+            <p className="mt-4 text-sm font-semibold text-frenchRed">
+              {t("quizResult", "Quiz result")}
+            </p>
+            <h3 className="mt-1 text-2xl font-bold">
+              {t("quizComplete", "Today's quiz is complete.")}
+            </h3>
+            <p className="mt-2 text-sm text-slate-600">
+              {t("quizCompleteCopy", "You tested {count} words.", {
+                count: answeredCount,
+              })}
+            </p>
+            <div className="mx-auto mt-5 grid max-w-xl gap-3 sm:grid-cols-3">
+              <Metric label={t("correct", "Correct")} value={correctCount} tone="green" />
+              <Metric
+                label={t("notQuite", "Not quite")}
+                value={answeredCount - correctCount}
+                tone="red"
+              />
+              <Metric
+                label={t("remaining", "Remaining")}
+                value={getEligibleVocabulary(items).length}
+                tone="blue"
+              />
+            </div>
+            <button
+              className="focus-ring mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={getEligibleVocabulary(items).length === 0}
+              onClick={startNewQuiz}
+              type="button"
+            >
+              <RotateCcw size={17} />
+              {t("startNewQuiz", "Start a new quiz")}
+            </button>
+          </div>
+        ) : eligibleItems.length === 0 ? (
           <div className="rounded-md border border-dashed border-frenchBlue/25 bg-white p-8 text-center">
             <p className="font-semibold">{t("noVocabularyDueTitle", "No vocabulary is due today.")}</p>
             <p className="mt-1 text-sm text-slate-600">
@@ -174,14 +221,24 @@ export function QuizView({ items, onQuizAnswer, openNewItem, user }) {
             </button>
           </div>
         ) : !currentItem ? (
-          <div className="rounded-md bg-sage/10 p-6 text-center text-sage">
-            <CheckCircle2 className="mx-auto mb-2" size={28} />
-            <p className="font-semibold">{t("quizComplete", "Today's quiz is complete.")}</p>
-            <p className="mt-1 text-sm">
-              {t("quizCompleteCopy", "You tested {count} words.", {
-                count: answeredCount,
-              })}
+          <div className="rounded-md border border-dashed border-frenchBlue/25 bg-white p-8 text-center">
+            <p className="font-semibold">
+              {t("quizReadyTitle", "Ready for another quiz?")}
             </p>
+            <p className="mt-1 text-sm text-slate-600">
+              {t(
+                "quizReadyCopy",
+                "Start a new quiz to pull the next available vocabulary set."
+              )}
+            </p>
+            <button
+              className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
+              onClick={startNewQuiz}
+              type="button"
+            >
+              <RotateCcw size={17} />
+              {t("startNewQuiz", "Start a new quiz")}
+            </button>
           </div>
         ) : (
           <form className="grid gap-4" onSubmit={submitAnswer}>
