@@ -19,16 +19,19 @@ export function QuizView({
   items,
   onQuizAnswer,
   onQuizComplete,
+  onQuizStateChange,
   openNewItem,
+  savedQuizState,
   user,
 }) {
   const { t } = useLanguage();
   const [quizState, setQuizState] = useState(() =>
-    loadDailyQuizState(items, user?.id)
+    savedQuizState ?? loadDailyQuizState(items, user?.id)
   );
   const [answer, setAnswer] = useState("");
   const [genderAnswer, setGenderAnswer] = useState("");
   const [lastResult, setLastResult] = useState(null);
+  const appliedSavedQuizKeyRef = useRef("");
   const reportedCompletionRef = useRef(false);
 
   const eligibleItems = useMemo(() => getEligibleVocabulary(items), [items]);
@@ -61,7 +64,18 @@ export function QuizView({
 
   useEffect(() => {
     saveDailyQuizState(quizState, user?.id);
-  }, [quizState, user?.id]);
+    onQuizStateChange?.(quizState);
+  }, [onQuizStateChange, quizState, user?.id]);
+
+  useEffect(() => {
+    if (!savedQuizState) return;
+
+    const savedQuizKey = JSON.stringify(savedQuizState);
+    if (appliedSavedQuizKeyRef.current === savedQuizKey) return;
+
+    appliedSavedQuizKeyRef.current = savedQuizKey;
+    setQuizState(savedQuizState);
+  }, [savedQuizState]);
 
   const quizItems = useMemo(() => {
     const byId = new Map(items.map((item) => [item.id, item]));

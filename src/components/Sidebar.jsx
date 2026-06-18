@@ -62,7 +62,7 @@ export function Sidebar({ activeSection, dailyProgress, setActiveSection }) {
         })}
       </nav>
 
-      <div className="mt-7 hidden rounded-xl bg-mint p-4 shadow-inset lg:block">
+      <div className="mt-4 rounded-xl bg-mint p-4 shadow-inset lg:mt-7">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-black">
             <Gauge size={17} className="text-sage" />

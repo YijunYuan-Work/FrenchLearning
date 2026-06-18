@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   signInWithEmail,
   signOut as signOutUser,
@@ -14,6 +14,11 @@ import {
   getLanguagePreference,
   updateLanguagePreference,
 } from "./api/preferences";
+import {
+  getDailyLearningState,
+  updateDailyProgress,
+  updateDailyQuizState,
+} from "./api/dailyLearning";
 import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
 import { FrenchInTheWild } from "./components/FrenchInTheWild";
@@ -25,11 +30,7 @@ import { useLanguage } from "./i18n/LanguageContext";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
 import { autoFillFrenchVocabulary } from "./services/vocabularyAutofill";
-import {
-  createDailyProgress,
-  loadDailyProgress,
-  saveDailyProgress,
-} from "./utils/dailyProgress";
+import { createDailyProgress } from "./utils/dailyProgress";
 import { normalizeTags } from "./utils/tags";
 import { getTodayKey, MAX_CONFIDENCE } from "./utils/quiz";
 import { GrammarView } from "./views/GrammarView";
@@ -99,7 +100,8 @@ export default function App() {
   const [dailyProgress, setDailyProgress] = useState(() =>
     createDailyProgress()
   );
-  const [dailyProgressLoaded, setDailyProgressLoaded] = useState(false);
+  const [dailyQuizState, setDailyQuizState] = useState(null);
+  const [dailyStateLoaded, setDailyStateLoaded] = useState(false);
   const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(false);
   const [activeSection, setActiveSection] = useState("today");
   const [query, setQuery] = useState("");
@@ -109,6 +111,7 @@ export default function App() {
   const [editorError, setEditorError] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const savedLanguageRef = useRef(language);
 
   useEffect(() => {
     if (!hasSupabaseConfig) return undefined;
@@ -117,7 +120,7 @@ export default function App() {
 
     supabase.auth.getSession().then(({ data }) => {
       if (!isMounted) return;
-      setDailyProgressLoaded(false);
+      setDailyStateLoaded(false);
       setUser(data.session?.user ?? null);
       setAuthLoading(false);
     });
@@ -125,7 +128,7 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      setDailyProgressLoaded(false);
+      setDailyStateLoaded(false);
       setUser(session?.user ?? null);
       setAuthLoading(false);
       setAuthError("");
@@ -134,7 +137,8 @@ export default function App() {
         setSelectedIds([]);
         setActiveSection("today");
         setDailyProgress(createDailyProgress());
-        setDailyProgressLoaded(false);
+        setDailyQuizState(null);
+        setDailyStateLoaded(false);
         setLanguagePreferenceLoaded(false);
       }
     });
@@ -147,8 +151,6 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    setDailyProgress(loadDailyProgress(user.id));
-    setDailyProgressLoaded(true);
 
     let isMounted = true;
     setDataLoading(true);
@@ -176,18 +178,48 @@ export default function App() {
   }, [user]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setDailyStateLoaded(false);
+      return undefined;
+    }
 
+    let isMounted = true;
     const today = getTodayKey();
-    setDailyProgress((current) =>
-      current.date === today ? current : createDailyProgress(today)
-    );
+
+    setDailyStateLoaded(false);
+    getDailyLearningState(user.id, today)
+      .then(({ progress, quizState }) => {
+        if (!isMounted) return;
+        setDailyProgress(progress);
+        setDailyQuizState(quizState);
+        setDailyStateLoaded(true);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setDailyProgress(createDailyProgress(today));
+        setDailyQuizState(null);
+        setDailyStateLoaded(true);
+        setDataError(error.message);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   useEffect(() => {
-    if (!user || !dailyProgressLoaded) return;
-    saveDailyProgress(user.id, dailyProgress);
-  }, [dailyProgress, dailyProgressLoaded, user]);
+    if (!user || !dailyStateLoaded) return;
+    updateDailyProgress(user.id, dailyProgress).catch((error) => {
+      setDataError(error.message);
+    });
+  }, [dailyProgress, dailyStateLoaded, user]);
+
+  useEffect(() => {
+    if (!user || !dailyStateLoaded || !dailyQuizState) return;
+    updateDailyQuizState(user.id, dailyQuizState).catch((error) => {
+      setDataError(error.message);
+    });
+  }, [dailyQuizState, dailyStateLoaded, user]);
 
   useEffect(() => {
     if (!user) {
@@ -202,13 +234,17 @@ export default function App() {
       .then((savedLanguage) => {
         if (!isMounted) return;
         if (savedLanguage) {
+          savedLanguageRef.current = savedLanguage;
           setLanguage(savedLanguage);
+        } else {
+          savedLanguageRef.current = language;
         }
         setLanguagePreferenceLoaded(true);
       })
       .catch((error) => {
         if (!isMounted) return;
-        setDataError(error.message);
+        console.warn("Language preference could not be loaded.", error);
+        savedLanguageRef.current = language;
         setLanguagePreferenceLoaded(true);
       });
 
@@ -219,10 +255,15 @@ export default function App() {
 
   useEffect(() => {
     if (!user || !languagePreferenceLoaded) return;
+    if (language === savedLanguageRef.current) return;
 
-    updateLanguagePreference(user.id, language).catch((error) => {
-      setDataError(error.message);
-    });
+    updateLanguagePreference(user.id, language)
+      .then((savedLanguage) => {
+        savedLanguageRef.current = savedLanguage;
+      })
+      .catch((error) => {
+        console.warn("Language preference could not be saved.", error);
+      });
   }, [language, languagePreferenceLoaded, user]);
 
   const tags = useMemo(() => {
@@ -312,11 +353,11 @@ export default function App() {
     setAuthError("");
 
     try {
-      const authenticatedUser =
-        mode === "sign-up"
-          ? await signUpWithEmail(username, email, password)
-          : await signInWithEmail(username, password);
-      setUser(authenticatedUser);
+      if (mode === "sign-up") {
+        await signUpWithEmail(username, email, password);
+      } else {
+        await signInWithEmail(username, password);
+      }
     } catch (error) {
       setAuthError(getFriendlyAuthError(error));
     } finally {
@@ -332,6 +373,9 @@ export default function App() {
       await signOutUser();
       setUser(null);
       setItems([]);
+      setDailyProgress(createDailyProgress());
+      setDailyQuizState(null);
+      setDailyStateLoaded(false);
       setLanguagePreferenceLoaded(false);
     } catch (error) {
       setDataError(error.message);
@@ -636,6 +680,7 @@ export default function App() {
     onQuizAnswer: handleQuizAnswer,
     onImportVocabulary: importVocabularyWords,
     onQuizComplete: () => completeDailyTask("quiz"),
+    onQuizStateChange: dailyStateLoaded ? setDailyQuizState : undefined,
     onStartStudy: () => setActiveSection("review"),
     onStartQuiz: () => setActiveSection("quiz"),
     onStudyComplete: () => completeDailyTask("study"),
@@ -647,6 +692,7 @@ export default function App() {
     stats,
     tags,
     weakItems,
+    savedQuizState: dailyQuizState,
     user,
   };
 

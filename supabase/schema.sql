@@ -107,3 +107,46 @@ create trigger set_user_preferences_updated_at
   before update on public.user_preferences
   for each row
   execute function public.set_updated_at();
+
+create table if not exists public.daily_learning_state (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  date text not null,
+  add_note boolean not null default false,
+  study boolean not null default false,
+  quiz boolean not null default false,
+  quiz_state jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, date)
+);
+
+alter table public.daily_learning_state enable row level security;
+
+drop policy if exists "Users can read their daily learning state" on public.daily_learning_state;
+create policy "Users can read their daily learning state"
+  on public.daily_learning_state
+  for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can create their daily learning state" on public.daily_learning_state;
+create policy "Users can create their daily learning state"
+  on public.daily_learning_state
+  for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their daily learning state" on public.daily_learning_state;
+create policy "Users can update their daily learning state"
+  on public.daily_learning_state
+  for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop trigger if exists set_daily_learning_state_updated_at on public.daily_learning_state;
+
+create trigger set_daily_learning_state_updated_at
+  before update on public.daily_learning_state
+  for each row
+  execute function public.set_updated_at();

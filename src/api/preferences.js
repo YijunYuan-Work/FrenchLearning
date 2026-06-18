@@ -18,6 +18,16 @@ export async function getLanguagePreference(userId) {
 
 export async function updateLanguagePreference(userId, language) {
   const nextLanguage = allowedLanguages.has(language) ? language : "en";
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || user?.id !== userId) {
+    return nextLanguage;
+  }
+
   const { data, error } = await supabase
     .from("user_preferences")
     .upsert(
