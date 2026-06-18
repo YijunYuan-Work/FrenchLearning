@@ -9,8 +9,8 @@ export function SetupPage() {
       <div className="fixed right-4 top-4">
         <LanguageToggle />
       </div>
-      <section className="w-full max-w-2xl rounded-md border border-frenchBlue/10 bg-paper p-6 shadow-soft">
-        <p className="text-sm font-semibold uppercase tracking-wide text-frenchRed">
+      <section className="app-card w-full max-w-2xl p-6">
+        <p className="text-sm font-bold text-frenchRed">
           {t("setupRequired", "Supabase setup required")}
         </p>
         <h1 className="mt-1 text-3xl font-bold">
@@ -22,7 +22,7 @@ export function SetupPage() {
             "Create a `.env.local` file in this project with your new FrenchLearning Supabase values, then restart the dev server."
           )}
         </p>
-        <pre className="mt-4 overflow-x-auto rounded-md bg-frenchBlue p-4 text-sm text-white">
+        <pre className="mt-4 overflow-x-auto rounded-xl bg-frenchBlue p-4 text-sm text-white">
 {`VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key`}
         </pre>

@@ -5,8 +5,8 @@ export function FrenchCharacterKeyboard({ onInsert }) {
   const { t } = useLanguage();
 
   return (
-    <div className="rounded-md border border-frenchBlue/10 bg-white p-3">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="rounded-xl border border-line bg-sky/35 p-3">
+      <p className="mb-2 text-xs font-bold text-slate-500">
         {t("frenchCharacters", "French characters")}
       </p>
       <div className="grid gap-2">
@@ -14,7 +14,7 @@ export function FrenchCharacterKeyboard({ onInsert }) {
           <div className="flex flex-wrap gap-1.5" key={row.join("")}>
             {row.map((character) => (
               <button
-                className="focus-ring grid size-8 place-items-center rounded-md border border-slate-200 bg-slate-50 text-sm font-semibold text-frenchRed hover:border-frenchBlue/30 hover:bg-frenchBlue/5"
+                className="focus-ring grid size-8 place-items-center rounded-lg border border-line bg-white text-sm font-bold text-frenchRed hover:border-frenchBlue/35 hover:bg-white"
                 key={character}
                 onClick={() => onInsert(character)}
                 type="button"

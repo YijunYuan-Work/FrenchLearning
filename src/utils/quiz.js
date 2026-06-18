@@ -14,6 +14,18 @@ export function getTodayKey() {
   return `${year}-${month}-${day}`;
 }
 
+export function shuffleItems(items) {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [
+      shuffled[swapIndex],
+      shuffled[index],
+    ];
+  }
+  return shuffled;
+}
+
 export function getEligibleVocabulary(items) {
   return items
     .filter(
@@ -31,7 +43,7 @@ export function getEligibleVocabulary(items) {
 export function createDailyQuizState(items, date = getTodayKey()) {
   return {
     date,
-    queueIds: getEligibleVocabulary(items)
+    queueIds: shuffleItems(getEligibleVocabulary(items))
       .slice(0, DAILY_QUIZ_LIMIT)
       .map((item) => item.id),
     answered: {},

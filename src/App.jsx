@@ -657,7 +657,7 @@ export default function App() {
   if (authLoading && !user) {
     return (
       <div className="grid min-h-screen place-items-center bg-cloud px-4 text-ink">
-        <div className="rounded-md border border-frenchBlue/10 bg-paper p-5 font-semibold shadow-soft">
+        <div className="app-card p-5 font-semibold">
           {t("loadingWorkspace", "Loading your French workspace...")}
         </div>
       </div>
@@ -675,8 +675,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-cloud text-ink">
-      <div className="grid min-h-screen lg:grid-cols-[260px_1fr]">
+    <div className="min-h-screen overflow-x-hidden bg-cloud text-ink">
+      <div className="grid min-h-screen min-w-0 lg:grid-cols-[272px_1fr]">
         <Sidebar
           activeSection={activeSection}
           dailyProgress={dailyProgress}
@@ -693,22 +693,22 @@ export default function App() {
           />
 
           <section
-            className={`grid gap-5 px-4 py-5 md:px-7 ${
+            className={`grid gap-5 px-4 py-5 md:px-7 lg:py-7 ${
               activeSection === "today" ||
               activeSection === "quiz" ||
               activeSection === "review" ||
               activeSection === "import"
                 ? ""
-                : "xl:grid-cols-[1fr_320px]"
+                : "xl:grid-cols-[minmax(0,1fr)_320px]"
             }`}
           >
             {dataError && (
-              <div className="rounded-md border border-frenchRed/20 bg-frenchRed/10 p-3 text-sm font-semibold text-frenchRed xl:col-span-2">
+              <div className="rounded-xl border border-frenchRed/25 bg-blush p-3 text-sm font-bold text-frenchRed xl:col-span-2">
                 {dataError}
               </div>
             )}
             {dataLoading && (
-              <div className="rounded-md border border-frenchBlue/10 bg-paper p-3 text-sm font-semibold text-slate-600 xl:col-span-2">
+              <div className="app-card p-3 text-sm font-bold text-slate-600 xl:col-span-2">
                 {t("loadingNotes", "Loading notes...")}
               </div>
             )}

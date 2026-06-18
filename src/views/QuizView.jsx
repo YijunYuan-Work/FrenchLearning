@@ -164,16 +164,16 @@ export function QuizView({
         <Metric label={t("dailyGoal", "Daily goal")} value={DAILY_QUIZ_LIMIT} />
       </div>
 
-      <section className="mt-5 rounded-md border border-frenchBlue/10 bg-paper p-5 shadow-sm">
+      <section className="app-card mt-5 p-5">
         <div className="mb-4 flex items-start gap-3">
-          <div className="grid size-10 shrink-0 place-items-center rounded-md bg-frenchBlue text-white">
+          <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-frenchBlue text-white">
             <CircleHelp size={20} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-frenchRed">
+            <p className="text-sm font-bold text-frenchRed">
               {t("vocabularyQuiz", "Vocabulary quiz")}
             </p>
-            <h3 className="text-xl font-bold">{t("writeEnglishMeaning", "Write the English meaning.")}</h3>
+            <h3 className="text-xl font-black">{t("writeEnglishMeaning", "Write the English meaning.")}</h3>
             <p className="mt-1 text-sm leading-6 text-slate-600">
               {t(
                 "quizRuleCopy",
@@ -184,14 +184,14 @@ export function QuizView({
         </div>
 
         {isQuizComplete ? (
-          <div className="rounded-md bg-white p-6 text-center">
-            <div className="mx-auto grid size-12 place-items-center rounded-md bg-sage text-white">
+          <div className="rounded-xl bg-white p-6 text-center shadow-inset">
+            <div className="mx-auto grid size-12 place-items-center rounded-lg bg-sage text-white">
               <CheckCircle2 size={26} />
             </div>
-            <p className="mt-4 text-sm font-semibold text-frenchRed">
+            <p className="mt-4 text-sm font-bold text-frenchRed">
               {t("quizResult", "Quiz result")}
             </p>
-            <h3 className="mt-1 text-2xl font-bold">
+            <h3 className="mt-1 text-2xl font-black">
               {t("quizComplete", "Today's quiz is complete.")}
             </h3>
             <p className="mt-2 text-sm text-slate-600">
@@ -213,7 +213,7 @@ export function QuizView({
               />
             </div>
             <button
-              className="focus-ring mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="primary-action mt-5 h-10 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={getEligibleVocabulary(items).length === 0}
               onClick={startNewQuiz}
               type="button"
@@ -223,13 +223,13 @@ export function QuizView({
             </button>
           </div>
         ) : eligibleItems.length === 0 ? (
-          <div className="rounded-md border border-dashed border-frenchBlue/25 bg-white p-8 text-center">
-            <p className="font-semibold">{t("noVocabularyDueTitle", "No vocabulary is due today.")}</p>
-            <p className="mt-1 text-sm text-slate-600">
+          <div className="rounded-xl border border-dashed border-frenchBlue/30 bg-sky/40 p-8 text-center">
+            <p className="font-black">{t("noVocabularyDueTitle", "No vocabulary is due today.")}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
               {t("noVocabularyDueCopy", "Add vocabulary or lower-confidence words to build a daily quiz.")}
             </p>
             <button
-              className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
+              className="primary-action mt-4 h-10"
               onClick={() => openNewItem("vocabulary")}
               type="button"
             >
@@ -238,18 +238,18 @@ export function QuizView({
             </button>
           </div>
         ) : !currentItem ? (
-          <div className="rounded-md border border-dashed border-frenchBlue/25 bg-white p-8 text-center">
-            <p className="font-semibold">
+          <div className="rounded-xl border border-dashed border-frenchBlue/30 bg-sky/40 p-8 text-center">
+            <p className="font-black">
               {t("quizReadyTitle", "Ready for another quiz?")}
             </p>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm leading-6 text-slate-600">
               {t(
                 "quizReadyCopy",
                 "Start a new quiz to pull the next available vocabulary set."
               )}
             </p>
             <button
-              className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
+              className="primary-action mt-4 h-10"
               onClick={startNewQuiz}
               type="button"
             >
@@ -259,11 +259,11 @@ export function QuizView({
           </div>
         ) : (
           <form className="grid gap-4" onSubmit={submitAnswer}>
-            <div className="rounded-md bg-white p-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="rounded-xl bg-sky/45 p-5">
+              <p className="text-xs font-bold text-slate-500">
                 {t("french", "French")}
               </p>
-              <p className="mt-1 text-3xl font-bold text-ink">
+              <p className="mt-1 text-3xl font-black tracking-[-0.01em] text-ink">
                 {currentItem.french}
               </p>
               {currentItem.ipa && (
@@ -271,10 +271,10 @@ export function QuizView({
               )}
             </div>
 
-            <label className="grid gap-1 text-sm font-semibold">
+            <label className="grid gap-1 text-sm font-bold">
               {t("yourAnswer", "Your answer")}
               <input
-                className="focus-ring h-11 rounded-md border border-slate-200 bg-white px-3 font-normal"
+                className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
                 disabled={Boolean(lastResult)}
                 onChange={(event) => setAnswer(event.target.value)}
                 placeholder={t("typeEnglishMeaning", "Type the English meaning")}
@@ -283,10 +283,10 @@ export function QuizView({
             </label>
 
             {currentItemNeedsGender && (
-              <label className="grid gap-1 text-sm font-semibold">
+              <label className="grid gap-1 text-sm font-bold">
                 {t("genderAnswer", "Gender")}
                 <select
-                  className="focus-ring h-11 rounded-md border border-slate-200 bg-white px-3 font-normal"
+                  className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
                   disabled={Boolean(lastResult)}
                   onChange={(event) => setGenderAnswer(event.target.value)}
                   value={genderAnswer}
@@ -302,13 +302,13 @@ export function QuizView({
 
             {lastResult && (
               <div
-                className={`rounded-md p-4 ${
+                className={`rounded-xl p-4 ${
                   lastResult.correct
-                    ? "bg-sage/10 text-sage"
-                    : "bg-frenchRed/10 text-frenchRed"
+                    ? "bg-mint text-sage"
+                    : "bg-blush text-frenchRed"
                 }`}
               >
-                <div className="flex items-center gap-2 font-semibold">
+                <div className="flex items-center gap-2 font-bold">
                   {lastResult.correct ? (
                     <CheckCircle2 size={18} />
                   ) : (
@@ -356,7 +356,7 @@ export function QuizView({
             <div className="flex justify-end">
               {lastResult ? (
                 <button
-                  className="focus-ring h-10 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white"
+                  className="primary-action h-10"
                   onClick={continueQuiz}
                   type="button"
                 >
@@ -364,7 +364,7 @@ export function QuizView({
                 </button>
               ) : (
                 <button
-                  className="focus-ring h-10 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className="primary-action h-10 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={
                     !answer.trim() ||
                     (currentItemNeedsGender && !genderAnswer.trim())

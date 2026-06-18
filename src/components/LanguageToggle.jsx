@@ -5,7 +5,7 @@ export function LanguageToggle() {
 
   return (
     <button
-      className="focus-ring inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 hover:text-frenchBlue"
+      className="secondary-action h-10 px-3"
       onClick={() => setLanguage(language === "en" ? "zh" : "en")}
       type="button"
     >

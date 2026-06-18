@@ -14,8 +14,8 @@ export function PaginationControls({
   if (totalItems <= itemsPerPage) return null;
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-frenchBlue/10 bg-paper p-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-slate-600">
+    <div className="flex flex-col gap-2 rounded-xl border border-line bg-white/90 p-3 shadow-soft sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm font-semibold text-slate-600">
         {t("showingRange", "Showing {start}-{end} of {total} {label}", {
           start: (page - 1) * itemsPerPage + 1,
           end: Math.min(page * itemsPerPage, totalItems),
@@ -25,7 +25,7 @@ export function PaginationControls({
       </p>
       <div className="flex gap-2">
         <button
-          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+          className="secondary-action h-9 px-3"
           disabled={page === 1}
           onClick={onPrevious}
           type="button"
@@ -34,7 +34,7 @@ export function PaginationControls({
           {t("previous", "Previous")}
         </button>
         <button
-          className="focus-ring inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+          className="secondary-action h-9 px-3"
           disabled={page === totalPages}
           onClick={onNext}
           type="button"

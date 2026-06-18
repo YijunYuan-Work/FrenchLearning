@@ -1,17 +1,21 @@
 export function Metric({ label, value, tone = "default" }) {
-  const toneClass = {
-    default: "text-ink",
-    red: "text-frenchRed",
-    blue: "text-frenchBlue",
-    green: "text-sage",
+  const toneClasses = {
+    default: "bg-white text-ink",
+    red: "bg-blush text-frenchRed",
+    blue: "bg-sky text-frenchBlue",
+    green: "bg-mint text-sage",
   }[tone];
 
   return (
-    <div className="rounded-md border border-frenchBlue/10 bg-paper p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="app-card p-4">
+      <p className="text-xs font-bold text-slate-500">
         {label}
       </p>
-      <p className={`mt-1 text-2xl font-bold ${toneClass}`}>{value}</p>
+      <p
+        className={`mt-3 inline-flex min-h-11 min-w-16 items-center justify-center rounded-lg px-3 text-2xl font-black ${toneClasses}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }

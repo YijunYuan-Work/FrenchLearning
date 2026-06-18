@@ -84,16 +84,16 @@ export function ImportView({ onImportVocabulary }) {
         <Metric label={t("importFailed", "Failed")} value={summary.failed} tone="red" />
       </div>
 
-      <section className="mt-5 rounded-md border border-frenchBlue/10 bg-paper p-5 shadow-sm">
+      <section className="app-card mt-5 p-5">
         <div className="mb-5 flex items-start gap-3">
-          <div className="grid size-10 shrink-0 place-items-center rounded-md bg-frenchBlue text-white">
+          <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-frenchBlue text-white">
             <Upload size={20} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-frenchRed">
+            <p className="text-sm font-bold text-frenchRed">
               {t("categoryImport", "Import")}
             </p>
-            <h3 className="text-xl font-bold">
+            <h3 className="text-xl font-black">
               {t("importTitle", "Import vocabulary from a text file")}
             </h3>
             <p className="mt-1 text-sm leading-6 text-slate-600">
@@ -106,14 +106,14 @@ export function ImportView({ onImportVocabulary }) {
         </div>
 
         <div className="grid gap-4">
-          <label className="grid gap-2 rounded-md border border-dashed border-frenchBlue/25 bg-white p-5 text-sm font-semibold">
+          <label className="grid gap-2 rounded-xl border border-dashed border-frenchBlue/30 bg-sky/35 p-5 text-sm font-bold">
             <span className="flex items-center gap-2">
               <FileText size={18} className="text-frenchBlue" />
               {t("importFile", "Text file")}
             </span>
             <input
               accept=".txt,text/plain"
-              className="focus-ring rounded-md border border-slate-200 bg-white px-3 py-2 font-normal"
+              className="focus-ring rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
               disabled={isImporting}
               onChange={handleFileChange}
               type="file"
@@ -124,7 +124,7 @@ export function ImportView({ onImportVocabulary }) {
           </label>
 
           {words.length > 0 && (
-            <div className="rounded-md bg-frenchBlue/8 p-3 text-sm text-frenchBlue">
+            <div className="rounded-xl bg-sky p-3 text-sm font-semibold text-frenchBlue">
               {t("importReady", "{count} words ready to import.", {
                 count: words.length,
               })}
@@ -132,13 +132,13 @@ export function ImportView({ onImportVocabulary }) {
           )}
 
           {error && (
-            <div className="rounded-md bg-frenchRed/10 p-3 text-sm font-semibold text-frenchRed">
+            <div className="rounded-xl bg-blush p-3 text-sm font-bold text-frenchRed">
               {error}
             </div>
           )}
 
           {isImporting && (
-            <div className="rounded-md bg-frenchBlue/8 p-3 text-sm font-semibold text-frenchBlue">
+            <div className="rounded-xl bg-sky p-3 text-sm font-bold text-frenchBlue">
               {t("importProgress", "Importing {current} of {total}...", {
                 current: progress.current,
                 total: progress.total,
@@ -148,7 +148,7 @@ export function ImportView({ onImportVocabulary }) {
 
           <div className="flex justify-end">
             <button
-              className="focus-ring h-10 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="primary-action h-10 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isImporting || words.length === 0}
               onClick={startImport}
               type="button"
@@ -162,22 +162,22 @@ export function ImportView({ onImportVocabulary }) {
       </section>
 
       {results.length > 0 && (
-        <section className="mt-5 rounded-md border border-frenchBlue/10 bg-paper p-4">
-          <h3 className="font-bold">{t("importFailures", "Failed imports")}</h3>
+        <section className="app-card mt-5 p-4">
+          <h3 className="font-black">{t("importFailures", "Failed imports")}</h3>
           {failedResults.length === 0 ? (
-            <p className="mt-3 rounded-md bg-sage/10 p-3 text-sm font-semibold text-sage">
+            <p className="mt-3 rounded-xl bg-mint p-3 text-sm font-bold text-sage">
               {t("importNoFailures", "No failed imports.")}
             </p>
           ) : (
             <div className="mt-3 grid gap-2">
               {failedResults.map((result, index) => (
                 <div
-                  className="rounded-md border border-slate-200 bg-white p-3 text-sm"
+                  className="rounded-xl border border-line bg-white p-3 text-sm shadow-sm"
                   key={`${result.word}-${index}`}
                 >
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="font-semibold">{result.word}</p>
-                    <span className="w-fit rounded-md bg-frenchRed/10 px-2 py-1 text-xs font-semibold text-frenchRed">
+                    <p className="font-bold">{result.word}</p>
+                    <span className="w-fit rounded-lg bg-blush px-2 py-1 text-xs font-bold text-frenchRed">
                       {t("importStatus_failed", "failed")}
                     </span>
                   </div>

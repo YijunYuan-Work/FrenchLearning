@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  color: #172033;
-  background: #f7f4ed;
+  color: #102033;
+  background: #f5f9ff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -15,6 +15,9 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(220, 238, 255, 0.42), rgba(245, 249, 255, 0) 260px),
+    #f5f9ff;
 }
 
 button,
@@ -24,6 +27,48 @@ textarea {
   font: inherit;
 }
 
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::placeholder {
+  color: #5d7189;
+  opacity: 1;
+}
+
 .focus-ring {
-  @apply outline-none ring-2 ring-transparent transition focus-visible:ring-frenchBlue/40;
+  @apply outline-none ring-2 ring-transparent transition focus-visible:ring-frenchBlue/35 focus-visible:ring-offset-2 focus-visible:ring-offset-cloud;
+}
+
+.app-card {
+  @apply rounded-xl border border-[#d8e5f5] bg-paper shadow-soft;
+}
+
+.soft-panel {
+  @apply rounded-xl border border-[#d8e5f5] bg-white/90 shadow-soft;
+}
+
+.primary-action {
+  @apply focus-ring inline-flex items-center justify-center gap-2 rounded-lg bg-frenchBlue px-4 text-sm font-bold text-white shadow-soft transition hover:bg-frenchBlue/90 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.secondary-action {
+  @apply focus-ring inline-flex items-center justify-center gap-2 rounded-lg border border-[#d8e5f5] bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-frenchBlue/35 hover:text-frenchBlue disabled:cursor-not-allowed disabled:opacity-55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

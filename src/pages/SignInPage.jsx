@@ -1,4 +1,4 @@
-import { BookOpen } from "lucide-react";
+import { BookOpen, CheckCircle2, Flame, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { LanguageToggle } from "../components/LanguageToggle";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -23,23 +23,61 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-cloud px-4 py-8 text-ink">
+    <main className="min-h-screen bg-cloud px-4 py-8 text-ink">
       <div className="fixed right-4 top-4">
         <LanguageToggle />
       </div>
-      <section className="w-full max-w-md rounded-md border border-frenchBlue/10 bg-paper p-6 shadow-soft">
-        <div className="mb-6">
-          <div className="mb-4 grid size-11 place-items-center rounded-md bg-frenchBlue text-white">
-            <BookOpen size={22} />
+      <section className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-5xl items-center gap-6 lg:grid-cols-[1fr_440px]">
+        <div className="hidden lg:block">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-butter px-3 py-1 text-sm font-black text-ink shadow-inset">
+            <Sparkles size={16} className="text-brass" />
+            {t("frenchDesk", "French Desk")}
           </div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-frenchRed">
+          <h1 className="max-w-xl text-5xl font-black leading-[1.04] tracking-[-0.02em]">
+            {t("signInHeroTitle", "Make today’s French practice feel light.")}
+          </h1>
+          <p className="mt-4 max-w-lg text-base leading-7 text-slate-700">
+            {t(
+              "signInHeroCopy",
+              "Collect useful words, review what is fading, and keep a small daily rhythm without turning study into admin work."
+            )}
+          </p>
+          <div className="mt-8 grid max-w-xl gap-3">
+            {[
+              t("signInBenefitOne", "A 12-minute practice loop"),
+              t("signInBenefitTwo", "Vocabulary, phrases, grammar, and pronunciation together"),
+              t("signInBenefitThree", "Progress cues that encourage without nagging"),
+            ].map((benefit) => (
+              <div
+                className="flex items-center gap-3 rounded-xl bg-white/85 p-3 text-sm font-bold text-slate-700 shadow-soft"
+                key={benefit}
+              >
+                <CheckCircle2 size={18} className="text-sage" />
+                {benefit}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="app-card w-full p-6">
+          <div className="mb-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="grid size-11 place-items-center rounded-xl bg-frenchBlue text-white shadow-soft">
+              <BookOpen size={22} />
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-blush px-3 py-1 text-xs font-black text-frenchRed">
+              <Flame size={14} />
+              {t("dailyPractice", "Daily practice")}
+            </div>
+          </div>
+          <p className="text-sm font-bold text-frenchRed">
             {t("frenchDesk", "French Desk")}
           </p>
-          <h1 className="mt-1 text-3xl font-bold">
+          <h2 className="mt-1 text-3xl font-black tracking-[-0.01em]">
             {isSignUp
               ? t("signUpTitle", "Create your workspace.")
               : t("signInTitle", "Sign in to your workspace.")}
-          </h1>
+          </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {t(
               "signInCopy",
@@ -49,12 +87,12 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
         </div>
 
         <form className="grid gap-4" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 rounded-md border border-slate-200 bg-white p-1">
+          <div className="grid grid-cols-2 rounded-xl bg-sky/75 p-1">
             <button
-              className={`focus-ring h-10 rounded-md text-sm font-semibold ${
+              className={`focus-ring h-10 rounded-lg text-sm font-bold ${
                 mode === "sign-in"
-                  ? "bg-frenchBlue text-white"
-                  : "text-slate-600 hover:bg-frenchBlue/8"
+                  ? "bg-white text-frenchBlue shadow-sm"
+                  : "text-slate-600 hover:text-frenchBlue"
               }`}
               onClick={() => setMode("sign-in")}
               type="button"
@@ -62,10 +100,10 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
               {t("signIn", "Sign in")}
             </button>
             <button
-              className={`focus-ring h-10 rounded-md text-sm font-semibold ${
+              className={`focus-ring h-10 rounded-lg text-sm font-bold ${
                 mode === "sign-up"
-                  ? "bg-frenchBlue text-white"
-                  : "text-slate-600 hover:bg-frenchBlue/8"
+                  ? "bg-white text-frenchBlue shadow-sm"
+                  : "text-slate-600 hover:text-frenchBlue"
               }`}
               onClick={() => setMode("sign-up")}
               type="button"
@@ -74,10 +112,10 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
             </button>
           </div>
 
-          <label className="grid gap-1 text-sm font-semibold">
+          <label className="grid gap-1 text-sm font-bold">
             {t("username", "Username")}
             <input
-              className="focus-ring h-11 rounded-md border border-slate-200 bg-white px-3 font-normal"
+              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
               onChange={(event) => setUsername(event.target.value)}
               placeholder="john"
               required
@@ -86,10 +124,10 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
           </label>
 
           {isSignUp && (
-            <label className="grid gap-1 text-sm font-semibold">
+            <label className="grid gap-1 text-sm font-bold">
               {t("recoveryEmailOptional", "Recovery email optional")}
               <input
-                className="focus-ring h-11 rounded-md border border-slate-200 bg-white px-3 font-normal"
+                className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="john@example.com"
                 type="email"
@@ -104,12 +142,12 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
             </label>
           )}
 
-          <label className="grid gap-1 text-sm font-semibold">
+          <label className="grid gap-1 text-sm font-bold">
             {t("password", "Password")}
             <input
-              className="focus-ring h-11 rounded-md border border-slate-200 bg-white px-3 font-normal"
+              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="At least 6 characters"
+              placeholder={t("passwordPlaceholder", "At least 6 characters")}
               required
               type="password"
               value={password}
@@ -117,13 +155,13 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
           </label>
 
           {error && (
-            <p className="rounded-md bg-frenchRed/10 p-3 text-sm font-semibold text-frenchRed">
+            <p className="rounded-xl bg-blush p-3 text-sm font-bold text-frenchRed">
               {error}
             </p>
           )}
 
           <button
-            className="focus-ring h-11 rounded-md bg-frenchRed px-4 text-sm font-semibold text-white hover:bg-frenchRed/90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="primary-action h-11 bg-frenchRed hover:bg-frenchRed/90"
             disabled={isLoading}
             type="submit"
           >
@@ -134,6 +172,7 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
                 : t("signIn", "Sign in")}
           </button>
         </form>
+        </div>
       </section>
     </main>
   );

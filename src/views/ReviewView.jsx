@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { categories } from "../data/categories";
 import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
-import { MAX_CONFIDENCE } from "../utils/quiz";
+import { MAX_CONFIDENCE, shuffleItems } from "../utils/quiz";
 
 const STUDY_CYCLE_LIMIT = 50;
 
@@ -26,7 +26,7 @@ function DetailBlock({ label, children }) {
 
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <p className="text-xs font-bold text-slate-500">
         {label}
       </p>
       <div className="mt-1 text-sm leading-6 text-slate-800">{children}</div>
@@ -52,19 +52,41 @@ export function ReviewView({
         }),
     [items]
   );
+  const studyPoolKey = useMemo(
+    () =>
+      studyItems
+        .map((item) => `${item.id}:${item.confidence}`)
+        .sort()
+        .join("|"),
+    [studyItems]
+  );
+  const itemsById = useMemo(
+    () => new Map(studyItems.map((item) => [item.id, item])),
+    [studyItems]
+  );
   const [cardIndex, setCardIndex] = useState(0);
-  const [cycleIndex, setCycleIndex] = useState(0);
+  const [cycleIds, setCycleIds] = useState(() =>
+    shuffleItems(studyItems)
+      .slice(0, STUDY_CYCLE_LIMIT)
+      .map((item) => item.id)
+  );
   const [isFlipped, setIsFlipped] = useState(false);
   const [isStudyComplete, setIsStudyComplete] = useState(false);
-  const totalCycles = Math.max(
-    1,
-    Math.ceil(studyItems.length / STUDY_CYCLE_LIMIT)
+  const cycleItems = useMemo(
+    () => cycleIds.map((id) => itemsById.get(id)).filter(Boolean),
+    [cycleIds, itemsById]
   );
-  const cycleStart = cycleIndex * STUDY_CYCLE_LIMIT;
-  const cycleItems = studyItems.slice(
-    cycleStart,
-    cycleStart + STUDY_CYCLE_LIMIT
-  );
+
+  useEffect(() => {
+    setCycleIds(
+      shuffleItems(studyItems)
+        .slice(0, STUDY_CYCLE_LIMIT)
+        .map((item) => item.id)
+    );
+    setCardIndex(0);
+    setIsFlipped(false);
+    setIsStudyComplete(false);
+  }, [studyPoolKey]);
 
   useEffect(() => {
     setCardIndex((current) =>
@@ -72,11 +94,6 @@ export function ReviewView({
     );
     setIsFlipped(false);
   }, [cycleItems.length]);
-
-  useEffect(() => {
-    setCycleIndex((current) => Math.min(current, totalCycles - 1));
-    setIsStudyComplete(false);
-  }, [studyItems.length, totalCycles]);
 
   const currentItem = cycleItems[cardIndex];
 
@@ -86,8 +103,11 @@ export function ReviewView({
   }
 
   function startNewStudyCycle() {
-    const hasNextCycle = (cycleIndex + 1) * STUDY_CYCLE_LIMIT < studyItems.length;
-    setCycleIndex(hasNextCycle ? cycleIndex + 1 : 0);
+    setCycleIds(
+      shuffleItems(studyItems)
+        .slice(0, STUDY_CYCLE_LIMIT)
+        .map((item) => item.id)
+    );
     setCardIndex(0);
     setIsFlipped(false);
     setIsStudyComplete(false);
@@ -100,16 +120,16 @@ export function ReviewView({
 
   if (!currentItem) {
     return (
-      <div className="rounded-md border border-dashed border-frenchBlue/25 bg-paper p-8 text-center">
-        <p className="font-semibold">{t("noStudyCards", "No study cards are due.")}</p>
-        <p className="mt-1 text-sm text-slate-600">
+      <div className="rounded-xl border border-dashed border-frenchBlue/30 bg-sky/40 p-8 text-center">
+        <p className="font-black">{t("noStudyCards", "No study cards are due.")}</p>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
           {t(
             "noStudyCardsCopy",
             "Add a new note or edit an existing note if you want something in the Study deck."
           )}
         </p>
         <button
-          className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
+          className="primary-action mt-4 h-10"
           onClick={() => openNewItem("vocabulary")}
           type="button"
         >
@@ -123,23 +143,23 @@ export function ReviewView({
   const CategoryIcon = categories[currentItem.category].icon;
   if (isStudyComplete) {
     return (
-      <div className="mx-auto w-full max-w-4xl rounded-md border border-frenchBlue/10 bg-paper p-8 text-center shadow-sm">
-        <div className="mx-auto grid size-12 place-items-center rounded-md bg-sage text-white">
+      <div className="app-card mx-auto w-full max-w-4xl p-8 text-center">
+        <div className="mx-auto grid size-12 place-items-center rounded-lg bg-sage text-white">
           <CheckCircle2 size={26} />
         </div>
-        <p className="mt-4 text-sm font-semibold text-frenchRed">
+        <p className="mt-4 text-sm font-bold text-frenchRed">
           {t("studyComplete", "Study complete")}
         </p>
-        <h2 className="mt-1 text-2xl font-bold">
+        <h2 className="mt-1 text-2xl font-black">
           {t("studyCompleteTitle", "Nice work. You finished this study cycle.")}
         </h2>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm leading-6 text-slate-600">
           {t("studyCompleteCopy", "You reviewed {count} cards.", {
             count: cycleItems.length,
           })}
         </p>
         <button
-          className="focus-ring mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
+          className="primary-action mt-5 h-10"
           onClick={startNewStudyCycle}
           type="button"
         >
@@ -162,10 +182,10 @@ export function ReviewView({
     <div className="mx-auto w-full max-w-4xl">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-frenchRed">{t("studyMode", "Study mode")}</p>
-          <h2 className="text-2xl font-bold">{t("flashcards", "Flashcards")}</h2>
+          <p className="text-sm font-bold text-frenchRed">{t("studyMode", "Study mode")}</p>
+          <h2 className="text-2xl font-black">{t("flashcards", "Flashcards")}</h2>
         </div>
-        <div className="rounded-md border border-frenchBlue/10 bg-paper px-3 py-2 text-sm font-semibold text-slate-600">
+        <div className="rounded-lg border border-line bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm">
           {t("cardProgress", "Card {current} of {total}", {
             current: cardIndex + 1,
             total: cycleItems.length,
@@ -173,40 +193,40 @@ export function ReviewView({
         </div>
       </div>
 
-      <div className="rounded-md border border-frenchBlue/10 bg-paper p-3 shadow-sm">
+      <div className="app-card p-3">
         {!isFlipped ? (
           <button
             aria-label={`Reveal details for ${currentItem.french}`}
-            className="focus-ring grid min-h-[360px] w-full place-items-center rounded-md border border-dashed border-frenchBlue/25 bg-white p-6 text-center hover:border-frenchBlue/45"
+            className="focus-ring grid min-h-[360px] w-full place-items-center rounded-xl border border-dashed border-frenchBlue/30 bg-sky/35 p-6 text-center hover:border-frenchBlue/45"
             onClick={() => setIsFlipped(true)}
             type="button"
           >
-            <span className="break-words text-4xl font-bold leading-tight text-ink md:text-6xl">
+            <span className="break-words text-4xl font-black leading-tight tracking-[-0.02em] text-ink md:text-6xl">
               {currentItem.french}
             </span>
           </button>
         ) : (
-          <div className="min-h-[360px] rounded-md border border-frenchBlue/15 bg-white p-5">
-            <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-h-[360px] rounded-xl border border-line bg-white p-5">
+            <div className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-md bg-frenchBlue/8 px-2 py-1 text-xs font-semibold text-frenchBlue">
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-sky px-2 py-1 text-xs font-bold text-frenchBlue">
                     <CategoryIcon size={13} />
                     {t(categories[currentItem.category].labelKey, categories[currentItem.category].label)}
                   </span>
-                  <span className="rounded-md bg-sage/10 px-2 py-1 text-xs font-semibold text-sage">
+                  <span className="rounded-lg bg-mint px-2 py-1 text-xs font-bold text-sage">
                     {confidenceLabel(Number(currentItem.confidence), t)}
                   </span>
                 </div>
-                <h3 className="mt-3 text-3xl font-bold leading-tight">
+                <h3 className="mt-3 text-3xl font-black leading-tight tracking-[-0.01em]">
                   {currentItem.french}
                 </h3>
-                <p className="mt-2 text-lg font-semibold text-slate-700">
+                <p className="mt-2 text-lg font-bold text-slate-700">
                   {currentItem.english}
                 </p>
               </div>
               <button
-                className="focus-ring inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:text-frenchBlue"
+                className="secondary-action h-9 shrink-0 px-3 text-xs"
                 onClick={() => openEditItem(currentItem)}
                 type="button"
               >
@@ -286,7 +306,7 @@ export function ReviewView({
                   <div className="flex flex-wrap gap-2">
                     {currentItem.tags.map((tag) => (
                       <span
-                        className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600"
+                        className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600"
                         key={tag}
                       >
                         {tag}
@@ -302,7 +322,7 @@ export function ReviewView({
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <button
-          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:text-frenchBlue disabled:cursor-not-allowed disabled:opacity-50"
+          className="secondary-action h-10 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={cardIndex === 0}
           onClick={() => moveToCard(cardIndex - 1)}
           type="button"
@@ -311,7 +331,7 @@ export function ReviewView({
           {t("previous", "Previous")}
         </button>
         <button
-          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:text-frenchBlue"
+          className="secondary-action h-10"
           onClick={() => setIsFlipped((current) => !current)}
           type="button"
         >
@@ -319,7 +339,7 @@ export function ReviewView({
           {isFlipped ? t("showFront", "Show front") : t("showDetails", "Show details")}
         </button>
         <button
-          className="focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
+          className="primary-action h-10"
           onClick={() =>
             isLastCard ? finishStudyCycle() : moveToCard(cardIndex + 1)
           }

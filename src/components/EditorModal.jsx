@@ -1,17 +1,21 @@
 import { Loader2, Sparkles, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { FrenchCharacterKeyboard } from "./FrenchCharacterKeyboard";
 import { categoryOptions } from "../data/categories";
 import {
-  createEmptyWordDetails,
   conjugationPronouns,
   createEmptyAdjectiveForms,
   createEmptyConjugation,
+  createEmptyWordDetails,
   genderOptions,
   partOfSpeechOptions,
 } from "../data/wordFields";
-import { autoFillFrenchVocabulary } from "../services/vocabularyAutofill";
 import { useLanguage } from "../i18n/LanguageContext";
+import { autoFillFrenchVocabulary } from "../services/vocabularyAutofill";
+import { FrenchCharacterKeyboard } from "./FrenchCharacterKeyboard";
+
+const inputClass =
+  "focus-ring h-10 rounded-lg border border-line bg-white px-3 font-normal shadow-sm";
+const labelClass = "grid gap-1 text-sm font-bold";
 
 export function EditorModal({
   error,
@@ -123,16 +127,16 @@ export function EditorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/45 p-4">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/45 p-4 backdrop-blur-sm">
       <form
-        className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-md bg-paper p-5 shadow-soft"
+        className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-xl bg-paper p-5 shadow-lift"
         onSubmit={onSave}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-xl font-bold">{title}</h2>
+          <h2 className="text-xl font-black tracking-[-0.01em]">{title}</h2>
           <button
             aria-label="Close editor"
-            className="focus-ring grid size-9 place-items-center rounded-md border border-slate-200 bg-white"
+            className="focus-ring grid size-9 place-items-center rounded-lg border border-line bg-white"
             onClick={onClose}
             type="button"
           >
@@ -142,15 +146,15 @@ export function EditorModal({
 
         <div className="grid gap-4 md:grid-cols-2">
           {error && (
-            <p className="rounded-md bg-frenchRed/10 px-3 py-2 text-sm font-semibold text-frenchRed md:col-span-2">
+            <p className="rounded-xl bg-blush px-3 py-2 text-sm font-bold text-frenchRed md:col-span-2">
               {error}
             </p>
           )}
 
-          <label className="grid gap-1 text-sm font-semibold">
+          <label className={labelClass}>
             {t("section", "Section")}
             <select
-              className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
+              className={inputClass}
               onChange={(event) => updateField("category", event.target.value)}
               value={form.category}
             >
@@ -161,10 +165,10 @@ export function EditorModal({
               ))}
             </select>
           </label>
-          <label className="grid gap-1 text-sm font-semibold">
+          <label className={labelClass}>
             {t("confidence", "Confidence")}
             <select
-              className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
+              className={inputClass}
               onChange={(event) =>
                 updateField("confidence", event.target.value)
               }
@@ -176,12 +180,12 @@ export function EditorModal({
               <option value="4">{t("confidenceStrong", "Strong")}</option>
             </select>
           </label>
-          <label className="grid gap-1 text-sm font-semibold">
+          <label className={labelClass}>
             <span className="flex items-center justify-between gap-3">
               {t("french", "French")}
               {form.category === "vocabulary" && (
                 <button
-                  className="focus-ring inline-flex h-8 items-center justify-center gap-2 rounded-md border border-frenchBlue/20 bg-white px-3 text-xs font-semibold text-frenchBlue hover:bg-frenchBlue/5 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="focus-ring inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-frenchBlue/25 bg-white px-3 text-xs font-bold text-frenchBlue hover:bg-sky/60 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={
                     autoFillState.status === "loading" || !form.french.trim()
                   }
@@ -198,7 +202,7 @@ export function EditorModal({
               )}
             </span>
             <input
-              className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
+              className={inputClass}
               onChange={(event) => updateField("french", event.target.value)}
               placeholder="e.g. boulangerie, parler, heureux"
               ref={frenchInputRef}
@@ -206,10 +210,10 @@ export function EditorModal({
               value={form.french}
             />
           </label>
-          <label className="grid gap-1 text-sm font-semibold">
+          <label className={labelClass}>
             {t("english", "English")}
             <input
-              className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
+              className={inputClass}
               onChange={(event) => updateField("english", event.target.value)}
               required
               value={form.english}
@@ -220,10 +224,10 @@ export function EditorModal({
           </div>
           {form.category === "vocabulary" && (
             <>
-              <label className="grid gap-1 text-sm font-semibold md:col-span-2">
+              <label className={`${labelClass} md:col-span-2`}>
                 {t("wordType", "Word type")}
                 <select
-                  className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
+                  className={inputClass}
                   onChange={(event) =>
                     updateField("partOfSpeech", event.target.value)
                   }
@@ -237,21 +241,21 @@ export function EditorModal({
                 </select>
               </label>
 
-              <label className="grid gap-1 text-sm font-semibold md:col-span-2">
+              <label className={`${labelClass} md:col-span-2`}>
                 {t("ipaPronunciation", "IPA pronunciation")}
                 <input
-                  className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
+                  className={inputClass}
                   onChange={(event) => updateField("ipa", event.target.value)}
-                  placeholder="e.g. /bu.lɑ̃ʒ.ʁi/"
+                  placeholder="e.g. /bu.lɑ̃.ʒʁi/"
                   value={form.ipa ?? ""}
                 />
               </label>
 
               {form.partOfSpeech === "noun" && (
-                <label className="grid gap-1 text-sm font-semibold md:col-span-2">
+                <label className={`${labelClass} md:col-span-2`}>
                   {t("gender", "Gender")}
                   <select
-                    className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
+                    className={inputClass}
                     onChange={(event) => updateField("gender", event.target.value)}
                     value={form.gender ?? ""}
                   >
@@ -265,19 +269,16 @@ export function EditorModal({
               )}
 
               {form.partOfSpeech === "verb" && (
-                <div className="grid gap-3 rounded-md border border-frenchBlue/10 bg-white p-3 md:col-span-2">
-                  <p className="text-sm font-semibold">
+                <div className="grid gap-3 rounded-xl border border-line bg-sky/35 p-3 md:col-span-2">
+                  <p className="text-sm font-black">
                     {t("presentTenseConjugation", "Present tense conjugation")}
                   </p>
                   <div className="grid gap-3 md:grid-cols-2">
                     {conjugationPronouns.map((pronoun) => (
-                      <label
-                        className="grid gap-1 text-sm font-semibold"
-                        key={pronoun}
-                      >
+                      <label className={labelClass} key={pronoun}>
                         {pronoun}
                         <input
-                          className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
+                          className={inputClass}
                           onChange={(event) =>
                             updateConjugation(pronoun, event.target.value)
                           }
@@ -290,8 +291,8 @@ export function EditorModal({
               )}
 
               {form.partOfSpeech === "adjective" && (
-                <div className="grid gap-3 rounded-md border border-frenchBlue/10 bg-white p-3 md:col-span-2">
-                  <p className="text-sm font-semibold">
+                <div className="grid gap-3 rounded-xl border border-line bg-sky/35 p-3 md:col-span-2">
+                  <p className="text-sm font-black">
                     {t("adjectiveForms", "Adjective forms")}
                   </p>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -301,10 +302,10 @@ export function EditorModal({
                       ["masculinePlural", t("masculinePlural", "Masculine plural")],
                       ["femininePlural", t("femininePlural", "Feminine plural")],
                     ].map(([field, label]) => (
-                      <label className="grid gap-1 text-sm font-semibold" key={field}>
+                      <label className={labelClass} key={field}>
                         {label}
                         <input
-                          className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
+                          className={inputClass}
                           onChange={(event) =>
                             updateAdjectiveForm(field, event.target.value)
                           }
@@ -319,37 +320,37 @@ export function EditorModal({
           )}
           {autoFillState.message && (
             <p
-              className={`rounded-md px-3 py-2 text-sm md:col-span-2 ${
+              className={`rounded-xl px-3 py-2 text-sm font-semibold md:col-span-2 ${
                 autoFillState.status === "error"
-                  ? "bg-frenchRed/10 text-frenchRed"
+                  ? "bg-blush text-frenchRed"
                   : autoFillState.status === "success"
-                    ? "bg-sage/10 text-sage"
-                    : "bg-frenchBlue/8 text-frenchBlue"
+                    ? "bg-mint text-sage"
+                    : "bg-sky text-frenchBlue"
               }`}
             >
               {autoFillState.message}
             </p>
           )}
-          <label className="grid gap-1 text-sm font-semibold md:col-span-2">
+          <label className={`${labelClass} md:col-span-2`}>
             {t("example", "Example")}
             <textarea
-              className="focus-ring min-h-20 rounded-md border border-slate-200 bg-white px-3 py-2 font-normal"
+              className="focus-ring min-h-20 rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
               onChange={(event) => updateField("example", event.target.value)}
               value={form.example}
             />
           </label>
-          <label className="grid gap-1 text-sm font-semibold md:col-span-2">
+          <label className={`${labelClass} md:col-span-2`}>
             {t("notes", "Notes")}
             <textarea
-              className="focus-ring min-h-24 rounded-md border border-slate-200 bg-white px-3 py-2 font-normal"
+              className="focus-ring min-h-24 rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
               onChange={(event) => updateField("notes", event.target.value)}
               value={form.notes}
             />
           </label>
-          <label className="grid gap-1 text-sm font-semibold md:col-span-2">
+          <label className={`${labelClass} md:col-span-2`}>
             {t("tags", "Tags")}
             <input
-              className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-3 font-normal"
+              className={inputClass}
               onChange={(event) => updateField("tags", event.target.value)}
               placeholder="food, travel, A1"
               value={form.tags}
@@ -358,17 +359,10 @@ export function EditorModal({
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            className="focus-ring h-10 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold"
-            onClick={onClose}
-            type="button"
-          >
+          <button className="secondary-action h-10" onClick={onClose} type="button">
             {t("cancel", "Cancel")}
           </button>
-          <button
-            className="focus-ring h-10 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white"
-            type="submit"
-          >
+          <button className="primary-action h-10" type="submit">
             {t("saveNote", "Save note")}
           </button>
         </div>

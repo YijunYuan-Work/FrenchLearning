@@ -56,20 +56,20 @@ export function NotesView({
         </div>
       )}
 
-      <div className="mt-5 flex flex-col gap-3 rounded-md border border-frenchBlue/10 bg-paper p-3 md:flex-row">
+      <div className="mt-5 flex flex-col gap-3 rounded-xl border border-line bg-white/90 p-3 shadow-soft md:flex-row">
         <label className="relative flex-1">
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
             size={18}
           />
           <input
-            className="focus-ring h-11 w-full rounded-md border border-slate-200 bg-white pl-10 pr-3 text-sm"
+            className="focus-ring h-11 w-full rounded-lg border border-line bg-white pl-10 pr-3 text-sm shadow-sm"
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("searchPlaceholder", "Search words, phrases, grammar, tags...")}
             value={query}
           />
         </label>
-        <label className="flex min-w-[210px] items-center gap-2 rounded-md border border-slate-200 bg-white px-3">
+        <label className="flex min-w-[210px] items-center gap-2 rounded-lg border border-line bg-white px-3 shadow-sm">
           <Tags size={17} className="text-slate-500" />
           <select
             className="focus-ring h-10 flex-1 bg-transparent text-sm"
@@ -119,13 +119,13 @@ export function NotesView({
             />
           ))}
           {filteredItems.length === 0 && (
-            <div className="rounded-md border border-dashed border-frenchBlue/25 bg-paper p-8 text-center">
-              <p className="font-semibold">
+            <div className="rounded-xl border border-dashed border-frenchBlue/30 bg-sky/40 p-8 text-center">
+              <p className="font-black">
                 {items.length === 0
                   ? t("yourNotebookReady", "Your French notebook is ready.")
                   : t("noNotesMatch", "No notes match this view.")}
               </p>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-1 text-sm leading-6 text-slate-600">
                 {items.length === 0
                   ? t(
                       "addFirstNoteCopy",
@@ -135,7 +135,7 @@ export function NotesView({
               </p>
               {items.length === 0 && (
                 <button
-                  className="focus-ring mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-frenchBlue px-4 text-sm font-semibold text-white hover:bg-frenchBlue/90"
+                  className="primary-action mt-4 h-10"
                   onClick={() => openNewItem("vocabulary")}
                   type="button"
                 >

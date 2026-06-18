@@ -25,29 +25,31 @@ export function Sidebar({ activeSection, dailyProgress, setActiveSection }) {
   const progressPercent = Math.round((completedTasks / dailyTasks.length) * 100);
 
   return (
-    <aside className="border-b border-frenchBlue/10 bg-paper px-4 py-4 lg:border-b-0 lg:border-r lg:px-5">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="grid size-11 place-items-center rounded-md bg-frenchBlue text-white">
+    <aside className="min-w-0 overflow-hidden border-b border-line bg-white/90 px-4 py-3 shadow-sm lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:px-5 lg:py-4">
+      <div className="mb-4 flex items-center gap-3 lg:mb-7">
+        <div className="grid size-11 place-items-center rounded-xl bg-frenchBlue text-white shadow-soft">
           <Sparkles size={22} />
         </div>
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-frenchRed">
+          <p className="text-sm font-bold text-frenchRed">
             {t("frenchDesk", "French Desk")}
           </p>
-          <h1 className="text-xl font-bold">{t("learningHub", "Learning Hub")}</h1>
+          <h1 className="text-xl font-black tracking-[-0.01em]">
+            {t("learningHub", "Learning Hub")}
+          </h1>
         </div>
       </div>
 
-      <nav className="grid gap-1">
+      <nav className="flex max-w-full gap-2 overflow-x-auto pb-1 lg:grid lg:gap-1.5 lg:overflow-visible lg:pb-0">
         {Object.entries(categories).map(([key, item]) => {
           const Icon = item.icon;
           const isActive = activeSection === key;
           return (
             <button
-              className={`focus-ring flex h-11 items-center gap-3 rounded-md px-3 text-left text-sm font-medium ${
+              className={`focus-ring flex h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-left text-sm font-bold transition lg:shrink ${
                 isActive
                   ? "bg-frenchBlue text-white shadow-soft"
-                  : "text-slate-700 hover:bg-frenchBlue/8"
+                  : "text-slate-700 hover:bg-sky/70 hover:text-frenchBlue"
               }`}
               key={key}
               onClick={() => setActiveSection(key)}
@@ -60,18 +62,23 @@ export function Sidebar({ activeSection, dailyProgress, setActiveSection }) {
         })}
       </nav>
 
-      <div className="mt-6 rounded-md border border-frenchBlue/10 bg-white p-3">
-        <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-          <Gauge size={17} className="text-sage" />
-          {t("dailyProgress", "Daily progress")}
+      <div className="mt-7 hidden rounded-xl bg-mint p-4 shadow-inset lg:block">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm font-black">
+            <Gauge size={17} className="text-sage" />
+            {t("dailyProgress", "Daily progress")}
+          </div>
+          <span className="rounded-full bg-white/85 px-2 py-1 text-xs font-black text-sage">
+            {progressPercent}%
+          </span>
         </div>
-        <div className="h-2 rounded-full bg-slate-100">
+        <div className="h-2 rounded-full bg-white/80">
           <div
             className="h-2 rounded-full bg-sage"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
-        <p className="mt-2 text-xs font-semibold text-slate-700">
+        <p className="mt-3 text-xs font-bold text-slate-700">
           {t(
             "dailyProgressCopy",
             "{completed}/3 tasks complete today.",
@@ -83,8 +90,8 @@ export function Sidebar({ activeSection, dailyProgress, setActiveSection }) {
             const Icon = task.done ? CheckCircle2 : Circle;
             return (
               <div
-                className={`flex items-center gap-2 text-xs ${
-                  task.done ? "font-semibold text-sage" : "text-slate-600"
+                className={`flex items-center gap-2 text-xs font-semibold ${
+                  task.done ? "text-sage" : "text-slate-600"
                 }`}
                 key={task.key}
               >

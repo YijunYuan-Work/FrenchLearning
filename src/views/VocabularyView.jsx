@@ -71,17 +71,17 @@ export function VocabularyView(props) {
         showList={false}
         showMetrics={false}
         topContent={
-          <div className="mt-5 rounded-md border border-frenchBlue/10 bg-paper p-3">
+          <div className="mt-5 rounded-xl border border-line bg-white/90 p-3 shadow-soft">
             <div className="flex flex-wrap gap-2">
               {vocabularyTabs.map((tab) => {
                 const isActive = activeWordType === tab.value;
                 const count = typeCounts[tab.value] ?? 0;
                 return (
                   <button
-                    className={`focus-ring inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold ${
+                    className={`focus-ring inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-bold ${
                       isActive
                         ? "bg-frenchBlue text-white"
-                        : "border border-slate-200 bg-white text-slate-700 hover:border-frenchBlue/30"
+                        : "border border-line bg-white text-slate-700 hover:border-frenchBlue/35 hover:text-frenchBlue"
                     }`}
                     key={tab.value}
                     onClick={() => selectWordType(tab.value)}
@@ -134,9 +134,9 @@ export function VocabularyView(props) {
         ))}
 
         {visibleItems.length === 0 && (
-          <div className="rounded-md border border-dashed border-frenchBlue/25 bg-paper p-8 text-center">
-            <p className="font-semibold">{t("noWordsInType", "No words in this type yet.")}</p>
-            <p className="mt-1 text-sm text-slate-600">
+          <div className="rounded-xl border border-dashed border-frenchBlue/30 bg-sky/40 p-8 text-center">
+            <p className="font-black">{t("noWordsInType", "No words in this type yet.")}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
               {t("noWordsInTypeCopy", "Add a word or choose another word-type tab.")}
             </p>
           </div>
