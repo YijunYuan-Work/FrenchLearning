@@ -18,6 +18,7 @@ const allowedOutputLanguages = new Set(["en", "zh"]);
 const requestLog = new Map();
 const maxRequestsPerWindow = 250;
 const rateWindowMs = 24 * 60 * 60 * 1000;
+let rateLimitTableAvailable = true;
 const wiktionaryHeaders = {
   "User-Agent": "FrenchLearning/0.1 vocabulary import and lookup",
 };
@@ -201,6 +202,10 @@ function sleep(ms) {
   });
 }
 
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 async function verifyFrenchWiktionaryEntry(word) {
   const pages = createWiktionaryPageCandidates(word);
 
@@ -257,7 +262,31 @@ async function verifyFrenchWiktionaryEntry(word) {
   );
 }
 
-function checkRateLimit(userId) {
+function getSupabaseEnvironment() {
+  return {
+    supabaseUrl: process.env.VITE_SUPABASE_URL,
+    supabaseKey:
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.VITE_SUPABASE_ANON_KEY,
+  };
+}
+
+function getBearerToken(request) {
+  const authorization =
+    request.headers.authorization ?? request.headers.Authorization ?? "";
+  return authorization.replace(/^Bearer\s+/i, "");
+}
+
+function isMissingRateLimitTable(error) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return (
+    error?.code === "PGRST205" ||
+    error?.code === "42P01" ||
+    message.includes("ai_autofill_usage")
+  );
+}
+
+function checkMemoryRateLimit(userId) {
   const now = Date.now();
   const current = requestLog.get(userId) ?? [];
   const recent = current.filter((timestamp) => now - timestamp < rateWindowMs);
@@ -268,6 +297,69 @@ function checkRateLimit(userId) {
   }
 
   requestLog.set(userId, [...recent, now]);
+  return true;
+}
+
+async function checkRateLimit(request, userId) {
+  if (!rateLimitTableAvailable) {
+    return checkMemoryRateLimit(userId);
+  }
+
+  const token = getBearerToken(request);
+  const { supabaseUrl, supabaseKey } = getSupabaseEnvironment();
+  if (!token || !supabaseUrl || !supabaseKey) {
+    return checkMemoryRateLimit(userId);
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
+  const today = getTodayKey();
+
+  const { data, error } = await supabase
+    .from("ai_autofill_usage")
+    .select("request_count")
+    .eq("user_id", userId)
+    .eq("date", today)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingRateLimitTable(error)) {
+      rateLimitTableAvailable = false;
+      return checkMemoryRateLimit(userId);
+    }
+    throw error;
+  }
+
+  const nextCount = Number(data?.request_count ?? 0) + 1;
+  if (nextCount > maxRequestsPerWindow) {
+    return false;
+  }
+
+  const { error: upsertError } = await supabase
+    .from("ai_autofill_usage")
+    .upsert(
+      {
+        user_id: userId,
+        date: today,
+        request_count: nextCount,
+      },
+      { onConflict: "user_id,date" }
+    );
+
+  if (upsertError) {
+    if (isMissingRateLimitTable(upsertError)) {
+      rateLimitTableAvailable = false;
+      return checkMemoryRateLimit(userId);
+    }
+    throw upsertError;
+  }
+
   return true;
 }
 
@@ -337,13 +429,8 @@ function extractResponseText(payload) {
 }
 
 async function authenticateUser(request) {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const supabaseKey =
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY;
-  const authorization =
-    request.headers.authorization ?? request.headers.Authorization ?? "";
-  const token = authorization.replace(/^Bearer\s+/i, "");
+  const { supabaseUrl, supabaseKey } = getSupabaseEnvironment();
+  const token = getBearerToken(request);
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error("Supabase environment variables are missing.");
@@ -389,7 +476,17 @@ export default async function handler(request, response) {
     return;
   }
 
-  if (!checkRateLimit(user.id)) {
+  let isWithinLimit;
+  try {
+    isWithinLimit = await checkRateLimit(request, user.id);
+  } catch (error) {
+    sendJson(response, 500, {
+      error: `AI usage tracking failed: ${error.message}`,
+    });
+    return;
+  }
+
+  if (!isWithinLimit) {
     sendJson(response, 429, {
       error: "Daily AI auto-fill limit reached. Try again tomorrow.",
     });

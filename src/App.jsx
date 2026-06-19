@@ -14,11 +14,6 @@ import {
   getLanguagePreference,
   updateLanguagePreference,
 } from "./api/preferences";
-import {
-  getDailyLearningState,
-  updateDailyProgress,
-  updateDailyQuizState,
-} from "./api/dailyLearning";
 import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
 import { FrenchInTheWild } from "./components/FrenchInTheWild";
@@ -26,13 +21,13 @@ import { PracticeQueue } from "./components/PracticeQueue";
 import { Sidebar } from "./components/Sidebar";
 import { categories } from "./data/categories";
 import { hasSupabaseConfig, supabase } from "./lib/supabase";
+import { useDailyLearningState } from "./hooks/useDailyLearningState";
 import { useLanguage } from "./i18n/LanguageContext";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
 import { autoFillFrenchVocabulary } from "./services/vocabularyAutofill";
-import { createDailyProgress } from "./utils/dailyProgress";
 import { normalizeTags } from "./utils/tags";
-import { getTodayKey, MAX_CONFIDENCE } from "./utils/quiz";
+import { MAX_CONFIDENCE } from "./utils/quiz";
 import { GrammarView } from "./views/GrammarView";
 import { ImportView } from "./views/ImportView";
 import { PhrasesView } from "./views/PhrasesView";
@@ -97,11 +92,6 @@ export default function App() {
   const [authError, setAuthError] = useState("");
   const [dataLoading, setDataLoading] = useState(false);
   const [dataError, setDataError] = useState("");
-  const [dailyProgress, setDailyProgress] = useState(() =>
-    createDailyProgress()
-  );
-  const [dailyQuizState, setDailyQuizState] = useState(null);
-  const [dailyStateLoaded, setDailyStateLoaded] = useState(false);
   const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(false);
   const [activeSection, setActiveSection] = useState("today");
   const [query, setQuery] = useState("");
@@ -112,6 +102,14 @@ export default function App() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const savedLanguageRef = useRef(language);
+  const {
+    completeDailyTask,
+    dailyProgress,
+    dailyQuizState,
+    dailyStateLoaded,
+    resetDailyLearningState,
+    setDailyQuizState,
+  } = useDailyLearningState(user, setDataError);
 
   useEffect(() => {
     if (!hasSupabaseConfig) return undefined;
@@ -120,7 +118,6 @@ export default function App() {
 
     supabase.auth.getSession().then(({ data }) => {
       if (!isMounted) return;
-      setDailyStateLoaded(false);
       setUser(data.session?.user ?? null);
       setAuthLoading(false);
     });
@@ -128,7 +125,6 @@ export default function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      setDailyStateLoaded(false);
       setUser(session?.user ?? null);
       setAuthLoading(false);
       setAuthError("");
@@ -136,9 +132,7 @@ export default function App() {
         setItems([]);
         setSelectedIds([]);
         setActiveSection("today");
-        setDailyProgress(createDailyProgress());
-        setDailyQuizState(null);
-        setDailyStateLoaded(false);
+        resetDailyLearningState();
         setLanguagePreferenceLoaded(false);
       }
     });
@@ -176,50 +170,6 @@ export default function App() {
       isMounted = false;
     };
   }, [user]);
-
-  useEffect(() => {
-    if (!user) {
-      setDailyStateLoaded(false);
-      return undefined;
-    }
-
-    let isMounted = true;
-    const today = getTodayKey();
-
-    setDailyStateLoaded(false);
-    getDailyLearningState(user.id, today)
-      .then(({ progress, quizState }) => {
-        if (!isMounted) return;
-        setDailyProgress(progress);
-        setDailyQuizState(quizState);
-        setDailyStateLoaded(true);
-      })
-      .catch((error) => {
-        if (!isMounted) return;
-        setDailyProgress(createDailyProgress(today));
-        setDailyQuizState(null);
-        setDailyStateLoaded(true);
-        setDataError(error.message);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
-
-  useEffect(() => {
-    if (!user || !dailyStateLoaded) return;
-    updateDailyProgress(user.id, dailyProgress).catch((error) => {
-      setDataError(error.message);
-    });
-  }, [dailyProgress, dailyStateLoaded, user]);
-
-  useEffect(() => {
-    if (!user || !dailyStateLoaded || !dailyQuizState) return;
-    updateDailyQuizState(user.id, dailyQuizState).catch((error) => {
-      setDataError(error.message);
-    });
-  }, [dailyQuizState, dailyStateLoaded, user]);
 
   useEffect(() => {
     if (!user) {
@@ -338,16 +288,6 @@ export default function App() {
     setIsEditorOpen(true);
   }
 
-  function completeDailyTask(task) {
-    setDailyProgress((current) => ({
-      ...(current.date === getTodayKey()
-        ? current
-        : createDailyProgress(getTodayKey())),
-      date: getTodayKey(),
-      [task]: true,
-    }));
-  }
-
   async function handleAuthSubmit({ email, mode, password, username }) {
     setAuthLoading(true);
     setAuthError("");
@@ -373,9 +313,7 @@ export default function App() {
       await signOutUser();
       setUser(null);
       setItems([]);
-      setDailyProgress(createDailyProgress());
-      setDailyQuizState(null);
-      setDailyStateLoaded(false);
+      resetDailyLearningState();
       setLanguagePreferenceLoaded(false);
     } catch (error) {
       setDataError(error.message);
@@ -440,7 +378,7 @@ export default function App() {
     }
   }
 
-  async function importVocabularyWords(words, onProgress) {
+  async function importVocabularyWords(words, onProgress, shouldCancel) {
     if (!user) return [];
 
     const results = [];
@@ -452,6 +390,10 @@ export default function App() {
     );
 
     for (const [index, rawWord] of words.entries()) {
+      if (shouldCancel?.()) {
+        break;
+      }
+
       const word = rawWord.trim();
       const normalizedWord = word.toLocaleLowerCase("fr");
       onProgress?.(index + 1, words.length);
@@ -530,7 +472,9 @@ export default function App() {
           reason: error.message,
         });
       } finally {
-        await wait(350);
+        if (!shouldCancel?.()) {
+          await wait(350);
+        }
       }
     }
 

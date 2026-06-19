@@ -1,5 +1,5 @@
 import { Loader2, Sparkles, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { categoryOptions } from "../data/categories";
 import {
   conjugationPronouns,
@@ -27,24 +27,69 @@ export function EditorModal({
   title,
 }) {
   const { language, t } = useLanguage();
+  const frenchInputId = useId();
+  const modalRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const previousFocusRef = useRef(null);
   const frenchInputRef = useRef(null);
   const [autoFillState, setAutoFillState] = useState({
     status: "idle",
     message: "",
   });
 
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    const modal = modalRef.current;
+    const focusableSelector =
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    previousFocusRef.current = document.activeElement;
+
+    function focusInitialControl() {
+      frenchInputRef.current?.focus();
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+
+      if (event.key !== "Tab" || !modal) return;
+
+      const focusable = Array.from(modal.querySelectorAll(focusableSelector)).filter(
+        (element) => !element.disabled && element.offsetParent !== null
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    focusInitialControl();
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus?.();
+    };
+  }, []);
+
   function updateField(field, value) {
     onChange?.();
     if (field === "french") {
-      setForm((current) => ({
-        ...current,
-        french: value,
-        english: "",
-        example: "",
-        notes: "",
-        tags: "",
-        ...createEmptyWordDetails(),
-      }));
+      setForm((current) => ({ ...current, french: value }));
       setAutoFillState({ status: "idle", message: "" });
       return;
     }
@@ -129,13 +174,17 @@ export function EditorModal({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink/45 p-4 backdrop-blur-sm">
       <form
+        aria-labelledby="editor-modal-title"
+        aria-modal="true"
         className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-xl bg-paper p-5 shadow-lift"
         onSubmit={onSave}
+        ref={modalRef}
+        role="dialog"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-xl font-black tracking-[-0.01em]">{title}</h2>
+          <h2 className="text-xl font-black tracking-[-0.01em]" id="editor-modal-title">{title}</h2>
           <button
-            aria-label="Close editor"
+            aria-label={t("closeEditor", "Close editor")}
             className="focus-ring grid size-9 place-items-center rounded-lg border border-line bg-white"
             onClick={onClose}
             type="button"
@@ -180,9 +229,9 @@ export function EditorModal({
               <option value="4">{t("confidenceStrong", "Strong")}</option>
             </select>
           </label>
-          <label className={labelClass}>
+          <div className={labelClass}>
             <span className="flex items-center justify-between gap-3">
-              {t("french", "French")}
+              <label htmlFor={frenchInputId}>{t("french", "French")}</label>
               {form.category === "vocabulary" && (
                 <button
                   className="focus-ring inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-frenchBlue/25 bg-white px-3 text-xs font-bold text-frenchBlue hover:bg-sky/60 disabled:cursor-not-allowed disabled:opacity-60"
@@ -203,13 +252,14 @@ export function EditorModal({
             </span>
             <input
               className={inputClass}
+              id={frenchInputId}
               onChange={(event) => updateField("french", event.target.value)}
               placeholder="e.g. boulangerie, parler, heureux"
               ref={frenchInputRef}
               required
               value={form.french}
             />
-          </label>
+          </div>
           <label className={labelClass}>
             {t("english", "English")}
             <input

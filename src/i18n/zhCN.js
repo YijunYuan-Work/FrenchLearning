@@ -212,6 +212,8 @@ export const zhCN = {
   importProgress: "正在导入第 {current} / {total} 个...",
   importWorking: "正在导入...",
   importStart: "开始导入",
+  importCancel: "取消导入",
+  importRetryFailed: "仅重试失败的词",
   importResults: "导入结果",
   importFailures: "导入失败的词",
   importNoFailures: "没有导入失败的词。",

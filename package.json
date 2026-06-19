@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "node --test src/utils/quiz.test.js",
+    "check": "npm run test && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {

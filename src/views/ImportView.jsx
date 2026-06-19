@@ -1,5 +1,5 @@
 import { FileText, Upload } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Metric } from "../components/Metric";
 import { useLanguage } from "../i18n/LanguageContext";
 
@@ -18,6 +18,7 @@ export function ImportView({ onImportVocabulary }) {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState("");
+  const cancelImportRef = useRef(false);
 
   const summary = useMemo(
     () => ({
@@ -57,22 +58,38 @@ export function ImportView({ onImportVocabulary }) {
     }
   }
 
-  async function startImport() {
+  async function startImport(nextWords = words) {
+    cancelImportRef.current = false;
     setIsImporting(true);
     setError("");
     setResults([]);
-    setProgress({ current: 0, total: words.length });
+    setProgress({ current: 0, total: nextWords.length });
 
     try {
-      const importResults = await onImportVocabulary(words, (current, total) => {
-        setProgress({ current, total });
-      });
+      const importResults = await onImportVocabulary(
+        nextWords,
+        (current, total) => {
+          setProgress({ current, total });
+        },
+        () => cancelImportRef.current
+      );
       setResults(importResults);
     } catch (importError) {
       setError(importError.message);
     } finally {
       setIsImporting(false);
     }
+  }
+
+  function cancelImport() {
+    cancelImportRef.current = true;
+  }
+
+  function retryFailed() {
+    const failedWords = failedResults.map((result) => result.word);
+    if (failedWords.length === 0) return;
+    setWords(failedWords);
+    startImport(failedWords);
   }
 
   return (
@@ -146,11 +163,20 @@ export function ImportView({ onImportVocabulary }) {
             </div>
           )}
 
-          <div className="flex justify-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            {isImporting && (
+              <button
+                className="secondary-action h-10"
+                onClick={cancelImport}
+                type="button"
+              >
+                {t("importCancel", "Cancel import")}
+              </button>
+            )}
             <button
               className="primary-action h-10 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isImporting || words.length === 0}
-              onClick={startImport}
+              onClick={() => startImport()}
               type="button"
             >
               {isImporting
@@ -185,6 +211,16 @@ export function ImportView({ onImportVocabulary }) {
                 </div>
               ))}
             </div>
+          )}
+          {failedResults.length > 0 && (
+            <button
+              className="secondary-action mt-3 h-10"
+              disabled={isImporting}
+              onClick={retryFailed}
+              type="button"
+            >
+              {t("importRetryFailed", "Retry failed only")}
+            </button>
           )}
         </section>
       )}

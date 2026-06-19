@@ -150,3 +150,45 @@ create trigger set_daily_learning_state_updated_at
   before update on public.daily_learning_state
   for each row
   execute function public.set_updated_at();
+
+create table if not exists public.ai_autofill_usage (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  date text not null,
+  request_count integer not null default 0 check (request_count >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, date)
+);
+
+alter table public.ai_autofill_usage enable row level security;
+
+drop policy if exists "Users can read their AI auto-fill usage" on public.ai_autofill_usage;
+create policy "Users can read their AI auto-fill usage"
+  on public.ai_autofill_usage
+  for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can create their AI auto-fill usage" on public.ai_autofill_usage;
+create policy "Users can create their AI auto-fill usage"
+  on public.ai_autofill_usage
+  for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their AI auto-fill usage" on public.ai_autofill_usage;
+create policy "Users can update their AI auto-fill usage"
+  on public.ai_autofill_usage
+  for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+grant select, insert, update on public.ai_autofill_usage to authenticated;
+
+drop trigger if exists set_ai_autofill_usage_updated_at on public.ai_autofill_usage;
+
+create trigger set_ai_autofill_usage_updated_at
+  before update on public.ai_autofill_usage
+  for each row
+  execute function public.set_updated_at();
