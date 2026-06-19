@@ -683,7 +683,7 @@ export default function App() {
           />
 
           <section
-            className={`grid gap-5 px-4 py-5 md:px-7 lg:py-7 ${
+            className={`grid gap-4 px-3 py-4 sm:px-4 sm:py-5 md:px-7 lg:gap-5 lg:py-7 ${
               activeSection === "today" ||
               activeSection === "quiz" ||
               activeSection === "review" ||

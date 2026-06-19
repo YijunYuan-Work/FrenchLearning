@@ -49,23 +49,23 @@ export function TodayView({ items, onStartQuiz, onStartStudy, openNewItem }) {
 
   return (
     <div className="min-w-0">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         <Metric label={t("vocabularyDue", "Vocabulary due")} value={dueCount} tone="blue" />
         <Metric label={t("dailyGoal", "Daily goal")} value={DAILY_QUIZ_LIMIT} />
         <Metric label={t("savedNotes", "Saved notes")} value={items.length} />
         <Metric label={t("mastered", "Mastered")} value={masteredCount} tone="green" />
       </div>
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="mt-4 grid gap-4 sm:mt-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-5">
         <section className="app-card overflow-hidden">
-          <div className="border-b border-line bg-sky/45 p-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="border-b border-line bg-sky/45 p-4 sm:p-5">
+            <div className="flex gap-3 sm:flex-col sm:gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="inline-flex items-center gap-2 text-sm font-black text-frenchBlue">
                   <Clock3 size={16} />
                   {t("twelveMinutePractice", "12-minute practice")}
                 </p>
-                <h3 className="mt-2 text-2xl font-black tracking-[-0.01em]">
+                <h3 className="mt-2 text-xl font-black tracking-[-0.01em] sm:text-2xl">
                   {t("todayPracticePath", "Your French path for today")}
                 </h3>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
@@ -75,20 +75,22 @@ export function TodayView({ items, onStartQuiz, onStartStudy, openNewItem }) {
                   )}
                 </p>
               </div>
-              <div className="grid size-16 shrink-0 place-items-center rounded-xl bg-white text-frenchBlue shadow-soft">
+              <div className="hidden size-16 shrink-0 place-items-center rounded-xl bg-white text-frenchBlue shadow-soft sm:grid">
                 <Route size={28} />
               </div>
             </div>
           </div>
 
-          <div className="grid gap-3 p-4 md:grid-cols-3">
+          <div className="grid gap-2 p-3 sm:gap-3 sm:p-4 md:grid-cols-3">
             {practiceSteps.map(({ Icon, copy, title, tone }) => (
-              <div className="rounded-xl bg-white p-4 shadow-inset" key={title}>
-                <div className={`grid size-10 place-items-center rounded-lg ${tone}`}>
+              <div className="flex gap-3 rounded-xl bg-white p-3 shadow-inset sm:block sm:p-4" key={title}>
+                <div className={`grid size-9 shrink-0 place-items-center rounded-lg sm:size-10 ${tone}`}>
                   <Icon size={19} />
                 </div>
-                <h4 className="mt-4 font-black">{title}</h4>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{copy}</p>
+                <div>
+                  <h4 className="font-black sm:mt-4">{title}</h4>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">{copy}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -110,83 +112,89 @@ export function TodayView({ items, onStartQuiz, onStartStudy, openNewItem }) {
         </aside>
       </div>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid gap-3 sm:mt-5 sm:gap-4 lg:grid-cols-3">
         <button
-          className="focus-ring app-card p-5 text-left transition hover:-translate-y-0.5 hover:shadow-lift"
+          className="focus-ring app-card flex gap-3 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lift sm:block sm:p-5"
           onClick={() => openNewItem("vocabulary")}
           type="button"
         >
-          <div className="grid size-10 place-items-center rounded-lg bg-frenchBlue text-white">
+          <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-frenchBlue text-white">
             <Plus size={20} />
           </div>
-          <h3 className="mt-4 text-xl font-black">
-            {t("addNewNote", "Add a new note")}
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            {t(
-              "addNewNoteCopy",
-              "Capture a vocabulary word, phrase, grammar note, or pronunciation rule before you forget it."
-            )}
-          </p>
+          <div>
+            <h3 className="text-lg font-black sm:mt-4 sm:text-xl">
+              {t("addNewNote", "Add a new note")}
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-slate-600 sm:mt-2">
+              {t(
+                "addNewNoteCopy",
+                "Capture a vocabulary word, phrase, grammar note, or pronunciation rule before you forget it."
+              )}
+            </p>
+          </div>
         </button>
 
         <button
-          className="focus-ring app-card p-5 text-left transition hover:-translate-y-0.5 hover:shadow-lift disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+          className="focus-ring app-card flex gap-3 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lift disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 sm:block sm:p-5"
           disabled={studyCount === 0}
           onClick={onStartStudy}
           type="button"
         >
-          <div className="grid size-10 place-items-center rounded-lg bg-sage text-white">
+          <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-sage text-white">
             <ListChecks size={20} />
           </div>
-          <h3 className="mt-4 text-xl font-black">
-            {t("studyCards", "Study flashcards")}
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            {t(
-              "studyCardsCopy",
-              "Flip through notes that have not reached strong confidence yet. Study mode does not change confidence."
-            )}
-          </p>
-          <p className="mt-3 text-sm font-black text-frenchBlue">
-            {studyCount > 0
-              ? t(
-                  studyCount === 1 ? "cardReady" : "cardsReady",
-                  `${studyCount} card${studyCount === 1 ? "" : "s"} ready`,
-                  { count: studyCount }
-                )
-              : t("noCardsNeedStudy", "No cards need study")}
-          </p>
+          <div>
+            <h3 className="text-lg font-black sm:mt-4 sm:text-xl">
+              {t("studyCards", "Study flashcards")}
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-slate-600 sm:mt-2">
+              {t(
+                "studyCardsCopy",
+                "Flip through notes that have not reached strong confidence yet. Study mode does not change confidence."
+              )}
+            </p>
+            <p className="mt-2 text-sm font-black text-frenchBlue sm:mt-3">
+              {studyCount > 0
+                ? t(
+                    studyCount === 1 ? "cardReady" : "cardsReady",
+                    `${studyCount} card${studyCount === 1 ? "" : "s"} ready`,
+                    { count: studyCount }
+                  )
+                : t("noCardsNeedStudy", "No cards need study")}
+            </p>
+          </div>
         </button>
 
         <button
-          className="focus-ring app-card p-5 text-left transition hover:-translate-y-0.5 hover:shadow-lift disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+          className="focus-ring app-card flex gap-3 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-lift disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 sm:block sm:p-5"
           disabled={dueCount === 0}
           onClick={onStartQuiz}
           type="button"
         >
-          <div className="grid size-10 place-items-center rounded-lg bg-frenchRed text-white">
+          <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-frenchRed text-white">
             <CircleHelp size={20} />
           </div>
-          <h3 className="mt-4 text-xl font-black">
-            {t("startQuiz", "Start today's quiz")}
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            {t(
-              "startQuizCopy",
-              "Test up to {count} vocabulary words. Correct answers advance confidence, and mastered words are skipped.",
-              { count: DAILY_QUIZ_LIMIT }
-            )}
-          </p>
-          <p className="mt-3 text-sm font-black text-frenchBlue">
-            {dueCount > 0
-              ? t(
-                  dueCount === 1 ? "wordReady" : "wordsReady",
-                  `${dueCount} word${dueCount === 1 ? "" : "s"} ready`,
-                  { count: dueCount }
-                )
-              : t("noVocabularyDue", "No vocabulary is due today")}
-          </p>
+          <div>
+            <h3 className="text-lg font-black sm:mt-4 sm:text-xl">
+              {t("startQuiz", "Start today's quiz")}
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-slate-600 sm:mt-2">
+              {t(
+                "startQuizCopy",
+                "Test up to {count} vocabulary words. Correct answers advance confidence, and mastered words are skipped.",
+                { count: DAILY_QUIZ_LIMIT }
+              )}
+            </p>
+            <p className="mt-2 text-sm font-black text-frenchBlue sm:mt-3">
+              {dueCount > 0
+                ? t(
+                    dueCount === 1 ? "wordReady" : "wordsReady",
+                    `${dueCount} word${dueCount === 1 ? "" : "s"} ready`,
+                    { count: dueCount }
+                  )
+                : t("noVocabularyDue", "No vocabulary is due today")}
+            </p>
+          </div>
         </button>
       </div>
     </div>

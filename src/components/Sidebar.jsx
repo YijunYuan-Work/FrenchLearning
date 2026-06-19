@@ -25,28 +25,28 @@ export function Sidebar({ activeSection, dailyProgress, setActiveSection }) {
   const progressPercent = Math.round((completedTasks / dailyTasks.length) * 100);
 
   return (
-    <aside className="min-w-0 overflow-hidden border-b border-line bg-white/90 px-4 py-3 shadow-sm lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:px-5 lg:py-4">
-      <div className="mb-4 flex items-center gap-3 lg:mb-7">
-        <div className="grid size-11 place-items-center rounded-xl bg-frenchBlue text-white shadow-soft">
-          <Sparkles size={22} />
+    <aside className="sticky top-0 z-30 min-w-0 overflow-hidden border-b border-line bg-white/95 px-3 py-2 shadow-sm backdrop-blur lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:px-5 lg:py-4">
+      <div className="mb-2 flex items-center gap-2 lg:mb-7 lg:gap-3">
+        <div className="grid size-10 place-items-center rounded-xl bg-frenchBlue text-white shadow-soft lg:size-11">
+          <Sparkles size={20} />
         </div>
-        <div>
-          <p className="text-sm font-bold text-frenchRed">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold text-frenchRed lg:text-sm">
             {t("frenchDesk", "French Desk")}
           </p>
-          <h1 className="text-xl font-black tracking-[-0.01em]">
+          <h1 className="truncate text-lg font-black tracking-[-0.01em] lg:text-xl">
             {t("learningHub", "Learning Hub")}
           </h1>
         </div>
       </div>
 
-      <nav className="flex max-w-full gap-2 overflow-x-auto pb-1 lg:grid lg:gap-1.5 lg:overflow-visible lg:pb-0">
+      <nav className="flex max-w-full gap-1.5 overflow-x-auto pb-1 lg:grid lg:gap-1.5 lg:overflow-visible lg:pb-0">
         {Object.entries(categories).map(([key, item]) => {
           const Icon = item.icon;
           const isActive = activeSection === key;
           return (
             <button
-              className={`focus-ring flex h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-left text-sm font-bold transition lg:shrink ${
+              className={`focus-ring flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold transition lg:h-11 lg:shrink lg:gap-3 ${
                 isActive
                   ? "bg-frenchBlue text-white shadow-soft"
                   : "text-slate-700 hover:bg-sky/70 hover:text-frenchBlue"
@@ -55,14 +55,14 @@ export function Sidebar({ activeSection, dailyProgress, setActiveSection }) {
               onClick={() => setActiveSection(key)}
               type="button"
             >
-              <Icon size={18} />
-              {t(item.labelKey, item.label)}
+              <Icon size={17} />
+              <span className="whitespace-nowrap">{t(item.labelKey, item.label)}</span>
             </button>
           );
         })}
       </nav>
 
-      <div className="mt-4 rounded-xl bg-mint p-4 shadow-inset lg:mt-7">
+      <div className="mt-4 hidden rounded-xl bg-mint p-4 shadow-inset lg:mt-7 lg:block">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-black">
             <Gauge size={17} className="text-sage" />
