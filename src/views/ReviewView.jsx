@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { categories } from "../data/categories";
 import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
-import { MAX_CONFIDENCE, shuffleItems } from "../utils/quiz";
+import { MAX_CONFIDENCE, shuffleItems, uniqueLearningItems } from "../utils/quiz";
 
 const STUDY_CYCLE_LIMIT = 50;
 
@@ -34,6 +34,20 @@ function DetailBlock({ label, children }) {
   );
 }
 
+function createStudyCycle(studyItems, excludedIds = []) {
+  const excluded = new Set(excludedIds);
+  const cycleIds = shuffleItems(
+    uniqueLearningItems(studyItems).filter((item) => !excluded.has(item.id))
+  )
+    .slice(0, STUDY_CYCLE_LIMIT)
+    .map((item) => item.id);
+
+  return {
+    cycleIds,
+    seenIds: Array.from(new Set([...excludedIds, ...cycleIds])),
+  };
+}
+
 export function ReviewView({
   items,
   onStudyComplete,
@@ -43,8 +57,9 @@ export function ReviewView({
   const { t } = useLanguage();
   const studyItems = useMemo(
     () =>
-      items
-        .filter((item) => Number(item.confidence) < MAX_CONFIDENCE)
+      uniqueLearningItems(
+        items.filter((item) => Number(item.confidence) < MAX_CONFIDENCE)
+      )
         .sort((a, b) => {
           const confidenceGap = Number(a.confidence) - Number(b.confidence);
           if (confidenceGap !== 0) return confidenceGap;
@@ -65,24 +80,23 @@ export function ReviewView({
     [studyItems]
   );
   const [cardIndex, setCardIndex] = useState(0);
-  const [cycleIds, setCycleIds] = useState(() =>
-    shuffleItems(studyItems)
-      .slice(0, STUDY_CYCLE_LIMIT)
-      .map((item) => item.id)
+  const [studyCycle, setStudyCycle] = useState(() =>
+    createStudyCycle(studyItems)
   );
   const [isFlipped, setIsFlipped] = useState(false);
   const [isStudyComplete, setIsStudyComplete] = useState(false);
+  const cycleIds = studyCycle.cycleIds;
   const cycleItems = useMemo(
     () => cycleIds.map((id) => itemsById.get(id)).filter(Boolean),
     [cycleIds, itemsById]
   );
+  const hasUnseenStudyItems = useMemo(() => {
+    const seen = new Set(studyCycle.seenIds);
+    return studyItems.some((item) => !seen.has(item.id));
+  }, [studyCycle.seenIds, studyItems]);
 
   useEffect(() => {
-    setCycleIds(
-      shuffleItems(studyItems)
-        .slice(0, STUDY_CYCLE_LIMIT)
-        .map((item) => item.id)
-    );
+    setStudyCycle(createStudyCycle(studyItems));
     setCardIndex(0);
     setIsFlipped(false);
     setIsStudyComplete(false);
@@ -103,11 +117,7 @@ export function ReviewView({
   }
 
   function startNewStudyCycle() {
-    setCycleIds(
-      shuffleItems(studyItems)
-        .slice(0, STUDY_CYCLE_LIMIT)
-        .map((item) => item.id)
-    );
+    setStudyCycle((current) => createStudyCycle(studyItems, current.seenIds));
     setCardIndex(0);
     setIsFlipped(false);
     setIsStudyComplete(false);
@@ -119,23 +129,35 @@ export function ReviewView({
   }
 
   if (!currentItem) {
+    const hasStudiedEverything = studyItems.length > 0 && cycleItems.length === 0;
     return (
       <div className="rounded-xl border border-dashed border-frenchBlue/30 bg-sky/40 p-8 text-center">
-        <p className="font-black">{t("noStudyCards", "No study cards are due.")}</p>
-        <p className="mt-1 text-sm leading-6 text-slate-600">
-          {t(
-            "noStudyCardsCopy",
-            "Add a new note or edit an existing note if you want something in the Study deck."
-          )}
+        <p className="font-black">
+          {hasStudiedEverything
+            ? t("studyNoUnseenTitle", "All available study cards have appeared.")
+            : t("noStudyCards", "No study cards are due.")}
         </p>
-        <button
-          className="primary-action mt-4 h-10"
-          onClick={() => openNewItem("vocabulary")}
-          type="button"
-        >
-          <Plus size={17} />
-          {t("addNote", "Add note")}
-        </button>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          {hasStudiedEverything
+            ? t(
+                "studyNoUnseenCopy",
+                "Add more notes or return after confidence levels change."
+              )
+            : t(
+                "noStudyCardsCopy",
+                "Add a new note or edit an existing note if you want something in the Study deck."
+              )}
+        </p>
+        {!hasStudiedEverything && (
+          <button
+            className="primary-action mt-4 h-10"
+            onClick={() => openNewItem("vocabulary")}
+            type="button"
+          >
+            <Plus size={17} />
+            {t("addNote", "Add note")}
+          </button>
+        )}
       </div>
     );
   }
@@ -159,7 +181,8 @@ export function ReviewView({
           })}
         </p>
         <button
-          className="primary-action mt-5 h-10"
+          className="primary-action mt-5 h-10 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!hasUnseenStudyItems}
           onClick={startNewStudyCycle}
           type="button"
         >

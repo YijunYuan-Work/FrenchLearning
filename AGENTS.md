@@ -160,6 +160,7 @@ Rules:
 - Study shows one flashcard at a time.
 - A study cycle randomly chooses up to 50 non-mastered cards.
 - Quiz randomly chooses up to 20 non-mastered vocabulary notes.
+- Starting another quiz or study cycle should draw from items that have not already appeared in the current day/session.
 - Quiz increases confidence only on correct answers.
 - Study mode must not change confidence.
 - Max confidence is `4`; mastered words should not appear in future quiz queues.
@@ -245,4 +246,3 @@ If testing AI auto-fill, avoid unnecessary OpenAI calls. First test local state 
 - Prefer existing file/module patterns over introducing new abstractions.
 - Use structured helpers/parsers where they already exist.
 - Add or update focused tests when changing quiz matching, confidence rules, import behavior, or data normalization.
-

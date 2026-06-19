@@ -26,27 +26,62 @@ export function shuffleItems(items) {
   return shuffled;
 }
 
+function normalizeFrenchKey(value) {
+  return String(value ?? "")
+    .trim()
+    .toLocaleLowerCase("fr");
+}
+
+export function uniqueLearningItems(items) {
+  const seenIds = new Set();
+  const seenWords = new Set();
+
+  return items.filter((item) => {
+    const id = String(item.id ?? "");
+    const wordKey = normalizeFrenchKey(item.french);
+    const duplicate = seenIds.has(id) || (wordKey && seenWords.has(wordKey));
+
+    if (id) seenIds.add(id);
+    if (wordKey) seenWords.add(wordKey);
+
+    return !duplicate;
+  });
+}
+
 export function getEligibleVocabulary(items) {
-  return items
-    .filter(
+  return uniqueLearningItems(
+    items.filter(
       (item) =>
         item.category === "vocabulary" &&
         Number(item.confidence) < MAX_CONFIDENCE
     )
-    .sort((a, b) => {
+  ).sort((a, b) => {
       const confidenceGap = Number(a.confidence) - Number(b.confidence);
       if (confidenceGap !== 0) return confidenceGap;
       return a.french.localeCompare(b.french, "fr");
     });
 }
 
-export function createDailyQuizState(items, date = getTodayKey()) {
+export function createQuizQueueIds(items, excludedIds = []) {
+  const excluded = new Set(excludedIds);
+  return shuffleItems(
+    getEligibleVocabulary(items).filter((item) => !excluded.has(item.id))
+  )
+    .slice(0, DAILY_QUIZ_LIMIT)
+    .map((item) => item.id);
+}
+
+export function createDailyQuizState(
+  items,
+  date = getTodayKey(),
+  excludedIds = []
+) {
+  const queueIds = createQuizQueueIds(items, excludedIds);
   return {
     date,
-    queueIds: shuffleItems(getEligibleVocabulary(items))
-      .slice(0, DAILY_QUIZ_LIMIT)
-      .map((item) => item.id),
+    queueIds,
     answered: {},
+    seenIds: Array.from(new Set([...excludedIds, ...queueIds])),
   };
 }
 
@@ -63,6 +98,9 @@ export function loadDailyQuizState(items, userId) {
       date: today,
       queueIds: saved.queueIds.filter((id) => existingIds.has(id)),
       answered: saved.answered ?? {},
+      seenIds: Array.from(
+        new Set([...(saved.seenIds ?? saved.queueIds)])
+      ).filter((id) => existingIds.has(id)),
     };
   } catch {
     return createDailyQuizState(items);

@@ -33,6 +33,7 @@ function normalizeQuizState(value, date) {
     date,
     queueIds: value.queueIds,
     answered: value.answered ?? {},
+    seenIds: Array.isArray(value.seenIds) ? value.seenIds : value.queueIds,
   };
 }
 

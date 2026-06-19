@@ -44,18 +44,32 @@ export function QuizView({
       }
 
       const eligible = getEligibleVocabulary(items);
+      const currentSeenIds = Array.from(
+        new Set(
+          current.seenIds ?? [
+            ...current.queueIds,
+            ...Object.keys(current.answered ?? {}),
+          ]
+        )
+      );
       if (
         current.queueIds.length === 0 &&
         Object.keys(current.answered).length === 0 &&
-        eligible.length > 0
+        eligible.length > 0 &&
+        currentSeenIds.length === 0
       ) {
         return createDailyQuizState(items, today);
       }
 
       const existingIds = new Set(items.map((item) => item.id));
       const nextQueueIds = current.queueIds.filter((id) => existingIds.has(id));
-      if (nextQueueIds.length !== current.queueIds.length) {
-        return { ...current, queueIds: nextQueueIds };
+      const nextSeenIds = currentSeenIds.filter((id) => existingIds.has(id));
+      if (
+        nextQueueIds.length !== current.queueIds.length ||
+        nextSeenIds.length !== currentSeenIds.length ||
+        !current.seenIds
+      ) {
+        return { ...current, queueIds: nextQueueIds, seenIds: nextSeenIds };
       }
 
       return current;
@@ -88,6 +102,20 @@ export function QuizView({
           Number(item.confidence) < MAX_CONFIDENCE
       );
   }, [items, quizState]);
+  const seenQuizIds = useMemo(
+    () =>
+      new Set(
+        quizState.seenIds ?? [
+          ...quizState.queueIds,
+          ...Object.keys(quizState.answered ?? {}),
+        ]
+      ),
+    [quizState]
+  );
+  const unseenEligibleItems = useMemo(
+    () => eligibleItems.filter((item) => !seenQuizIds.has(item.id)),
+    [eligibleItems, seenQuizIds]
+  );
 
   const answeredResults = quizItems
     .map((item) => quizState.answered[item.id])
@@ -166,7 +194,17 @@ export function QuizView({
     setAnswer("");
     setGenderAnswer("");
     setLastResult(null);
-    setQuizState(createDailyQuizState(items, getTodayKey()));
+    setQuizState((current) => {
+      const today = getTodayKey();
+      const excludedIds =
+        current.date === today
+          ? current.seenIds ?? [
+              ...current.queueIds,
+              ...Object.keys(current.answered ?? {}),
+            ]
+          : [];
+      return createDailyQuizState(items, today, excludedIds);
+    });
   }
 
   return (
@@ -222,13 +260,13 @@ export function QuizView({
               />
               <Metric
                 label={t("remaining", "Remaining")}
-                value={getEligibleVocabulary(items).length}
+                value={unseenEligibleItems.length}
                 tone="blue"
               />
             </div>
             <button
               className="primary-action mt-5 h-10 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={getEligibleVocabulary(items).length === 0}
+              disabled={unseenEligibleItems.length === 0}
               onClick={startNewQuiz}
               type="button"
             >
@@ -254,16 +292,24 @@ export function QuizView({
         ) : !currentItem ? (
           <div className="rounded-xl border border-dashed border-frenchBlue/30 bg-sky/40 p-8 text-center">
             <p className="font-black">
-              {t("quizReadyTitle", "Ready for another quiz?")}
+              {unseenEligibleItems.length > 0
+                ? t("quizReadyTitle", "Ready for another quiz?")
+                : t("quizNoUnseenTitle", "All available quiz words have appeared.")}
             </p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              {t(
-                "quizReadyCopy",
-                "Start a new quiz to pull the next available vocabulary set."
-              )}
+              {unseenEligibleItems.length > 0
+                ? t(
+                    "quizReadyCopy",
+                    "Start a new quiz to pull the next available vocabulary set."
+                  )
+                : t(
+                    "quizNoUnseenCopy",
+                    "Add more vocabulary or come back after confidence levels change."
+                  )}
             </p>
             <button
-              className="primary-action mt-4 h-10"
+              className="primary-action mt-4 h-10 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={unseenEligibleItems.length === 0}
               onClick={startNewQuiz}
               type="button"
             >
