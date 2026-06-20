@@ -28,6 +28,7 @@ import { SignInPage } from "./pages/SignInPage";
 import { autoFillFrenchVocabulary } from "./services/vocabularyAutofill";
 import { normalizeTags } from "./utils/tags";
 import { MAX_CONFIDENCE } from "./utils/quiz";
+import { isRichTextEmpty, sanitizeRichTextHtml } from "./utils/richText";
 import { GrammarView } from "./views/GrammarView";
 import { ImportView } from "./views/ImportView";
 import { PhrasesView } from "./views/PhrasesView";
@@ -356,9 +357,11 @@ export default function App() {
       lastReviewed: editingItem?.lastReviewed ?? "Not reviewed",
     };
     if (nextItem.category === "grammar") {
+      const sanitizedNotes = sanitizeRichTextHtml(nextItem.notes);
       Object.assign(nextItem, {
         english: "",
         example: "",
+        notes: isRichTextEmpty(sanitizedNotes) ? "" : sanitizedNotes,
         ...createEmptyWordDetails(),
       });
     }

@@ -11,6 +11,7 @@ import {
 import { useLanguage } from "../i18n/LanguageContext";
 import { autoFillFrenchVocabulary } from "../services/vocabularyAutofill";
 import { FrenchCharacterKeyboard } from "./FrenchCharacterKeyboard";
+import { RichTextEditor } from "./RichTextEditor";
 
 const inputClass =
   "focus-ring h-10 rounded-lg border border-line bg-white px-3 font-normal shadow-sm";
@@ -56,7 +57,7 @@ export function EditorModal({
   useEffect(() => {
     const modal = modalRef.current;
     const focusableSelector =
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+      'button, [href], input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
     previousFocusRef.current = document.activeElement;
 
     function focusInitialControl() {
@@ -438,17 +439,24 @@ export function EditorModal({
             </label>
           )}
           {!isPhraseNote && (
-            <label className={`${labelClass} md:col-span-2`}>
-              {isGrammarNote ? t("grammarNote", "Grammar note") : t("notes", "Notes")}
-              <textarea
-                className={`focus-ring rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm ${
-                  isGrammarNote ? "min-h-56" : "min-h-24"
-                }`}
-                onChange={(event) => updateField("notes", event.target.value)}
-                required={isGrammarNote}
+            isGrammarNote ? (
+              <RichTextEditor
+                label={t("grammarNote", "Grammar note")}
+                onChange={(value) => updateField("notes", value)}
+                placeholder={t("grammarNotePlaceholder", "Paste or write the grammar rule here.")}
+                t={t}
                 value={form.notes}
               />
-            </label>
+            ) : (
+              <label className={`${labelClass} md:col-span-2`}>
+                {t("notes", "Notes")}
+                <textarea
+                  className="focus-ring min-h-24 rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
+                  onChange={(event) => updateField("notes", event.target.value)}
+                  value={form.notes}
+                />
+              </label>
+            )
           )}
         </div>
 

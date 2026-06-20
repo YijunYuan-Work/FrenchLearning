@@ -11,6 +11,7 @@ import { categories } from "../data/categories";
 import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
 import { MAX_CONFIDENCE, shuffleItems, uniqueLearningItems } from "../utils/quiz";
+import { RichTextContent } from "../components/RichTextEditor";
 
 const STUDY_CYCLE_LIMIT = 50;
 
@@ -275,9 +276,13 @@ export function ReviewView({
               )}
               {!isPhraseNote && (
                 <DetailBlock label={isGrammarNote ? t("grammarNote", "Grammar note") : t("notes", "Notes")}>
-                  <p className="whitespace-pre-line">
-                    {currentItem.notes || t("noNotesYet", "No notes yet.")}
-                  </p>
+                  {isGrammarNote && currentItem.notes ? (
+                    <RichTextContent html={currentItem.notes} />
+                  ) : (
+                    <p className="whitespace-pre-line">
+                      {currentItem.notes || t("noNotesYet", "No notes yet.")}
+                    </p>
+                  )}
                 </DetailBlock>
               )}
               {(currentItem.partOfSpeech || currentItem.ipa || currentItem.gender) && (

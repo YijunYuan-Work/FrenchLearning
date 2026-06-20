@@ -227,7 +227,13 @@ export const zhCN = {
   title: "标题",
   grammarNote: "语法笔记",
   grammarTitlePlaceholder: "例如：城市和国家前的介词",
+  grammarNotePlaceholder: "在这里粘贴或编写语法规则。",
   originalFrench: "原始法语",
   translation: "翻译",
   phraseFrenchPlaceholder: "例如：À bientôt !",
+  bold: "加粗",
+  italic: "斜体",
+  underline: "下划线",
+  bulletList: "项目符号列表",
+  numberedList: "编号列表",
 };

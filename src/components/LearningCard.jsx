@@ -2,6 +2,7 @@ import { Check, CheckSquare, Edit3, Square, Trash2 } from "lucide-react";
 import { categories } from "../data/categories";
 import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
+import { RichTextContent } from "./RichTextEditor";
 
 function confidenceLabel(value, t) {
   if (value >= 4) return t("confidenceStrong", "Strong");
@@ -180,9 +181,13 @@ export function LearningCard({
               <p className="text-xs font-bold text-slate-500">
                 {isGrammarNote ? t("grammarNote", "Grammar note") : t("notes", "Notes")}
               </p>
-              <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-800">
-                {item.notes}
-              </p>
+              {isGrammarNote ? (
+                <RichTextContent html={item.notes} />
+              ) : (
+                <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-800">
+                  {item.notes}
+                </p>
+              )}
             </div>
           )}
         </div>

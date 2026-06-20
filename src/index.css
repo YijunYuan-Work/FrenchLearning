@@ -27,6 +27,10 @@ textarea {
   font: inherit;
 }
 
+[contenteditable="true"] {
+  font: inherit;
+}
+
 h1,
 h2,
 h3 {
@@ -60,6 +64,56 @@ p {
 
 .secondary-action {
   @apply focus-ring inline-flex items-center justify-center gap-2 rounded-lg border border-[#d8e5f5] bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-frenchBlue/35 hover:text-frenchBlue disabled:cursor-not-allowed disabled:opacity-55;
+}
+
+.rich-text-editor:empty::before {
+  color: #5d7189;
+  content: attr(data-placeholder);
+}
+
+.rich-text-editor :where(h1, h2, h3, h4),
+.rich-text-content :where(h1, h2, h3, h4) {
+  @apply mb-2 mt-3 font-black leading-tight text-ink;
+}
+
+.rich-text-editor :where(h1),
+.rich-text-content :where(h1) {
+  @apply text-2xl;
+}
+
+.rich-text-editor :where(h2),
+.rich-text-content :where(h2) {
+  @apply text-xl;
+}
+
+.rich-text-editor :where(h3, h4),
+.rich-text-content :where(h3, h4) {
+  @apply text-lg;
+}
+
+.rich-text-editor :where(p),
+.rich-text-content :where(p) {
+  @apply my-2;
+}
+
+.rich-text-editor :where(ul),
+.rich-text-content :where(ul) {
+  @apply my-2 list-disc pl-6;
+}
+
+.rich-text-editor :where(ol),
+.rich-text-content :where(ol) {
+  @apply my-2 list-decimal pl-6;
+}
+
+.rich-text-editor :where(li),
+.rich-text-content :where(li) {
+  @apply my-1;
+}
+
+.rich-text-editor :where(blockquote),
+.rich-text-content :where(blockquote) {
+  @apply my-2 border-l-4 border-frenchBlue/25 pl-3 text-slate-700;
 }
 
 @media (prefers-reduced-motion: reduce) {
