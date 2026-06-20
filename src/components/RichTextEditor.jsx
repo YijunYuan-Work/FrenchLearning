@@ -1,5 +1,5 @@
 import { Bold, Italic, List, ListOrdered, Underline } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import {
   isRichTextEmpty,
   plainTextToRichText,
@@ -31,6 +31,7 @@ function insertHtml(html) {
 
 export function RichTextEditor({ label, onChange, placeholder, t, value }) {
   const editorRef = useRef(null);
+  const labelId = useId();
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -50,10 +51,12 @@ export function RichTextEditor({ label, onChange, placeholder, t, value }) {
     onChange(isRichTextEmpty(nextHtml) ? "" : nextHtml);
   }
 
-  function runCommand(command) {
+  function runCommand(command, trigger) {
     editorRef.current?.focus();
     document.execCommand(command, false);
     emitChange();
+    trigger?.blur();
+    editorRef.current?.focus();
   }
 
   function handlePaste(event) {
@@ -69,8 +72,8 @@ export function RichTextEditor({ label, onChange, placeholder, t, value }) {
   }
 
   return (
-    <label className="grid gap-1 text-sm font-bold md:col-span-2">
-      {label}
+    <div className="grid gap-1 text-sm font-bold md:col-span-2">
+      <span id={labelId}>{label}</span>
       <div className="rounded-xl border border-line bg-white shadow-sm">
         <div className="flex flex-wrap gap-1 border-b border-line bg-sky/35 p-2">
           {toolbarButtons.map((button) => {
@@ -80,8 +83,13 @@ export function RichTextEditor({ label, onChange, placeholder, t, value }) {
                 aria-label={t(button.labelKey, button.label)}
                 className="focus-ring inline-flex size-8 items-center justify-center rounded-lg border border-line bg-white text-slate-700 hover:bg-sky"
                 key={button.command}
-                onClick={() => runCommand(button.command)}
+                onClick={(event) => runCommand(button.command, event.currentTarget)}
                 onMouseDown={(event) => event.preventDefault()}
+                onPointerDown={(event) => {
+                  if (event.pointerType !== "keyboard") {
+                    event.preventDefault();
+                  }
+                }}
                 title={t(button.labelKey, button.label)}
                 type="button"
               >
@@ -91,7 +99,7 @@ export function RichTextEditor({ label, onChange, placeholder, t, value }) {
           })}
         </div>
         <div
-          aria-label={label}
+          aria-labelledby={labelId}
           className="rich-text-editor focus-ring min-h-56 rounded-b-xl px-3 py-2 font-normal outline-none"
           contentEditable
           data-placeholder={placeholder}
@@ -104,7 +112,7 @@ export function RichTextEditor({ label, onChange, placeholder, t, value }) {
           tabIndex={0}
         />
       </div>
-    </label>
+    </div>
   );
 }
 
