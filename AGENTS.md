@@ -182,6 +182,8 @@ Known decisions:
 - French input has an explicit label because the Auto-fill button sits near the label text.
 - French special character keyboard should appear for all note categories.
 - Auto-fill button should remain hidden outside vocabulary until AI support is added for other categories.
+- Grammar notes intentionally use a simpler shape: Title, Tags, Confidence, and Grammar note. Internally the title is stored in the existing `french` field, while hidden vocabulary-style fields are cleared on save.
+- Phrase notes use Original French, Translation, Tags, and Confidence. Original French and Translation should take the full row; internally the original French is stored in `french` and translation is stored in `english`.
 
 ## UI And Product Direction
 

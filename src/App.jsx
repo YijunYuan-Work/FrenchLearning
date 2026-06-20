@@ -355,6 +355,20 @@ export default function App() {
       confidence: Number(form.confidence),
       lastReviewed: editingItem?.lastReviewed ?? "Not reviewed",
     };
+    if (nextItem.category === "grammar") {
+      Object.assign(nextItem, {
+        english: "",
+        example: "",
+        ...createEmptyWordDetails(),
+      });
+    }
+    if (nextItem.category === "phrases") {
+      Object.assign(nextItem, {
+        example: "",
+        notes: "",
+        ...createEmptyWordDetails(),
+      });
+    }
 
     try {
       const savedItem = editingItem

@@ -21,6 +21,8 @@ export function LearningCard({
 }) {
   const { t } = useLanguage();
   const CategoryIcon = categories[item.category].icon;
+  const isGrammarNote = item.category === "grammar";
+  const isPhraseNote = item.category === "phrases";
   const hasConjugation =
     item.partOfSpeech === "verb" &&
     conjugationPronouns.some((pronoun) => item.conjugation?.[pronoun]);
@@ -62,9 +64,11 @@ export function LearningCard({
             </span>
           </div>
           <h3 className="text-xl font-black leading-snug tracking-[-0.01em]">{item.french}</h3>
-          <p className="mt-1 text-sm font-bold text-slate-600">
-            {item.english}
-          </p>
+          {item.english && !isPhraseNote && (
+            <p className="mt-1 text-sm font-bold text-slate-600">
+              {item.english}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <button
@@ -86,78 +90,103 @@ export function LearningCard({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div>
-          <p className="text-xs font-bold text-slate-500">
-            {t("example", "Example")}
-          </p>
-          <p className="mt-1 text-sm leading-6 text-slate-800">
-            {item.example}
-          </p>
-        </div>
-        {hasGrammarDetails && (
+      {isPhraseNote ? (
+        <div className="mt-4 grid gap-3 rounded-xl bg-sky/35 p-3 md:grid-cols-2">
           <div>
             <p className="text-xs font-bold text-slate-500">
-              {t("grammarDetails", "Grammar details")}
+              {t("originalFrench", "Original French")}
             </p>
-            <div className="mt-1 grid gap-2 text-sm leading-6 text-slate-800">
-              {item.partOfSpeech && (
-                <p>
-                  <span className="font-semibold">{t("type", "Type")}:</span>{" "}
-                  {partOfSpeechLabel(item.partOfSpeech, t)}
-                </p>
-              )}
-              {item.ipa && (
-                <p>
-                  <span className="font-semibold">IPA:</span> {item.ipa}
-                </p>
-              )}
-              {item.gender && (
-                <p>
-                  <span className="font-semibold">{t("gender", "Gender")}:</span> {item.gender}
-                </p>
-              )}
-              {hasConjugation && (
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
-                  {conjugationPronouns.map((pronoun) =>
-                    item.conjugation?.[pronoun] ? (
-                      <div className="flex gap-2" key={pronoun}>
-                        <dt className="font-semibold">{pronoun}</dt>
-                        <dd>{item.conjugation[pronoun]}</dd>
-                      </div>
-                    ) : null
-                  )}
-                </dl>
-              )}
-              {hasAdjectiveForms && (
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
-                  {[
-                    ["masculine", "masc."],
-                    ["feminine", "fem."],
-                    ["masculinePlural", "masc. pl."],
-                    ["femininePlural", "fem. pl."],
-                  ].map(([field, label]) =>
-                    item.adjectiveForms?.[field] ? (
-                      <div className="flex gap-2" key={field}>
-                        <dt className="font-semibold">{label}</dt>
-                        <dd>{item.adjectiveForms[field]}</dd>
-                      </div>
-                    ) : null
-                  )}
-                </dl>
-              )}
-            </div>
+            <p className="mt-1 text-sm leading-6 text-slate-800">
+              {item.french}
+            </p>
           </div>
-        )}
-        <div>
-          <p className="text-xs font-bold text-slate-500">
-            {t("notes", "Notes")}
-          </p>
-          <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-800">
-            {item.notes}
-          </p>
+          <div>
+            <p className="text-xs font-bold text-slate-500">
+              {t("translation", "Translation")}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-slate-800">
+              {item.english}
+            </p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {!isGrammarNote && item.example && (
+            <div>
+              <p className="text-xs font-bold text-slate-500">
+                {t("example", "Example")}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-800">
+                {item.example}
+              </p>
+            </div>
+          )}
+          {hasGrammarDetails && (
+            <div>
+              <p className="text-xs font-bold text-slate-500">
+                {t("grammarDetails", "Grammar details")}
+              </p>
+              <div className="mt-1 grid gap-2 text-sm leading-6 text-slate-800">
+                {item.partOfSpeech && (
+                  <p>
+                    <span className="font-semibold">{t("type", "Type")}:</span>{" "}
+                    {partOfSpeechLabel(item.partOfSpeech, t)}
+                  </p>
+                )}
+                {item.ipa && (
+                  <p>
+                    <span className="font-semibold">IPA:</span> {item.ipa}
+                  </p>
+                )}
+                {item.gender && (
+                  <p>
+                    <span className="font-semibold">{t("gender", "Gender")}:</span> {item.gender}
+                  </p>
+                )}
+                {hasConjugation && (
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {conjugationPronouns.map((pronoun) =>
+                      item.conjugation?.[pronoun] ? (
+                        <div className="flex gap-2" key={pronoun}>
+                          <dt className="font-semibold">{pronoun}</dt>
+                          <dd>{item.conjugation[pronoun]}</dd>
+                        </div>
+                      ) : null
+                    )}
+                  </dl>
+                )}
+                {hasAdjectiveForms && (
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    {[
+                      ["masculine", "masc."],
+                      ["feminine", "fem."],
+                      ["masculinePlural", "masc. pl."],
+                      ["femininePlural", "fem. pl."],
+                    ].map(([field, label]) =>
+                      item.adjectiveForms?.[field] ? (
+                        <div className="flex gap-2" key={field}>
+                          <dt className="font-semibold">{label}</dt>
+                          <dd>{item.adjectiveForms[field]}</dd>
+                        </div>
+                      ) : null
+                    )}
+                  </dl>
+                )}
+              </div>
+            </div>
+          )}
+          {item.notes && (
+            <div className={isGrammarNote ? "md:col-span-2" : ""}>
+              <p className="text-xs font-bold text-slate-500">
+                {isGrammarNote ? t("grammarNote", "Grammar note") : t("notes", "Notes")}
+              </p>
+              <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-800">
+                {item.notes}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 flex flex-col gap-3 border-t border-line pt-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">

@@ -5,7 +5,6 @@ import {
   conjugationPronouns,
   createEmptyAdjectiveForms,
   createEmptyConjugation,
-  createEmptyWordDetails,
   genderOptions,
   partOfSpeechOptions,
 } from "../data/wordFields";
@@ -28,6 +27,19 @@ export function EditorModal({
 }) {
   const { language, t } = useLanguage();
   const frenchInputId = useId();
+  const isGrammarNote = form.category === "grammar";
+  const isPhraseNote = form.category === "phrases";
+  const usesSimpleFullWidthForm = isGrammarNote || isPhraseNote;
+  const titleLabel = isGrammarNote
+    ? t("title", "Title")
+    : isPhraseNote
+      ? t("originalFrench", "Original French")
+      : t("french", "French");
+  const titlePlaceholder = isGrammarNote
+    ? t("grammarTitlePlaceholder", "e.g. Prepositions before cities and countries")
+    : isPhraseNote
+      ? t("phraseFrenchPlaceholder", "e.g. À bientôt !")
+      : "e.g. boulangerie, parler, heureux";
   const modalRef = useRef(null);
   const onCloseRef = useRef(onClose);
   const previousFocusRef = useRef(null);
@@ -229,9 +241,9 @@ export function EditorModal({
               <option value="4">{t("confidenceStrong", "Strong")}</option>
             </select>
           </label>
-          <div className={labelClass}>
+          <div className={`${labelClass} ${usesSimpleFullWidthForm ? "md:col-span-2" : ""}`}>
             <span className="flex items-center justify-between gap-3">
-              <label htmlFor={frenchInputId}>{t("french", "French")}</label>
+              <label htmlFor={frenchInputId}>{titleLabel}</label>
               {form.category === "vocabulary" && (
                 <button
                   className="focus-ring inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-frenchBlue/25 bg-white px-3 text-xs font-bold text-frenchBlue hover:bg-sky/60 disabled:cursor-not-allowed disabled:opacity-60"
@@ -254,24 +266,49 @@ export function EditorModal({
               className={inputClass}
               id={frenchInputId}
               onChange={(event) => updateField("french", event.target.value)}
-              placeholder="e.g. boulangerie, parler, heureux"
+              placeholder={titlePlaceholder}
               ref={frenchInputRef}
               required
               value={form.french}
             />
           </div>
-          <label className={labelClass}>
-            {t("english", "English")}
-            <input
-              className={inputClass}
-              onChange={(event) => updateField("english", event.target.value)}
-              required
-              value={form.english}
-            />
-          </label>
-          <div className="md:col-span-2">
-            <FrenchCharacterKeyboard onInsert={insertFrenchCharacter} />
-          </div>
+          {!usesSimpleFullWidthForm && (
+            <>
+              <label className={labelClass}>
+                {t("english", "English")}
+                <input
+                  className={inputClass}
+                  onChange={(event) => updateField("english", event.target.value)}
+                  required
+                  value={form.english}
+                />
+              </label>
+              <div className="md:col-span-2">
+                <FrenchCharacterKeyboard onInsert={insertFrenchCharacter} />
+              </div>
+            </>
+          )}
+          {isPhraseNote && (
+            <>
+              <label className={`${labelClass} md:col-span-2`}>
+                {t("translation", "Translation")}
+                <textarea
+                  className="focus-ring min-h-20 rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
+                  onChange={(event) => updateField("english", event.target.value)}
+                  required
+                  value={form.english}
+                />
+              </label>
+              <div className="md:col-span-2">
+                <FrenchCharacterKeyboard onInsert={insertFrenchCharacter} />
+              </div>
+            </>
+          )}
+          {isGrammarNote && (
+            <div className="md:col-span-2">
+              <FrenchCharacterKeyboard onInsert={insertFrenchCharacter} />
+            </div>
+          )}
           {form.category === "vocabulary" && (
             <>
               <label className={`${labelClass} md:col-span-2`}>
@@ -382,22 +419,6 @@ export function EditorModal({
             </p>
           )}
           <label className={`${labelClass} md:col-span-2`}>
-            {t("example", "Example")}
-            <textarea
-              className="focus-ring min-h-20 rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
-              onChange={(event) => updateField("example", event.target.value)}
-              value={form.example}
-            />
-          </label>
-          <label className={`${labelClass} md:col-span-2`}>
-            {t("notes", "Notes")}
-            <textarea
-              className="focus-ring min-h-24 rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
-              onChange={(event) => updateField("notes", event.target.value)}
-              value={form.notes}
-            />
-          </label>
-          <label className={`${labelClass} md:col-span-2`}>
             {t("tags", "Tags")}
             <input
               className={inputClass}
@@ -406,6 +427,29 @@ export function EditorModal({
               value={form.tags}
             />
           </label>
+          {!usesSimpleFullWidthForm && (
+            <label className={`${labelClass} md:col-span-2`}>
+              {t("example", "Example")}
+              <textarea
+                className="focus-ring min-h-20 rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
+                onChange={(event) => updateField("example", event.target.value)}
+                value={form.example}
+              />
+            </label>
+          )}
+          {!isPhraseNote && (
+            <label className={`${labelClass} md:col-span-2`}>
+              {isGrammarNote ? t("grammarNote", "Grammar note") : t("notes", "Notes")}
+              <textarea
+                className={`focus-ring rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm ${
+                  isGrammarNote ? "min-h-56" : "min-h-24"
+                }`}
+                onChange={(event) => updateField("notes", event.target.value)}
+                required={isGrammarNote}
+                value={form.notes}
+              />
+            </label>
+          )}
         </div>
 
         <div className="mt-5 flex justify-end gap-2">

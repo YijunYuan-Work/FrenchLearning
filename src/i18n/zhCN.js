@@ -224,4 +224,10 @@ export const zhCN = {
   importReasonDuplicateFile: "文件中重复。",
   importReasonDuplicate: "词汇中已存在。",
   importReasonAdded: "已成功添加。",
+  title: "标题",
+  grammarNote: "语法笔记",
+  grammarTitlePlaceholder: "例如：城市和国家前的介词",
+  originalFrench: "原始法语",
+  translation: "翻译",
+  phraseFrenchPlaceholder: "例如：À bientôt !",
 };

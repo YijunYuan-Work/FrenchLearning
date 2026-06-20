@@ -163,6 +163,8 @@ export function ReviewView({
   }
 
   const CategoryIcon = categories[currentItem.category].icon;
+  const isGrammarNote = currentItem.category === "grammar";
+  const isPhraseNote = currentItem.category === "phrases";
   if (isStudyComplete) {
     return (
       <div className="app-card mx-auto w-full max-w-4xl p-8 text-center">
@@ -244,9 +246,11 @@ export function ReviewView({
                 <h3 className="mt-3 text-3xl font-black leading-tight tracking-[-0.01em]">
                   {currentItem.french}
                 </h3>
-                <p className="mt-2 text-lg font-bold text-slate-700">
-                  {currentItem.english}
-                </p>
+                {currentItem.english && !isPhraseNote && (
+                  <p className="mt-2 text-lg font-bold text-slate-700">
+                    {currentItem.english}
+                  </p>
+                )}
               </div>
               <button
                 className="secondary-action h-9 shrink-0 px-3 text-xs"
@@ -259,14 +263,23 @@ export function ReviewView({
             </div>
 
             <div className="mt-5 grid gap-5 md:grid-cols-2">
-              <DetailBlock label={t("example", "Example")}>
-                {currentItem.example || t("noExampleYet", "No example yet.")}
-              </DetailBlock>
-              <DetailBlock label={t("notes", "Notes")}>
-                <p className="whitespace-pre-line">
-                  {currentItem.notes || t("noNotesYet", "No notes yet.")}
-                </p>
-              </DetailBlock>
+              {isPhraseNote && (
+                <DetailBlock label={t("translation", "Translation")}>
+                  {currentItem.english || t("unknown", "Unknown")}
+                </DetailBlock>
+              )}
+              {!isGrammarNote && !isPhraseNote && (
+                <DetailBlock label={t("example", "Example")}>
+                  {currentItem.example || t("noExampleYet", "No example yet.")}
+                </DetailBlock>
+              )}
+              {!isPhraseNote && (
+                <DetailBlock label={isGrammarNote ? t("grammarNote", "Grammar note") : t("notes", "Notes")}>
+                  <p className="whitespace-pre-line">
+                    {currentItem.notes || t("noNotesYet", "No notes yet.")}
+                  </p>
+                </DetailBlock>
+              )}
               {(currentItem.partOfSpeech || currentItem.ipa || currentItem.gender) && (
                 <DetailBlock label={t("wordDetails", "Word details")}>
                   <div className="grid gap-1">
