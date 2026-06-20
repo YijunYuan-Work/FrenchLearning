@@ -32,6 +32,7 @@ import { isRichTextEmpty, sanitizeRichTextHtml } from "./utils/richText";
 import { GrammarView } from "./views/GrammarView";
 import { ImportView } from "./views/ImportView";
 import { PhrasesView } from "./views/PhrasesView";
+import { ProfileView } from "./views/ProfileView";
 import { PronunciationView } from "./views/PronunciationView";
 import { QuizView } from "./views/QuizView";
 import { ReviewView } from "./views/ReviewView";
@@ -59,6 +60,7 @@ const viewBySection = {
   pronunciation: PronunciationView,
   review: ReviewView,
   import: ImportView,
+  profile: ProfileView,
 };
 
 function getFriendlyAuthError(error) {
@@ -95,7 +97,12 @@ function getImportRetryDelay(error, attempt) {
 }
 
 function getDisplayName(user) {
-  return user?.user_metadata?.name || user?.email?.split("@")[0] || "Learner";
+  return (
+    user?.user_metadata?.name ||
+    user?.user_metadata?.username ||
+    user?.email?.split("@")[0] ||
+    "Learner"
+  );
 }
 
 export default function App() {
@@ -243,14 +250,13 @@ export default function App() {
   const filteredItems = useMemo(() => {
     const searchable = query.trim().toLowerCase();
     return items.filter((item) => {
-    const matchesSection =
-        activeSection === "today"
-          ? true
-          : activeSection === "import"
-            ? true
-          : activeSection === "review"
-            ? Number(item.confidence) < MAX_CONFIDENCE
-            : item.category === activeSection;
+      const matchesSection =
+        activeSection === "today" ||
+        activeSection === "import" ||
+        activeSection === "profile" ||
+        (activeSection === "review"
+          ? Number(item.confidence) < MAX_CONFIDENCE
+          : item.category === activeSection);
       const matchesTag =
         selectedTag === "all" || (item.tags ?? []).includes(selectedTag);
       const haystack = [
@@ -768,6 +774,7 @@ export default function App() {
     onStartStudy: () => setActiveSection("review"),
     onStartQuiz: () => setActiveSection("quiz"),
     onStudyComplete: () => completeDailyTask("study"),
+    onUserUpdated: setUser,
     query,
     selectedTag,
     selectedIds,
@@ -827,7 +834,8 @@ export default function App() {
               activeSection === "today" ||
               activeSection === "quiz" ||
               activeSection === "review" ||
-              activeSection === "import"
+              activeSection === "import" ||
+              activeSection === "profile"
                 ? ""
                 : "xl:grid-cols-[minmax(0,1fr)_320px]"
             }`}
@@ -847,7 +855,8 @@ export default function App() {
             {activeSection !== "today" &&
               activeSection !== "quiz" &&
               activeSection !== "review" &&
-              activeSection !== "import" && (
+              activeSection !== "import" &&
+              activeSection !== "profile" && (
               <aside className="grid content-start gap-4">
                 <PracticeQueue items={weakItems} markReviewed={markReviewed} />
                 <FrenchInTheWild />

@@ -7,6 +7,7 @@ import {
   ListChecks,
   Mic2,
   Upload,
+  UserRound,
 } from "lucide-react";
 
 export const categories = {
@@ -30,11 +31,20 @@ export const categories = {
     labelKey: "categoryImport",
     icon: Upload,
   },
+  profile: {
+    label: "Profile",
+    labelKey: "categoryProfile",
+    icon: UserRound,
+  },
 };
 
 export const categoryOptions = Object.entries(categories)
   .filter(
     ([key]) =>
-      key !== "today" && key !== "quiz" && key !== "review" && key !== "import"
+      key !== "today" &&
+      key !== "quiz" &&
+      key !== "review" &&
+      key !== "import" &&
+      key !== "profile"
   )
   .map(([value, item]) => ({ value, label: item.label, labelKey: item.labelKey }));

@@ -10,6 +10,11 @@ export function AppHeader({
   user,
 }) {
   const { t } = useLanguage();
+  const displayName =
+    user?.user_metadata?.name ||
+    user?.user_metadata?.username ||
+    user?.email?.split("@")[0] ||
+    "Learner";
 
   return (
     <header className="border-b border-line bg-cloud/90 px-4 py-3 backdrop-blur md:px-7 md:py-4">
@@ -27,7 +32,7 @@ export function AppHeader({
           <LanguageToggle />
           {user && (
             <div className="hidden h-10 items-center rounded-lg border border-line bg-white px-3 text-sm font-bold text-slate-600 shadow-sm sm:flex">
-              {user.user_metadata?.name || user.email?.split("@")[0] || "Learner"}
+              {displayName}
             </div>
           )}
           <button
@@ -37,7 +42,8 @@ export function AppHeader({
                 activeSection === "today" ||
                   activeSection === "review" ||
                   activeSection === "quiz" ||
-                  activeSection === "import"
+                  activeSection === "import" ||
+                  activeSection === "profile"
                   ? "vocabulary"
                   : activeSection
               )
