@@ -138,6 +138,7 @@ Behavior:
 - Do not show every successful import in the results list; show totals plus failed items.
 - Keep cancel import and retry failed only behavior.
 - Import should not add duplicate notes if AI normalizes or capitalizes a word.
+- Import uses slower pacing and retries temporary Wiktionary 429/503 verification failures. Keep this behavior so bulk imports do not hammer Wiktionary or mark valid words failed during temporary rate limits.
 
 ## Study, Quiz, And Daily Progress
 

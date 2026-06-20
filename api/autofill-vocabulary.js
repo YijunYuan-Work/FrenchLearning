@@ -22,6 +22,10 @@ let rateLimitTableAvailable = true;
 const wiktionaryHeaders = {
   "User-Agent": "FrenchLearning/0.1 vocabulary import and lookup",
 };
+const wiktionaryVerificationCache = new Map();
+const wiktionaryCacheMs = 6 * 60 * 60 * 1000;
+const wiktionaryTemporaryCacheMs = 45 * 1000;
+let wiktionaryCooldownUntil = 0;
 
 const emptyConjugation = {
   je: "",
@@ -206,60 +210,120 @@ function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function getWiktionaryCacheKey(word) {
+  return normalizeWord(stripLeadingFrenchArticle(word)).toLocaleLowerCase("fr-FR");
+}
+
+function getCachedWiktionaryVerification(word) {
+  const cached = wiktionaryVerificationCache.get(getWiktionaryCacheKey(word));
+  if (!cached) return undefined;
+
+  if (cached.expiresAt <= Date.now()) {
+    wiktionaryVerificationCache.delete(getWiktionaryCacheKey(word));
+    return undefined;
+  }
+
+  return cached.value;
+}
+
+function setCachedWiktionaryVerification(word, value, ttlMs = wiktionaryCacheMs) {
+  wiktionaryVerificationCache.set(getWiktionaryCacheKey(word), {
+    value,
+    expiresAt: Date.now() + ttlMs,
+  });
+}
+
+function getRetryDelayMs(response, attempt) {
+  const retryAfter = response.headers.get("retry-after");
+  const retryAfterSeconds = Number(retryAfter);
+
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+    return Math.min(retryAfterSeconds * 1000, 30000);
+  }
+
+  const retryAfterDate = retryAfter ? Date.parse(retryAfter) : Number.NaN;
+  if (Number.isFinite(retryAfterDate)) {
+    return Math.min(Math.max(retryAfterDate - Date.now(), 1000), 30000);
+  }
+
+  return Math.min(1000 * 2 ** (attempt - 1), 8000);
+}
+
+function extractWiktionaryPageContent(page) {
+  const revision = page.revisions?.[0];
+  return revision?.slots?.main?.content ?? revision?.content ?? "";
+}
+
+class WiktionaryTemporaryError extends Error {
+  constructor(status, retryAfterMs) {
+    super(
+      `Wiktionary verification is temporarily unavailable${status ? ` (${status})` : ""}. Import will retry after a short pause.`
+    );
+    this.status = status;
+    this.retryAfterMs = retryAfterMs;
+    this.code = "WIKTIONARY_TEMPORARY";
+  }
+}
+
 async function verifyFrenchWiktionaryEntry(word) {
+  const cached = getCachedWiktionaryVerification(word);
+  if (cached !== undefined) return cached;
+
+  const cooldownRemainingMs = wiktionaryCooldownUntil - Date.now();
+  if (cooldownRemainingMs > 0) {
+    throw new WiktionaryTemporaryError(429, cooldownRemainingMs);
+  }
+
   const pages = createWiktionaryPageCandidates(word);
+  const url = new URL("https://en.wiktionary.org/w/api.php");
+  url.search = new URLSearchParams({
+    action: "query",
+    prop: "revisions",
+    titles: pages.join("|"),
+    rvprop: "content",
+    rvslots: "main",
+    redirects: "1",
+    format: "json",
+    formatversion: "2",
+    origin: "*",
+  }).toString();
 
   let lastStatus = 0;
-  for (const page of pages) {
-    const url = new URL("https://en.wiktionary.org/w/api.php");
-    url.search = new URLSearchParams({
-      action: "parse",
-      page,
-      prop: "wikitext",
-      format: "json",
-      formatversion: "2",
-      origin: "*",
-    }).toString();
+  let retryAfterMs = 0;
 
-    for (let attempt = 1; attempt <= 4; attempt += 1) {
-      const response = await fetch(url, { headers: wiktionaryHeaders });
-      lastStatus = response.status;
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    const response = await fetch(url, { headers: wiktionaryHeaders });
+    lastStatus = response.status;
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.error) {
-          break;
-        }
+    if (response.ok) {
+      const data = await response.json();
+      const hasFrenchEntry = (data.query?.pages ?? []).some((page) => {
+        if (page.missing) return false;
+        const wikitext = extractWiktionaryPageContent(page);
+        return extractLanguageSection(wikitext, "French").trim().length > 0;
+      });
 
-        const rawWikitext = data.parse?.wikitext;
-        const wikitext =
-          typeof rawWikitext === "string"
-            ? rawWikitext
-            : rawWikitext?.["*"] ?? "";
-        const frenchSection = extractLanguageSection(wikitext, "French");
-
-        if (frenchSection.trim()) {
-          return true;
-        }
-
-        break;
-      }
-
-      if (![429, 500, 502, 503, 504].includes(response.status)) {
-        break;
-      }
-
-      await sleep(600 * attempt);
+      setCachedWiktionaryVerification(word, hasFrenchEntry);
+      return hasFrenchEntry;
     }
+
+    if (response.status === 429) {
+      retryAfterMs = getRetryDelayMs(response, attempt);
+      wiktionaryCooldownUntil = Date.now() + retryAfterMs;
+      throw new WiktionaryTemporaryError(response.status, retryAfterMs);
+    }
+
+    if (![500, 502, 503, 504].includes(response.status)) {
+      setCachedWiktionaryVerification(word, false);
+      return false;
+    }
+
+    retryAfterMs = getRetryDelayMs(response, attempt);
+    await sleep(retryAfterMs);
   }
 
-  if (!lastStatus || lastStatus === 200 || lastStatus === 404) {
-    return false;
-  }
-
-  throw new Error(
-    `Wiktionary verification is temporarily unavailable${lastStatus ? ` (${lastStatus})` : ""}. Try importing again later.`
-  );
+  wiktionaryCooldownUntil = Date.now() + wiktionaryTemporaryCacheMs;
+  throw new WiktionaryTemporaryError(lastStatus, retryAfterMs);
 }
 
 function getSupabaseEnvironment() {
@@ -526,6 +590,16 @@ export default async function handler(request, response) {
   try {
     hasFrenchEntry = await verifyFrenchWiktionaryEntry(word);
   } catch (error) {
+    if (error.code === "WIKTIONARY_TEMPORARY") {
+      sendJson(response, 503, {
+        code: error.code,
+        error: error.message,
+        retryAfterMs: error.retryAfterMs,
+        status: error.status,
+      });
+      return;
+    }
+
     sendJson(response, 502, { error: error.message });
     return;
   }

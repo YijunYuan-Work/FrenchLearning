@@ -24,7 +24,11 @@ export async function autoFillFrenchVocabulary(word, language = "en") {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.error || "AI auto-fill failed.");
+    const error = new Error(payload.error || "AI auto-fill failed.");
+    error.code = payload.code;
+    error.retryAfterMs = payload.retryAfterMs;
+    error.status = payload.status ?? response.status;
+    throw error;
   }
 
   if (!payload?.word || !payload?.english || !payload?.partOfSpeech) {

@@ -81,6 +81,19 @@ function wait(ms) {
   });
 }
 
+function isTemporaryWiktionaryError(error) {
+  return error?.code === "WIKTIONARY_TEMPORARY" || error?.status === 503;
+}
+
+function getImportRetryDelay(error, attempt) {
+  const retryAfterMs = Number(error?.retryAfterMs);
+  if (Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
+    return Math.min(retryAfterMs + 750, 30000);
+  }
+
+  return Math.min(2500 * attempt, 10000);
+}
+
 function getDisplayName(user) {
   return user?.user_metadata?.name || user?.email?.split("@")[0] || "Learner";
 }
@@ -444,7 +457,24 @@ export default function App() {
       }
 
       try {
-        const result = await autoFillFrenchVocabulary(word, language);
+        let result;
+        for (let attempt = 1; attempt <= 3; attempt += 1) {
+          try {
+            result = await autoFillFrenchVocabulary(word, language);
+            break;
+          } catch (error) {
+            if (
+              !isTemporaryWiktionaryError(error) ||
+              attempt === 3 ||
+              shouldCancel?.()
+            ) {
+              throw error;
+            }
+
+            await wait(getImportRetryDelay(error, attempt));
+          }
+        }
+
         const resultWordKey = result.word.trim().toLocaleLowerCase("fr");
         if (knownWords.has(resultWordKey)) {
           results.push({
@@ -490,7 +520,7 @@ export default function App() {
         });
       } finally {
         if (!shouldCancel?.()) {
-          await wait(350);
+          await wait(900);
         }
       }
     }
