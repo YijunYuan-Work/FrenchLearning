@@ -69,6 +69,7 @@ Main Supabase tables are defined in `supabase/schema.sql`:
 - `user_preferences`: per-user UI language preference.
 - `daily_learning_state`: optional cloud sync for daily progress and quiz state.
 - `ai_autofill_usage`: per-user daily AI auto-fill usage counter.
+- `user_subscription_roles`: server-read subscription tier for AI auto-fill limits.
 
 All public tables must have RLS enabled. Policies should use `auth.uid() = user_id`.
 
@@ -132,10 +133,12 @@ src/views/ImportView.jsx
 
 Behavior:
 
-- Accept `.txt` files with French entries separated by semicolons.
-- Deduplicate within the file and against existing vocabulary notes.
-- Each new word uses the same AI auto-fill flow as Add Note.
-- Do not show every successful import in the results list; show totals plus failed items.
+- Accept `.txt` files with French vocabulary entries separated by semicolons.
+- Accept `.csv` files for short phrases. Column 1 is French, column 2 is translation, and optional column 3 becomes tags.
+- Deduplicate within the file and against existing notes in the selected import category.
+- Vocabulary imports use the same AI auto-fill flow as Add Note.
+- Phrase imports create phrase notes directly without AI auto-fill.
+- Do not show every successful import in the results list; show totals plus skipped/failed items.
 - Keep cancel import and retry failed only behavior.
 - Import should not add duplicate notes if AI normalizes or capitalizes a word.
 - Import uses slower pacing and retries temporary Wiktionary 429/503 verification failures. Keep this behavior so bulk imports do not hammer Wiktionary or mark valid words failed during temporary rate limits.
@@ -240,6 +243,8 @@ If testing AI auto-fill, avoid unnecessary OpenAI calls. First test local state 
 - Do not print API keys or Supabase tokens.
 - AI auto-fill costs money. Avoid repeated real calls during UI testing.
 - `ai_autofill_usage` stores durable per-user daily usage when the schema is applied.
+- AI auto-fill daily limits are plan-aware: free users get 10/day, `subscriber` users get 1000/day.
+- Subscription roles are stored in `user_subscription_roles`. Users may read their own tier but must not be able to update it from the frontend; payment/admin flows should update this table later.
 - If the usage table is missing, the API falls back to an in-memory limit so the app remains usable during setup.
 
 ## Git And Editing Hygiene

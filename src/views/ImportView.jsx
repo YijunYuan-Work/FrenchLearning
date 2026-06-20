@@ -1,19 +1,19 @@
-import { FileText, Upload } from "lucide-react";
+import { FileText, Languages, Upload } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { Metric } from "../components/Metric";
 import { useLanguage } from "../i18n/LanguageContext";
+import { parsePhraseCsv, parseVocabularyText } from "../utils/importParsers";
 
-function parseVocabularyText(text) {
-  return text
-    .split(";")
-    .map((word) => word.trim())
-    .filter(Boolean);
-}
+const importModes = [
+  { value: "vocabulary", labelKey: "categoryVocabulary", label: "Vocabulary" },
+  { value: "phrases", labelKey: "categoryPhrases", label: "Short phrases" },
+];
 
-export function ImportView({ onImportVocabulary }) {
+export function ImportView({ onImportPhrases, onImportVocabulary }) {
   const { t } = useLanguage();
+  const [importMode, setImportMode] = useState("vocabulary");
   const [fileName, setFileName] = useState("");
-  const [words, setWords] = useState([]);
+  const [importItems, setImportItems] = useState([]);
   const [results, setResults] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -32,42 +32,67 @@ export function ImportView({ onImportVocabulary }) {
     () => results.filter((result) => result.status === "failed"),
     [results]
   );
+  const attentionResults = useMemo(
+    () => results.filter((result) => result.status !== "added"),
+    [results]
+  );
+  const isPhraseMode = importMode === "phrases";
+  const fileAccept = isPhraseMode ? ".csv,text/csv" : ".txt,text/plain";
+  const readyCopy = isPhraseMode
+    ? t("importPhrasesReady", "{count} phrases ready to import.", {
+        count: importItems.length,
+      })
+    : t("importReady", "{count} words ready to import.", {
+        count: importItems.length,
+      });
 
   async function handleFileChange(event) {
     const file = event.target.files?.[0];
     setError("");
     setResults([]);
-    setWords([]);
+    setImportItems([]);
     setFileName(file?.name ?? "");
 
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".txt")) {
-      setError(t("importTxtOnly", "Please choose a .txt file."));
+    const lowerFileName = file.name.toLowerCase();
+    if (isPhraseMode ? !lowerFileName.endsWith(".csv") : !lowerFileName.endsWith(".txt")) {
+      setError(
+        isPhraseMode
+          ? t("importCsvOnly", "Please choose a .csv file.")
+          : t("importTxtOnly", "Please choose a .txt file.")
+      );
       return;
     }
 
     try {
       const text = await file.text();
-      const parsedWords = parseVocabularyText(text);
-      setWords(parsedWords);
-      if (parsedWords.length === 0) {
-        setError(t("importNoWords", "No semicolon-separated words were found."));
+      const parsedItems = isPhraseMode
+        ? parsePhraseCsv(text)
+        : parseVocabularyText(text);
+      setImportItems(parsedItems);
+      if (parsedItems.length === 0) {
+        setError(
+          isPhraseMode
+            ? t("importNoPhrases", "No phrase rows were found in this CSV.")
+            : t("importNoWords", "No semicolon-separated words were found.")
+        );
       }
     } catch {
-      setError(t("importReadFailed", "Could not read this text file."));
+      setError(t("importReadFailed", "Could not read this file."));
     }
   }
 
-  async function startImport(nextWords = words) {
+  async function startImport(nextItems = importItems) {
     cancelImportRef.current = false;
     setIsImporting(true);
     setError("");
     setResults([]);
-    setProgress({ current: 0, total: nextWords.length });
+    setProgress({ current: 0, total: nextItems.length });
 
     try {
-      const importResults = await onImportVocabulary(
-        nextWords,
+      const importHandler = isPhraseMode ? onImportPhrases : onImportVocabulary;
+      const importResults = await importHandler(
+        nextItems,
         (current, total) => {
           setProgress({ current, total });
         },
@@ -86,16 +111,33 @@ export function ImportView({ onImportVocabulary }) {
   }
 
   function retryFailed() {
-    const failedWords = failedResults.map((result) => result.word);
-    if (failedWords.length === 0) return;
-    setWords(failedWords);
-    startImport(failedWords);
+    const failedItems = failedResults.map((result) => result.item ?? result.word);
+    if (failedItems.length === 0) return;
+    setImportItems(failedItems);
+    startImport(failedItems);
+  }
+
+  function changeImportMode(nextMode) {
+    if (isImporting || nextMode === importMode) return;
+    setImportMode(nextMode);
+    setFileName("");
+    setImportItems([]);
+    setResults([]);
+    setError("");
+    setProgress({ current: 0, total: 0 });
   }
 
   return (
     <div className="min-w-0">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label={t("importParsed", "Parsed words")} value={words.length} />
+        <Metric
+          label={
+            isPhraseMode
+              ? t("importParsedPhrases", "Parsed phrases")
+              : t("importParsed", "Parsed words")
+          }
+          value={importItems.length}
+        />
         <Metric label={t("importAdded", "Added")} value={summary.added} tone="green" />
         <Metric label={t("importSkipped", "Skipped")} value={summary.skipped} tone="blue" />
         <Metric label={t("importFailed", "Failed")} value={summary.failed} tone="red" />
@@ -104,32 +146,57 @@ export function ImportView({ onImportVocabulary }) {
       <section className="app-card mt-5 p-5">
         <div className="mb-5 flex items-start gap-3">
           <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-frenchBlue text-white">
-            <Upload size={20} />
+            {isPhraseMode ? <Languages size={20} /> : <Upload size={20} />}
           </div>
           <div>
             <p className="text-sm font-bold text-frenchRed">
               {t("categoryImport", "Import")}
             </p>
             <h3 className="text-xl font-black">
-              {t("importTitle", "Import vocabulary from a text file")}
+              {isPhraseMode
+                ? t("importPhraseTitle", "Import short phrases from a CSV")
+                : t("importTitle", "Import vocabulary from a text file")}
             </h3>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              {t(
-                "importCopy",
-                "Upload a .txt file with French vocabulary separated by semicolons. Each new word will use the same AI auto-fill flow as Add note."
-              )}
+              {isPhraseMode
+                ? t(
+                    "importPhraseCopy",
+                    "Upload a .csv file with French in the first column and translation in the second. An optional third column is saved as tags."
+                  )
+                : t(
+                    "importCopy",
+                    "Upload a .txt file with French vocabulary separated by semicolons. Each new word will use the same AI auto-fill flow as Add note."
+                  )}
             </p>
           </div>
         </div>
 
         <div className="grid gap-4">
+          <div className="grid gap-2 rounded-xl bg-sky/40 p-2 sm:grid-cols-2">
+            {importModes.map((mode) => (
+              <button
+                className={`focus-ring h-10 rounded-lg text-sm font-black transition ${
+                  importMode === mode.value
+                    ? "bg-frenchBlue text-white shadow-soft"
+                    : "bg-white text-slate-700 hover:text-frenchBlue"
+                }`}
+                disabled={isImporting}
+                key={mode.value}
+                onClick={() => changeImportMode(mode.value)}
+                type="button"
+              >
+                {t(mode.labelKey, mode.label)}
+              </button>
+            ))}
+          </div>
+
           <label className="grid gap-2 rounded-xl border border-dashed border-frenchBlue/30 bg-sky/35 p-5 text-sm font-bold">
             <span className="flex items-center gap-2">
               <FileText size={18} className="text-frenchBlue" />
-              {t("importFile", "Text file")}
+              {isPhraseMode ? t("importCsvFile", "CSV file") : t("importFile", "Text file")}
             </span>
             <input
-              accept=".txt,text/plain"
+              accept={fileAccept}
               className="focus-ring rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
               disabled={isImporting}
               onChange={handleFileChange}
@@ -140,11 +207,40 @@ export function ImportView({ onImportVocabulary }) {
             )}
           </label>
 
-          {words.length > 0 && (
+          {importItems.length > 0 && (
             <div className="rounded-xl bg-sky p-3 text-sm font-semibold text-frenchBlue">
-              {t("importReady", "{count} words ready to import.", {
-                count: words.length,
-              })}
+              {readyCopy}
+            </div>
+          )}
+
+          {isPhraseMode && importItems.length > 0 && (
+            <div className="overflow-x-auto rounded-xl border border-line bg-white shadow-sm">
+              <div className="min-w-[720px]">
+                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_160px] gap-3 border-b border-line bg-sky/45 px-3 py-2 text-xs font-black uppercase text-slate-500">
+                  <span>{t("french", "French")}</span>
+                  <span>{t("translation", "Translation")}</span>
+                  <span>{t("tags", "Tags")}</span>
+                </div>
+                {importItems.slice(0, 5).map((item, index) => (
+                  <div
+                    className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_160px] gap-3 border-b border-line px-3 py-2 text-sm last:border-b-0"
+                    key={`${item.french}-${index}`}
+                  >
+                    <span className="min-w-0 truncate font-bold">{item.french || "-"}</span>
+                    <span className="min-w-0 truncate text-slate-700">{item.english || "-"}</span>
+                    <span className="min-w-0 truncate text-slate-500">
+                      {(item.tags ?? []).join(", ") || "-"}
+                    </span>
+                  </div>
+                ))}
+                {importItems.length > 5 && (
+                  <p className="bg-sky/25 px-3 py-2 text-xs font-bold text-slate-500">
+                    {t("importPreviewMore", "Showing first 5 rows. {count} more will also be imported.", {
+                      count: importItems.length - 5,
+                    })}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -175,7 +271,7 @@ export function ImportView({ onImportVocabulary }) {
             )}
             <button
               className="primary-action h-10 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isImporting || words.length === 0}
+              disabled={isImporting || importItems.length === 0}
               onClick={() => startImport()}
               type="button"
             >
@@ -189,22 +285,30 @@ export function ImportView({ onImportVocabulary }) {
 
       {results.length > 0 && (
         <section className="app-card mt-5 p-4">
-          <h3 className="font-black">{t("importFailures", "Failed imports")}</h3>
-          {failedResults.length === 0 ? (
+          <h3 className="font-black">
+            {t("importNeedsAttention", "Items not imported")}
+          </h3>
+          {attentionResults.length === 0 ? (
             <p className="mt-3 rounded-xl bg-mint p-3 text-sm font-bold text-sage">
-              {t("importNoFailures", "No failed imports.")}
+              {t("importAllImported", "All parsed items were imported.")}
             </p>
           ) : (
             <div className="mt-3 grid gap-2">
-              {failedResults.map((result, index) => (
+              {attentionResults.map((result, index) => (
                 <div
                   className="rounded-xl border border-line bg-white p-3 text-sm shadow-sm"
                   key={`${result.word}-${index}`}
                 >
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <p className="font-bold">{result.word}</p>
-                    <span className="w-fit rounded-lg bg-blush px-2 py-1 text-xs font-bold text-frenchRed">
-                      {t("importStatus_failed", "failed")}
+                    <span
+                      className={`w-fit rounded-lg px-2 py-1 text-xs font-bold ${
+                        result.status === "failed"
+                          ? "bg-blush text-frenchRed"
+                          : "bg-sky text-frenchBlue"
+                      }`}
+                    >
+                      {t(`importStatus_${result.status}`, result.status)}
                     </span>
                   </div>
                   <p className="mt-1 text-slate-600">{result.reason}</p>

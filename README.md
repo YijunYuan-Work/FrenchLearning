@@ -73,6 +73,8 @@ This creates:
 - `notes`
 - `user_preferences`
 - `daily_learning_state`
+- `user_subscription_roles`
+- `ai_autofill_usage`
 - row-level security policies for per-user access
 - update timestamp triggers
 
@@ -101,20 +103,45 @@ The flow is:
 
 The OpenAI API key must stay server-side. Do not expose it with a `VITE_` prefix.
 
-## Import Format
+AI auto-fill has plan-aware daily limits:
 
-The Import tab accepts `.txt` files where French words are separated by semicolons:
+- Free users: 10 auto-fills per day
+- Subscribers: 1000 auto-fills per day
+
+Until payment/subscription management is added, promote a user manually in the Supabase SQL Editor:
+
+```sql
+insert into public.user_subscription_roles (user_id, subscription_tier)
+values ('USER_UUID_HERE', 'subscriber')
+on conflict (user_id)
+do update set subscription_tier = excluded.subscription_tier;
+```
+
+## Import Formats
+
+The Import tab supports two modes.
+
+Vocabulary accepts `.txt` files where French words are separated by semicolons:
 
 ```text
 bonjour; fromage; parler; heureux;
 ```
 
+Short phrases accept `.csv` files. The first column is French, the second column is translation, and an optional third column is imported as tags:
+
+```csv
+French,English,Usage
+Bonjour !,Hello!,Formal / neutral greeting
+Salut !,Hi!,Informal greeting
+```
+
 Import behavior:
 
 - duplicates are skipped
-- invalid or unverifiable words are reported
-- successful imports use the same AI auto-fill flow as the Add Note modal
-- only failed import details are shown after import, while totals remain visible in the summary cards
+- invalid or unverifiable vocabulary words are reported
+- vocabulary imports use the same AI auto-fill flow as the Add Note modal
+- phrase imports create phrase notes directly without AI auto-fill
+- successful imports are hidden after import, while skipped and failed rows are shown with reasons
 
 ## Daily Learning Loop
 

@@ -16,9 +16,11 @@ const allowedPartsOfSpeech = [
 const allowedOutputLanguages = new Set(["en", "zh"]);
 
 const requestLog = new Map();
-const maxRequestsPerWindow = 250;
+const freeAutofillDailyLimit = 10;
+const subscriberAutofillDailyLimit = 1000;
 const rateWindowMs = 24 * 60 * 60 * 1000;
 let rateLimitTableAvailable = true;
+let subscriptionRoleTableAvailable = true;
 const wiktionaryHeaders = {
   "User-Agent": "FrenchLearning/0.1 vocabulary import and lookup",
 };
@@ -350,18 +352,64 @@ function isMissingRateLimitTable(error) {
   );
 }
 
-function checkMemoryRateLimit(userId) {
+function isMissingSubscriptionRoleTable(error) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return (
+    error?.code === "PGRST205" ||
+    error?.code === "42P01" ||
+    message.includes("user_subscription_roles")
+  );
+}
+
+function getAutofillLimit(subscriptionTier) {
+  return subscriptionTier === "subscriber"
+    ? subscriberAutofillDailyLimit
+    : freeAutofillDailyLimit;
+}
+
+function checkMemoryRateLimit(userId, limit = freeAutofillDailyLimit, subscriptionTier = "free") {
   const now = Date.now();
   const current = requestLog.get(userId) ?? [];
   const recent = current.filter((timestamp) => now - timestamp < rateWindowMs);
 
-  if (recent.length >= maxRequestsPerWindow) {
+  if (recent.length >= limit) {
     requestLog.set(userId, recent);
-    return false;
+    return {
+      allowed: false,
+      limit,
+      requestCount: recent.length,
+      subscriptionTier,
+    };
   }
 
   requestLog.set(userId, [...recent, now]);
-  return true;
+  return {
+    allowed: true,
+    limit,
+    requestCount: recent.length + 1,
+    subscriptionTier,
+  };
+}
+
+async function getSubscriptionTier(supabase, userId) {
+  if (!subscriptionRoleTableAvailable) return "free";
+
+  const { data, error } = await supabase
+    .from("user_subscription_roles")
+    .select("subscription_tier")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingSubscriptionRoleTable(error)) {
+      subscriptionRoleTableAvailable = false;
+      return "free";
+    }
+
+    throw error;
+  }
+
+  return data?.subscription_tier === "subscriber" ? "subscriber" : "free";
 }
 
 async function checkRateLimit(request, userId) {
@@ -384,6 +432,8 @@ async function checkRateLimit(request, userId) {
     },
   });
   const today = getTodayKey();
+  const subscriptionTier = await getSubscriptionTier(supabase, userId);
+  const limit = getAutofillLimit(subscriptionTier);
 
   const { data, error } = await supabase
     .from("ai_autofill_usage")
@@ -395,14 +445,19 @@ async function checkRateLimit(request, userId) {
   if (error) {
     if (isMissingRateLimitTable(error)) {
       rateLimitTableAvailable = false;
-      return checkMemoryRateLimit(userId);
+      return checkMemoryRateLimit(userId, limit, subscriptionTier);
     }
     throw error;
   }
 
   const nextCount = Number(data?.request_count ?? 0) + 1;
-  if (nextCount > maxRequestsPerWindow) {
-    return false;
+  if (nextCount > limit) {
+    return {
+      allowed: false,
+      limit,
+      requestCount: Number(data?.request_count ?? 0),
+      subscriptionTier,
+    };
   }
 
   const { error: upsertError } = await supabase
@@ -419,12 +474,17 @@ async function checkRateLimit(request, userId) {
   if (upsertError) {
     if (isMissingRateLimitTable(upsertError)) {
       rateLimitTableAvailable = false;
-      return checkMemoryRateLimit(userId);
+      return checkMemoryRateLimit(userId, limit, subscriptionTier);
     }
     throw upsertError;
   }
 
-  return true;
+  return {
+    allowed: true,
+    limit,
+    requestCount: nextCount,
+    subscriptionTier,
+  };
 }
 
 function cleanAutofillResult(value, requestedWord) {
@@ -540,9 +600,9 @@ export default async function handler(request, response) {
     return;
   }
 
-  let isWithinLimit;
+  let rateLimitResult;
   try {
-    isWithinLimit = await checkRateLimit(request, user.id);
+    rateLimitResult = await checkRateLimit(request, user.id);
   } catch (error) {
     sendJson(response, 500, {
       error: `AI usage tracking failed: ${error.message}`,
@@ -550,9 +610,12 @@ export default async function handler(request, response) {
     return;
   }
 
-  if (!isWithinLimit) {
+  if (!rateLimitResult.allowed) {
     sendJson(response, 429, {
-      error: "Daily AI auto-fill limit reached. Try again tomorrow.",
+      error: `Daily AI auto-fill limit reached (${rateLimitResult.requestCount}/${rateLimitResult.limit} used for the ${rateLimitResult.subscriptionTier} plan). Try again tomorrow.`,
+      limit: rateLimitResult.limit,
+      requestCount: rateLimitResult.requestCount,
+      subscriptionTier: rateLimitResult.subscriptionTier,
     });
     return;
   }

@@ -151,6 +151,31 @@ create trigger set_daily_learning_state_updated_at
   for each row
   execute function public.set_updated_at();
 
+create table if not exists public.user_subscription_roles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  subscription_tier text not null default 'free' check (subscription_tier in ('free', 'subscriber')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.user_subscription_roles enable row level security;
+
+drop policy if exists "Users can read their subscription role" on public.user_subscription_roles;
+create policy "Users can read their subscription role"
+  on public.user_subscription_roles
+  for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+grant select on public.user_subscription_roles to authenticated;
+
+drop trigger if exists set_user_subscription_roles_updated_at on public.user_subscription_roles;
+
+create trigger set_user_subscription_roles_updated_at
+  before update on public.user_subscription_roles
+  for each row
+  execute function public.set_updated_at();
+
 create table if not exists public.ai_autofill_usage (
   user_id uuid not null references auth.users(id) on delete cascade,
   date text not null,

@@ -528,6 +528,98 @@ export default function App() {
     return results;
   }
 
+  async function importPhraseRows(rows, onProgress, shouldCancel) {
+    if (!user) return [];
+
+    const results = [];
+    const seenInFile = new Set();
+    const knownPhrases = new Set(
+      items
+        .filter((item) => item.category === "phrases")
+        .map((item) => item.french.trim().toLocaleLowerCase("fr"))
+    );
+
+    for (const [index, row] of rows.entries()) {
+      if (shouldCancel?.()) {
+        break;
+      }
+
+      const french = row.french.trim();
+      const english = row.english.trim();
+      const normalizedFrench = french.toLocaleLowerCase("fr");
+      onProgress?.(index + 1, rows.length);
+
+      if (!french || !english) {
+        results.push({
+          word: french || english || t("unknown", "Unknown"),
+          item: row,
+          status: "skipped",
+          reason: t(
+            "importReasonMissingPhraseColumns",
+            "Missing French phrase or translation."
+          ),
+        });
+        continue;
+      }
+
+      if (seenInFile.has(normalizedFrench)) {
+        results.push({
+          word: french,
+          item: row,
+          status: "skipped",
+          reason: t("importReasonDuplicateFile", "Duplicate in this file."),
+        });
+        continue;
+      }
+      seenInFile.add(normalizedFrench);
+
+      if (knownPhrases.has(normalizedFrench)) {
+        results.push({
+          word: french,
+          item: row,
+          status: "skipped",
+          reason: t("importReasonDuplicatePhrase", "Already exists in Short phrases."),
+        });
+        continue;
+      }
+
+      try {
+        const nextItem = {
+          ...emptyForm,
+          category: "phrases",
+          french,
+          english,
+          example: "",
+          notes: "",
+          tags: row.tags ?? [],
+          confidence: 1,
+          lastReviewed: "Not reviewed",
+          ...createEmptyWordDetails(),
+        };
+        const savedItem = await createNote(nextItem, user.id);
+
+        knownPhrases.add(savedItem.french.trim().toLocaleLowerCase("fr"));
+        setItems((current) => [savedItem, ...current]);
+        completeDailyTask("addNote");
+        results.push({
+          word: french,
+          item: row,
+          status: "added",
+          reason: t("importReasonAdded", "Added successfully."),
+        });
+      } catch (error) {
+        results.push({
+          word: french,
+          item: row,
+          status: "failed",
+          reason: error.message,
+        });
+      }
+    }
+
+    return results;
+  }
+
   async function markReviewed(item, delta) {
     if (!user) return;
 
@@ -669,6 +761,7 @@ export default function App() {
     openEditItem,
     openNewItem,
     onQuizAnswer: handleQuizAnswer,
+    onImportPhrases: importPhraseRows,
     onImportVocabulary: importVocabularyWords,
     onQuizComplete: () => completeDailyTask("quiz"),
     onQuizStateChange: dailyStateLoaded ? setDailyQuizState : undefined,
