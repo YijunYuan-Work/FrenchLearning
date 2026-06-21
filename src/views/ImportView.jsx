@@ -1,5 +1,5 @@
 import { FileText, Languages, Upload } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { Metric } from "../components/Metric";
 import { useLanguage } from "../i18n/LanguageContext";
 import { parsePhraseCsv, parseVocabularyText } from "../utils/importParsers";
@@ -9,16 +9,22 @@ const importModes = [
   { value: "phrases", labelKey: "categoryPhrases", label: "Short phrases" },
 ];
 
-export function ImportView({ onImportPhrases, onImportVocabulary }) {
+export function ImportView({
+  importJob,
+  onCancelImport,
+  onStartImport,
+  onUpdateImportJob,
+}) {
   const { t } = useLanguage();
-  const [importMode, setImportMode] = useState("vocabulary");
-  const [fileName, setFileName] = useState("");
-  const [importItems, setImportItems] = useState([]);
-  const [results, setResults] = useState([]);
-  const [isImporting, setIsImporting] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [error, setError] = useState("");
-  const cancelImportRef = useRef(false);
+  const {
+    error,
+    fileName,
+    importItems,
+    importMode,
+    isImporting,
+    progress,
+    results,
+  } = importJob;
 
   const summary = useMemo(
     () => ({
@@ -48,19 +54,21 @@ export function ImportView({ onImportPhrases, onImportVocabulary }) {
 
   async function handleFileChange(event) {
     const file = event.target.files?.[0];
-    setError("");
-    setResults([]);
-    setImportItems([]);
-    setFileName(file?.name ?? "");
+    onUpdateImportJob({
+      error: "",
+      fileName: file?.name ?? "",
+      importItems: [],
+      results: [],
+    });
 
     if (!file) return;
     const lowerFileName = file.name.toLowerCase();
     if (isPhraseMode ? !lowerFileName.endsWith(".csv") : !lowerFileName.endsWith(".txt")) {
-      setError(
-        isPhraseMode
+      onUpdateImportJob({
+        error: isPhraseMode
           ? t("importCsvOnly", "Please choose a .csv file.")
-          : t("importTxtOnly", "Please choose a .txt file.")
-      );
+          : t("importTxtOnly", "Please choose a .txt file."),
+      });
       return;
     }
 
@@ -69,62 +77,38 @@ export function ImportView({ onImportPhrases, onImportVocabulary }) {
       const parsedItems = isPhraseMode
         ? parsePhraseCsv(text)
         : parseVocabularyText(text);
-      setImportItems(parsedItems);
+      onUpdateImportJob({ importItems: parsedItems });
       if (parsedItems.length === 0) {
-        setError(
-          isPhraseMode
+        onUpdateImportJob({
+          error: isPhraseMode
             ? t("importNoPhrases", "No phrase rows were found in this CSV.")
-            : t("importNoWords", "No semicolon-separated words were found.")
-        );
+            : t("importNoWords", "No semicolon-separated words were found."),
+        });
       }
     } catch {
-      setError(t("importReadFailed", "Could not read this file."));
+      onUpdateImportJob({
+        error: t("importReadFailed", "Could not read this file."),
+      });
     }
-  }
-
-  async function startImport(nextItems = importItems) {
-    cancelImportRef.current = false;
-    setIsImporting(true);
-    setError("");
-    setResults([]);
-    setProgress({ current: 0, total: nextItems.length });
-
-    try {
-      const importHandler = isPhraseMode ? onImportPhrases : onImportVocabulary;
-      const importResults = await importHandler(
-        nextItems,
-        (current, total) => {
-          setProgress({ current, total });
-        },
-        () => cancelImportRef.current
-      );
-      setResults(importResults);
-    } catch (importError) {
-      setError(importError.message);
-    } finally {
-      setIsImporting(false);
-    }
-  }
-
-  function cancelImport() {
-    cancelImportRef.current = true;
   }
 
   function retryFailed() {
     const failedItems = failedResults.map((result) => result.item ?? result.word);
     if (failedItems.length === 0) return;
-    setImportItems(failedItems);
-    startImport(failedItems);
+    onUpdateImportJob({ importItems: failedItems });
+    onStartImport(failedItems);
   }
 
   function changeImportMode(nextMode) {
     if (isImporting || nextMode === importMode) return;
-    setImportMode(nextMode);
-    setFileName("");
-    setImportItems([]);
-    setResults([]);
-    setError("");
-    setProgress({ current: 0, total: 0 });
+    onUpdateImportJob({
+      error: "",
+      fileName: "",
+      importItems: [],
+      importMode: nextMode,
+      progress: { current: 0, total: 0 },
+      results: [],
+    });
   }
 
   return (
@@ -263,7 +247,7 @@ export function ImportView({ onImportPhrases, onImportVocabulary }) {
             {isImporting && (
               <button
                 className="secondary-action h-10"
-                onClick={cancelImport}
+                onClick={onCancelImport}
                 type="button"
               >
                 {t("importCancel", "Cancel import")}
@@ -272,7 +256,7 @@ export function ImportView({ onImportPhrases, onImportVocabulary }) {
             <button
               className="primary-action h-10 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isImporting || importItems.length === 0}
-              onClick={() => startImport()}
+              onClick={() => onStartImport()}
               type="button"
             >
               {isImporting

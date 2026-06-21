@@ -53,6 +53,16 @@ const emptyForm = {
   ...createEmptyWordDetails(),
 };
 
+const emptyImportJob = {
+  error: "",
+  fileName: "",
+  importItems: [],
+  importMode: "vocabulary",
+  isImporting: false,
+  progress: { current: 0, total: 0 },
+  results: [],
+};
+
 const viewBySection = {
   today: TodayView,
   quiz: QuizView,
@@ -121,11 +131,13 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [importJob, setImportJob] = useState(emptyImportJob);
   const [editingItem, setEditingItem] = useState(null);
   const [editorError, setEditorError] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const savedLanguageRef = useRef(language);
+  const cancelImportRef = useRef(false);
   const {
     completeDailyTask,
     dailyProgress,
@@ -155,6 +167,8 @@ export default function App() {
       if (!session?.user) {
         setItems([]);
         setSelectedIds([]);
+        setImportJob(emptyImportJob);
+        cancelImportRef.current = false;
         setActiveSection("today");
         resetDailyLearningState();
         setLanguagePreferenceLoaded(false);
@@ -361,6 +375,8 @@ export default function App() {
       await signOutUser();
       setUser(null);
       setItems([]);
+      setImportJob(emptyImportJob);
+      cancelImportRef.current = false;
       resetDailyLearningState();
       setLanguagePreferenceLoaded(false);
       setLearningSettings(defaultLearningSettings);
@@ -655,6 +671,46 @@ export default function App() {
     return results;
   }
 
+  function updateImportJob(patch) {
+    setImportJob((current) => ({ ...current, ...patch }));
+  }
+
+  async function startImportJob(nextItems = importJob.importItems) {
+    if (!user || importJob.isImporting || nextItems.length === 0) return;
+
+    const mode = importJob.importMode;
+    cancelImportRef.current = false;
+    updateImportJob({
+      error: "",
+      importItems: nextItems,
+      isImporting: true,
+      progress: { current: 0, total: nextItems.length },
+      results: [],
+    });
+
+    try {
+      const importHandler =
+        mode === "phrases" ? importPhraseRows : importVocabularyWords;
+      const importResults = await importHandler(
+        nextItems,
+        (current, total) => {
+          updateImportJob({ progress: { current, total } });
+        },
+        () => cancelImportRef.current
+      );
+
+      updateImportJob({ results: importResults });
+    } catch (importError) {
+      updateImportJob({ error: importError.message });
+    } finally {
+      updateImportJob({ isImporting: false });
+    }
+  }
+
+  function cancelImportJob() {
+    cancelImportRef.current = true;
+  }
+
   async function markReviewed(item, delta) {
     if (!user) return;
 
@@ -826,8 +882,12 @@ export default function App() {
     openEditItem,
     openNewItem,
     onQuizAnswer: handleQuizAnswer,
+    importJob,
+    onCancelImport: cancelImportJob,
     onImportPhrases: importPhraseRows,
     onImportVocabulary: importVocabularyWords,
+    onStartImport: startImportJob,
+    onUpdateImportJob: updateImportJob,
     onQuizComplete: () => completeDailyTask("quiz"),
     onQuizStateChange: dailyStateLoaded ? setDailyQuizState : undefined,
     onStartStudy: () => setActiveSection("review"),
