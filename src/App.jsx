@@ -11,6 +11,7 @@ import {
   updateNote,
 } from "./api/notes";
 import {
+  getLearningPreferences,
   getLanguagePreference,
   updateLanguagePreference,
 } from "./api/preferences";
@@ -32,13 +33,14 @@ import { isRichTextEmpty, sanitizeRichTextHtml } from "./utils/richText";
 import { GrammarView } from "./views/GrammarView";
 import { ImportView } from "./views/ImportView";
 import { PhrasesView } from "./views/PhrasesView";
-import { ProfileView } from "./views/ProfileView";
+import { SettingsView } from "./views/SettingsView";
 import { PronunciationView } from "./views/PronunciationView";
 import { QuizView } from "./views/QuizView";
 import { ReviewView } from "./views/ReviewView";
 import { TodayView } from "./views/TodayView";
 import { VocabularyView } from "./views/VocabularyView";
 import { createEmptyWordDetails, normalizeWordDetails } from "./data/wordFields";
+import { defaultLearningSettings } from "./utils/learningSettings";
 
 const emptyForm = {
   category: "vocabulary",
@@ -60,7 +62,7 @@ const viewBySection = {
   pronunciation: PronunciationView,
   review: ReviewView,
   import: ImportView,
-  profile: ProfileView,
+  settings: SettingsView,
 };
 
 function getFriendlyAuthError(error) {
@@ -114,6 +116,7 @@ export default function App() {
   const [dataLoading, setDataLoading] = useState(false);
   const [dataError, setDataError] = useState("");
   const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(false);
+  const [learningSettings, setLearningSettings] = useState(defaultLearningSettings);
   const [activeSection, setActiveSection] = useState("today");
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
@@ -155,6 +158,7 @@ export default function App() {
         setActiveSection("today");
         resetDailyLearningState();
         setLanguagePreferenceLoaded(false);
+        setLearningSettings(defaultLearningSettings);
       }
     });
 
@@ -225,6 +229,30 @@ export default function App() {
   }, [setLanguage, user]);
 
   useEffect(() => {
+    if (!user) {
+      setLearningSettings(defaultLearningSettings);
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    getLearningPreferences(user.id)
+      .then((savedSettings) => {
+        if (!isMounted) return;
+        setLearningSettings(savedSettings);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        console.warn("Learning settings could not be loaded.", error);
+        setLearningSettings(defaultLearningSettings);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  useEffect(() => {
     if (!user || !languagePreferenceLoaded) return;
     if (language === savedLanguageRef.current) return;
 
@@ -253,7 +281,7 @@ export default function App() {
       const matchesSection =
         activeSection === "today" ||
         activeSection === "import" ||
-        activeSection === "profile" ||
+        activeSection === "settings" ||
         (activeSection === "review"
           ? Number(item.confidence) < MAX_CONFIDENCE
           : item.category === activeSection);
@@ -335,6 +363,7 @@ export default function App() {
       setItems([]);
       resetDailyLearningState();
       setLanguagePreferenceLoaded(false);
+      setLearningSettings(defaultLearningSettings);
     } catch (error) {
       setDataError(error.message);
     } finally {
@@ -687,6 +716,36 @@ export default function App() {
     }
   }
 
+  async function handleStudyConfidenceChange(itemId, nextConfidence) {
+    if (!user) return;
+
+    const currentItem = items.find((item) => item.id === itemId);
+    if (!currentItem) return;
+
+    const nextItem = {
+      ...currentItem,
+      confidence: Math.min(4, Math.max(1, Number(nextConfidence))),
+      lastReviewed: "Today",
+    };
+
+    setItems((current) =>
+      current.map((entry) => (entry.id === itemId ? nextItem : entry))
+    );
+
+    try {
+      const savedItem = await updateNote(itemId, nextItem, user.id);
+      setItems((current) =>
+        current.map((entry) => (entry.id === itemId ? savedItem : entry))
+      );
+      setDataError("");
+    } catch (error) {
+      setDataError(error.message);
+      setItems((current) =>
+        current.map((entry) => (entry.id === itemId ? currentItem : entry))
+      );
+    }
+  }
+
   function toggleSelected(id) {
     setSelectedIds((current) =>
       current.includes(id)
@@ -774,7 +833,10 @@ export default function App() {
     onStartStudy: () => setActiveSection("review"),
     onStartQuiz: () => setActiveSection("quiz"),
     onStudyComplete: () => completeDailyTask("study"),
+    onStudyConfidenceChange: handleStudyConfidenceChange,
+    onLearningSettingsUpdated: setLearningSettings,
     onUserUpdated: setUser,
+    learningSettings,
     query,
     selectedTag,
     selectedIds,
@@ -835,7 +897,7 @@ export default function App() {
               activeSection === "quiz" ||
               activeSection === "review" ||
               activeSection === "import" ||
-              activeSection === "profile"
+              activeSection === "settings"
                 ? ""
                 : "xl:grid-cols-[minmax(0,1fr)_320px]"
             }`}
@@ -856,7 +918,7 @@ export default function App() {
               activeSection !== "quiz" &&
               activeSection !== "review" &&
               activeSection !== "import" &&
-              activeSection !== "profile" && (
+              activeSection !== "settings" && (
               <aside className="grid content-start gap-4">
                 <PracticeQueue items={weakItems} markReviewed={markReviewed} />
                 <FrenchInTheWild />

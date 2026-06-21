@@ -15,12 +15,24 @@ import {
 } from "../utils/quiz";
 import { useLanguage } from "../i18n/LanguageContext";
 
-export function TodayView({ items, onStartQuiz, onStartStudy, openNewItem }) {
+export function TodayView({
+  items,
+  learningSettings,
+  onStartQuiz,
+  onStartStudy,
+  openNewItem,
+}) {
   const { t } = useLanguage();
+  const quizLimit = learningSettings?.quizVocabularyLimit ?? DAILY_QUIZ_LIMIT;
   const eligibleItems = useMemo(() => getEligibleVocabulary(items), [items]);
-  const dueCount = Math.min(eligibleItems.length, DAILY_QUIZ_LIMIT);
+  const dueCount = Math.min(eligibleItems.length, quizLimit);
   const studyCount = useMemo(
-    () => items.filter((item) => Number(item.confidence) < MAX_CONFIDENCE).length,
+    () =>
+      items.filter(
+        (item) =>
+          ["vocabulary", "grammar", "phrases"].includes(item.category) &&
+          Number(item.confidence) < MAX_CONFIDENCE
+      ).length,
     [items]
   );
   const masteredCount = items.filter(
@@ -51,7 +63,7 @@ export function TodayView({ items, onStartQuiz, onStartStudy, openNewItem }) {
     <div className="min-w-0">
       <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         <Metric label={t("vocabularyDue", "Vocabulary due")} value={dueCount} tone="blue" />
-        <Metric label={t("dailyGoal", "Daily goal")} value={DAILY_QUIZ_LIMIT} />
+        <Metric label={t("dailyGoal", "Daily goal")} value={quizLimit} />
         <Metric label={t("savedNotes", "Saved notes")} value={items.length} />
         <Metric label={t("mastered", "Mastered")} value={masteredCount} tone="green" />
       </div>
@@ -103,7 +115,7 @@ export function TodayView({ items, onStartQuiz, onStartStudy, openNewItem }) {
               <h3 className="font-black">{t("dailyProgress", "Daily progress")}</h3>
             </div>
             <p className="mt-3 text-3xl font-black tracking-[-0.01em]">
-              {Math.min(dueCount, DAILY_QUIZ_LIMIT)}/{DAILY_QUIZ_LIMIT}
+              {dueCount}/{quizLimit}
             </p>
             <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">
               {t("wordsReady", "{count} words ready", { count: dueCount })}
@@ -182,7 +194,7 @@ export function TodayView({ items, onStartQuiz, onStartStudy, openNewItem }) {
               {t(
                 "startQuizCopy",
                 "Test up to {count} vocabulary words. Correct answers advance confidence, and mastered words are skipped.",
-                { count: DAILY_QUIZ_LIMIT }
+                { count: quizLimit }
               )}
             </p>
             <p className="mt-2 text-sm font-black text-frenchBlue sm:mt-3">

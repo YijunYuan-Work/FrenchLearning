@@ -2,7 +2,9 @@ import {
   CheckCircle2,
   KeyRound,
   RefreshCw,
+  Save,
   ShieldCheck,
+  SlidersHorizontal,
   UserRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -13,7 +15,12 @@ import {
   getProfileUsername,
   updateUserProfile,
 } from "../api/profile";
+import { updateLearningPreferences } from "../api/preferences";
 import { useLanguage } from "../i18n/LanguageContext";
+import {
+  getLearningSettingLimits,
+  normalizeLearningSettings,
+} from "../utils/learningSettings";
 
 function isValidOptionalEmail(email) {
   if (!email.trim()) return true;
@@ -30,7 +37,12 @@ function getFriendlyProfileError(error) {
   return message;
 }
 
-export function ProfileView({ onUserUpdated, user }) {
+export function SettingsView({
+  learningSettings,
+  onLearningSettingsUpdated,
+  onUserUpdated,
+  user,
+}) {
   const { t } = useLanguage();
   const [username, setUsername] = useState(() => getProfileUsername(user));
   const [recoveryEmail, setRecoveryEmail] = useState(() =>
@@ -45,6 +57,12 @@ export function ProfileView({ onUserUpdated, user }) {
   const [quotaError, setQuotaError] = useState("");
   const [quotaStatus, setQuotaStatus] = useState(null);
   const [isLoadingQuota, setIsLoadingQuota] = useState(false);
+  const [settingsForm, setSettingsForm] = useState(() =>
+    normalizeLearningSettings(learningSettings)
+  );
+  const [settingsMessage, setSettingsMessage] = useState("");
+  const [settingsError, setSettingsError] = useState("");
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -75,6 +93,10 @@ export function ProfileView({ onUserUpdated, user }) {
   useEffect(() => {
     loadQuotaStatus();
   }, [user?.id]);
+
+  useEffect(() => {
+    setSettingsForm(normalizeLearningSettings(learningSettings));
+  }, [learningSettings]);
 
   async function handleProfileSubmit(event) {
     event.preventDefault();
@@ -163,10 +185,35 @@ export function ProfileView({ onUserUpdated, user }) {
     }
   }
 
+  async function handleLearningSettingsSubmit(event) {
+    event.preventDefault();
+    setSettingsError("");
+    setSettingsMessage("");
+    setIsSavingSettings(true);
+
+    try {
+      const savedSettings = await updateLearningPreferences(user.id, settingsForm);
+      onLearningSettingsUpdated(savedSettings);
+      setSettingsMessage(t("settingsSaved", "Learning settings updated."));
+    } catch (error) {
+      setSettingsError(error.message);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  }
+
+  function updateSettingsField(key, value) {
+    setSettingsForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
   const isSubscriber = quotaStatus?.subscriptionTier === "subscriber";
   const usagePercent = quotaStatus
     ? Math.min(100, Math.round((quotaStatus.used / quotaStatus.limit) * 100))
     : 0;
+  const settingLimits = getLearningSettingLimits();
 
   return (
     <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -298,6 +345,112 @@ export function ProfileView({ onUserUpdated, user }) {
           )}
         </section>
       </aside>
+
+      <section className="app-card p-5 xl:col-span-2">
+        <div className="mb-5 flex items-start gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-sky text-frenchBlue">
+            <SlidersHorizontal size={20} />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-frenchRed">
+              {t("settingsLearning", "Learning")}
+            </p>
+            <h3 className="text-xl font-black">
+              {t("settingsDailyAmounts", "Daily quiz and study amounts")}
+            </h3>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              {t(
+                "settingsDailyAmountsCopy",
+                "These limits control how many cards are pulled into each new quiz or study cycle."
+              )}
+            </p>
+          </div>
+        </div>
+
+        <form
+          className="grid gap-4 md:grid-cols-2"
+          onSubmit={handleLearningSettingsSubmit}
+        >
+          <label className="grid gap-1 text-sm font-bold">
+            {t("settingsQuizVocabulary", "Quiz vocabulary questions")}
+            <input
+              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
+              max={settingLimits.quizVocabularyLimit.max}
+              min={settingLimits.quizVocabularyLimit.min}
+              onChange={(event) =>
+                updateSettingsField("quizVocabularyLimit", event.target.value)
+              }
+              type="number"
+              value={settingsForm.quizVocabularyLimit}
+            />
+          </label>
+
+          <label className="grid gap-1 text-sm font-bold">
+            {t("settingsStudyVocabulary", "Study vocabulary cards")}
+            <input
+              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
+              max={settingLimits.studyVocabularyLimit.max}
+              min={settingLimits.studyVocabularyLimit.min}
+              onChange={(event) =>
+                updateSettingsField("studyVocabularyLimit", event.target.value)
+              }
+              type="number"
+              value={settingsForm.studyVocabularyLimit}
+            />
+          </label>
+
+          <label className="grid gap-1 text-sm font-bold">
+            {t("settingsStudyGrammar", "Study grammar cards")}
+            <input
+              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
+              max={settingLimits.studyGrammarLimit.max}
+              min={settingLimits.studyGrammarLimit.min}
+              onChange={(event) =>
+                updateSettingsField("studyGrammarLimit", event.target.value)
+              }
+              type="number"
+              value={settingsForm.studyGrammarLimit}
+            />
+          </label>
+
+          <label className="grid gap-1 text-sm font-bold">
+            {t("settingsStudyPhrases", "Study short phrase cards")}
+            <input
+              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
+              max={settingLimits.studyPhraseLimit.max}
+              min={settingLimits.studyPhraseLimit.min}
+              onChange={(event) =>
+                updateSettingsField("studyPhraseLimit", event.target.value)
+              }
+              type="number"
+              value={settingsForm.studyPhraseLimit}
+            />
+          </label>
+
+          {settingsError && (
+            <p className="rounded-xl bg-blush p-3 text-sm font-bold text-frenchRed md:col-span-2">
+              {settingsError}
+            </p>
+          )}
+          {settingsMessage && (
+            <p className="inline-flex items-center gap-2 rounded-xl bg-mint p-3 text-sm font-bold text-sage md:col-span-2">
+              <CheckCircle2 size={17} />
+              {settingsMessage}
+            </p>
+          )}
+
+          <button
+            className="primary-action h-11 justify-center md:col-span-2 md:w-fit"
+            disabled={isSavingSettings}
+            type="submit"
+          >
+            <Save size={17} />
+            {isSavingSettings
+              ? t("working", "Working...")
+              : t("settingsSaveLearning", "Save learning settings")}
+          </button>
+        </form>
+      </section>
 
       <section className="app-card p-5 xl:col-span-2">
         <div className="mb-5 flex items-start gap-3">

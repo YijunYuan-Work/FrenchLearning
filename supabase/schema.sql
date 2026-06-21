@@ -73,9 +73,25 @@ create trigger set_notes_updated_at
 create table if not exists public.user_preferences (
   user_id uuid primary key references auth.users(id) on delete cascade,
   language text not null default 'en' check (language in ('en', 'zh')),
+  quiz_vocabulary_limit integer not null default 50 check (quiz_vocabulary_limit between 1 and 200),
+  study_vocabulary_limit integer not null default 50 check (study_vocabulary_limit between 0 and 200),
+  study_grammar_limit integer not null default 20 check (study_grammar_limit between 0 and 100),
+  study_phrase_limit integer not null default 20 check (study_phrase_limit between 0 and 100),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.user_preferences
+  add column if not exists quiz_vocabulary_limit integer not null default 50 check (quiz_vocabulary_limit between 1 and 200);
+
+alter table public.user_preferences
+  add column if not exists study_vocabulary_limit integer not null default 50 check (study_vocabulary_limit between 0 and 200);
+
+alter table public.user_preferences
+  add column if not exists study_grammar_limit integer not null default 20 check (study_grammar_limit between 0 and 100);
+
+alter table public.user_preferences
+  add column if not exists study_phrase_limit integer not null default 20 check (study_phrase_limit between 0 and 100);
 
 alter table public.user_preferences enable row level security;
 

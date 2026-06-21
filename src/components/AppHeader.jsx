@@ -43,7 +43,7 @@ export function AppHeader({
                   activeSection === "review" ||
                   activeSection === "quiz" ||
                   activeSection === "import" ||
-                  activeSection === "profile"
+                  activeSection === "settings"
                   ? "vocabulary"
                   : activeSection
               )

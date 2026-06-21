@@ -12,8 +12,13 @@ import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
 import { MAX_CONFIDENCE, shuffleItems, uniqueLearningItems } from "../utils/quiz";
 import { RichTextContent } from "../components/RichTextEditor";
+import { defaultLearningSettings } from "../utils/learningSettings";
 
-const STUDY_CYCLE_LIMIT = 50;
+const studyCategories = [
+  ["vocabulary", "studyVocabularyLimit"],
+  ["grammar", "studyGrammarLimit"],
+  ["phrases", "studyPhraseLimit"],
+];
 
 function confidenceLabel(value, t) {
   if (value >= 4) return t("confidenceStrong", "Strong");
@@ -35,31 +40,50 @@ function DetailBlock({ label, children }) {
   );
 }
 
-function createStudyCycle(studyItems, excludedIds = []) {
+function createStudyCycle(studyItems, settings, excludedIds = []) {
   const excluded = new Set(excludedIds);
-  const cycleIds = shuffleItems(
-    uniqueLearningItems(studyItems).filter((item) => !excluded.has(item.id))
-  )
-    .slice(0, STUDY_CYCLE_LIMIT)
-    .map((item) => item.id);
+  const cycleIds = studyCategories.flatMap(([category, limitKey]) =>
+    shuffleItems(
+      uniqueLearningItems(
+        studyItems.filter(
+          (item) => item.category === category && !excluded.has(item.id)
+        )
+      )
+    )
+      .slice(0, settings[limitKey] ?? defaultLearningSettings[limitKey])
+      .map((item) => item.id)
+  );
 
   return {
-    cycleIds,
+    cycleIds: shuffleItems(cycleIds),
     seenIds: Array.from(new Set([...excludedIds, ...cycleIds])),
   };
 }
 
 export function ReviewView({
   items,
+  learningSettings = defaultLearningSettings,
+  onStudyConfidenceChange,
   onStudyComplete,
   openEditItem,
   openNewItem,
 }) {
   const { t } = useLanguage();
+  const studySettings = useMemo(
+    () => ({
+      ...defaultLearningSettings,
+      ...learningSettings,
+    }),
+    [learningSettings]
+  );
   const studyItems = useMemo(
     () =>
       uniqueLearningItems(
-        items.filter((item) => Number(item.confidence) < MAX_CONFIDENCE)
+        items.filter(
+          (item) =>
+            ["vocabulary", "grammar", "phrases"].includes(item.category) &&
+            Number(item.confidence) < MAX_CONFIDENCE
+        )
       )
         .sort((a, b) => {
           const confidenceGap = Number(a.confidence) - Number(b.confidence);
@@ -68,21 +92,13 @@ export function ReviewView({
         }),
     [items]
   );
-  const studyPoolKey = useMemo(
-    () =>
-      studyItems
-        .map((item) => `${item.id}:${item.confidence}`)
-        .sort()
-        .join("|"),
-    [studyItems]
-  );
   const itemsById = useMemo(
-    () => new Map(studyItems.map((item) => [item.id, item])),
-    [studyItems]
+    () => new Map(items.map((item) => [item.id, item])),
+    [items]
   );
   const [cardIndex, setCardIndex] = useState(0);
   const [studyCycle, setStudyCycle] = useState(() =>
-    createStudyCycle(studyItems)
+    createStudyCycle(studyItems, studySettings)
   );
   const [isFlipped, setIsFlipped] = useState(false);
   const [isStudyComplete, setIsStudyComplete] = useState(false);
@@ -97,11 +113,25 @@ export function ReviewView({
   }, [studyCycle.seenIds, studyItems]);
 
   useEffect(() => {
-    setStudyCycle(createStudyCycle(studyItems));
-    setCardIndex(0);
-    setIsFlipped(false);
-    setIsStudyComplete(false);
-  }, [studyPoolKey]);
+    setStudyCycle((current) => {
+      const existingIds = new Set(items.map((item) => item.id));
+      const nextCycleIds = current.cycleIds.filter((id) => existingIds.has(id));
+      const nextSeenIds = current.seenIds.filter((id) => existingIds.has(id));
+
+      if (nextCycleIds.length === 0 && studyItems.length > 0 && !isStudyComplete) {
+        return createStudyCycle(studyItems, studySettings);
+      }
+
+      if (
+        nextCycleIds.length !== current.cycleIds.length ||
+        nextSeenIds.length !== current.seenIds.length
+      ) {
+        return { cycleIds: nextCycleIds, seenIds: nextSeenIds };
+      }
+
+      return current;
+    });
+  }, [items, isStudyComplete, studyItems, studySettings]);
 
   useEffect(() => {
     setCardIndex((current) =>
@@ -118,7 +148,9 @@ export function ReviewView({
   }
 
   function startNewStudyCycle() {
-    setStudyCycle((current) => createStudyCycle(studyItems, current.seenIds));
+    setStudyCycle((current) =>
+      createStudyCycle(studyItems, studySettings, current.seenIds)
+    );
     setCardIndex(0);
     setIsFlipped(false);
     setIsStudyComplete(false);
@@ -166,6 +198,7 @@ export function ReviewView({
   const CategoryIcon = categories[currentItem.category].icon;
   const isGrammarNote = currentItem.category === "grammar";
   const isPhraseNote = currentItem.category === "phrases";
+  const canAdjustConfidence = isGrammarNote || isPhraseNote;
   if (isStudyComplete) {
     return (
       <div className="app-card mx-auto w-full max-w-4xl p-8 text-center">
@@ -264,6 +297,31 @@ export function ReviewView({
             </div>
 
             <div className="mt-5 grid gap-5 md:grid-cols-2">
+              {canAdjustConfidence && (
+                <DetailBlock label={t("confidence", "Confidence")}>
+                  <div className="flex flex-wrap gap-2">
+                    {[1, 2, 3, 4].map((value) => {
+                      const isActive = Number(currentItem.confidence) === value;
+                      return (
+                        <button
+                          className={`focus-ring rounded-lg px-3 py-2 text-xs font-black transition ${
+                            isActive
+                              ? "bg-frenchBlue text-white shadow-soft"
+                              : "bg-sky text-frenchBlue hover:bg-frenchBlue hover:text-white"
+                          }`}
+                          key={value}
+                          onClick={() =>
+                            onStudyConfidenceChange?.(currentItem.id, value)
+                          }
+                          type="button"
+                        >
+                          {confidenceLabel(value, t)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </DetailBlock>
+              )}
               {isPhraseNote && (
                 <DetailBlock label={t("translation", "Translation")}>
                   {currentItem.english || t("unknown", "Unknown")}

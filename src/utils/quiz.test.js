@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  createQuizQueueIds,
+  DAILY_QUIZ_LIMIT,
   createDailyQuizState,
   getEligibleVocabulary,
   isGenderCorrect,
@@ -58,6 +60,19 @@ test("new quiz queues exclude words that already appeared", () => {
 
   assert.deepEqual(state.queueIds, ["3"]);
   assert.deepEqual(state.seenIds, ["1", "2", "3"]);
+});
+
+test("quiz queue defaults to 50 words and accepts a custom limit", () => {
+  const items = Array.from({ length: 60 }, (_, index) => ({
+    id: String(index + 1),
+    category: "vocabulary",
+    confidence: 1,
+    french: `mot-${index + 1}`,
+  }));
+
+  assert.equal(DAILY_QUIZ_LIMIT, 50);
+  assert.equal(createQuizQueueIds(items).length, 50);
+  assert.equal(createQuizQueueIds(items, [], 12).length, 12);
 });
 
 test("study queues can share the same item de-duplication helper", () => {

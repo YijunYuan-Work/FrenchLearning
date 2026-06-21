@@ -31,9 +31,9 @@ export const categories = {
     labelKey: "categoryImport",
     icon: Upload,
   },
-  profile: {
-    label: "Profile",
-    labelKey: "categoryProfile",
+  settings: {
+    label: "Settings",
+    labelKey: "categorySettings",
     icon: UserRound,
   },
 };
@@ -45,6 +45,6 @@ export const categoryOptions = Object.entries(categories)
       key !== "quiz" &&
       key !== "review" &&
       key !== "import" &&
-      key !== "profile"
+      key !== "settings"
   )
   .map(([value, item]) => ({ value, label: item.label, labelKey: item.labelKey }));

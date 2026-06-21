@@ -22,11 +22,13 @@ export function QuizView({
   onQuizStateChange,
   openNewItem,
   savedQuizState,
+  learningSettings,
   user,
 }) {
   const { t } = useLanguage();
+  const quizLimit = learningSettings?.quizVocabularyLimit ?? DAILY_QUIZ_LIMIT;
   const [quizState, setQuizState] = useState(() =>
-    savedQuizState ?? loadDailyQuizState(items, user?.id)
+    savedQuizState ?? loadDailyQuizState(items, user?.id, quizLimit)
   );
   const [answer, setAnswer] = useState("");
   const [genderAnswer, setGenderAnswer] = useState("");
@@ -40,7 +42,7 @@ export function QuizView({
     setQuizState((current) => {
       const today = getTodayKey();
       if (current.date !== today) {
-        return createDailyQuizState(items, today);
+        return createDailyQuizState(items, today, [], quizLimit);
       }
 
       const eligible = getEligibleVocabulary(items);
@@ -58,7 +60,15 @@ export function QuizView({
         eligible.length > 0 &&
         currentSeenIds.length === 0
       ) {
-        return createDailyQuizState(items, today);
+        return createDailyQuizState(items, today, [], quizLimit);
+      }
+
+      if (
+        Object.keys(current.answered).length === 0 &&
+        current.limit !== quizLimit &&
+        eligible.length > 0
+      ) {
+        return createDailyQuizState(items, today, [], quizLimit);
       }
 
       const existingIds = new Set(items.map((item) => item.id));
@@ -74,7 +84,7 @@ export function QuizView({
 
       return current;
     });
-  }, [items]);
+  }, [items, quizLimit]);
 
   useEffect(() => {
     saveDailyQuizState(quizState, user?.id);
@@ -203,7 +213,7 @@ export function QuizView({
               ...Object.keys(current.answered ?? {}),
             ]
           : [];
-      return createDailyQuizState(items, today, excludedIds);
+      return createDailyQuizState(items, today, excludedIds, quizLimit);
     });
   }
 
@@ -213,7 +223,7 @@ export function QuizView({
         <Metric label={t("todaysQuiz", "Today's quiz")} value={`${answeredCount}/${quizItems.length}`} />
         <Metric label={t("correct", "Correct")} value={correctCount} tone="green" />
         <Metric label={t("remaining", "Remaining")} value={remainingCount} tone="blue" />
-        <Metric label={t("dailyGoal", "Daily goal")} value={DAILY_QUIZ_LIMIT} />
+        <Metric label={t("dailyGoal", "Daily goal")} value={quizLimit} />
       </div>
 
       <section className="app-card mt-5 p-5">
