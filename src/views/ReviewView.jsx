@@ -16,8 +16,8 @@ import { defaultLearningSettings } from "../utils/learningSettings";
 
 const studyCategories = [
   ["vocabulary", "studyVocabularyLimit"],
-  ["grammar", "studyGrammarLimit"],
   ["phrases", "studyPhraseLimit"],
+  ["grammar", "studyGrammarLimit"],
 ];
 
 function confidenceLabel(value, t) {
@@ -55,7 +55,7 @@ function createStudyCycle(studyItems, settings, excludedIds = []) {
   );
 
   return {
-    cycleIds: shuffleItems(cycleIds),
+    cycleIds,
     seenIds: Array.from(new Set([...excludedIds, ...cycleIds])),
   };
 }
@@ -107,6 +107,27 @@ export function ReviewView({
     () => cycleIds.map((id) => itemsById.get(id)).filter(Boolean),
     [cycleIds, itemsById]
   );
+  const currentItem = cycleItems[cardIndex];
+  const cycleGroups = useMemo(
+    () =>
+      studyCategories.map(([category, limitKey]) => {
+        const groupItems = cycleItems.filter((item) => item.category === category);
+        const reviewedCount = cycleItems
+          .slice(0, cardIndex + 1)
+          .filter((item) => item.category === category).length;
+        const isCurrent = currentItem?.category === category;
+        const limit = studySettings[limitKey] ?? defaultLearningSettings[limitKey];
+
+        return {
+          category,
+          isCurrent,
+          limit,
+          reviewedCount: Math.min(reviewedCount, groupItems.length),
+          total: groupItems.length,
+        };
+      }),
+    [cardIndex, currentItem?.category, cycleItems, studySettings]
+  );
   const hasUnseenStudyItems = useMemo(() => {
     const seen = new Set(studyCycle.seenIds);
     return studyItems.some((item) => !seen.has(item.id));
@@ -139,8 +160,6 @@ export function ReviewView({
     );
     setIsFlipped(false);
   }, [cycleItems.length]);
-
-  const currentItem = cycleItems[cardIndex];
 
   function moveToCard(nextIndex) {
     setCardIndex(nextIndex);
@@ -199,6 +218,7 @@ export function ReviewView({
   const isGrammarNote = currentItem.category === "grammar";
   const isPhraseNote = currentItem.category === "phrases";
   const canAdjustConfidence = isGrammarNote || isPhraseNote;
+  const currentGroup = cycleGroups.find((group) => group.isCurrent);
   if (isStudyComplete) {
     return (
       <div className="app-card mx-auto w-full max-w-4xl p-8 text-center">
@@ -243,6 +263,18 @@ export function ReviewView({
         <div>
           <p className="text-sm font-bold text-frenchRed">{t("studyMode", "Study mode")}</p>
           <h2 className="text-2xl font-black">{t("flashcards", "Flashcards")}</h2>
+          {currentGroup && (
+            <p className="mt-1 text-sm font-bold text-slate-600">
+              {t("studyCurrentSection", "{section} {current}/{total}", {
+                section: t(
+                  categories[currentGroup.category].labelKey,
+                  categories[currentGroup.category].label
+                ),
+                current: currentGroup.reviewedCount,
+                total: currentGroup.total,
+              })}
+            </p>
+          )}
         </div>
         <div className="rounded-lg border border-line bg-white px-3 py-2 text-sm font-bold text-slate-600 shadow-sm">
           {t("cardProgress", "Card {current} of {total}", {
@@ -250,6 +282,41 @@ export function ReviewView({
             total: cycleItems.length,
           })}
         </div>
+      </div>
+
+      <div className="mb-4 grid gap-2 rounded-xl bg-white p-2 shadow-inset md:grid-cols-3">
+        {cycleGroups.map((group) => {
+          const Icon = categories[group.category].icon;
+          return (
+            <div
+              className={`rounded-lg border px-3 py-2 transition ${
+                group.isCurrent
+                  ? "border-frenchBlue bg-sky text-frenchBlue"
+                  : "border-line bg-white text-slate-600"
+              }`}
+              key={group.category}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-2 text-sm font-black">
+                  <Icon size={16} />
+                  {t(
+                    categories[group.category].labelKey,
+                    categories[group.category].label
+                  )}
+                </span>
+                <span className="text-sm font-black">
+                  {group.reviewedCount}/{group.total}
+                </span>
+              </div>
+              <p className="mt-1 text-xs font-semibold opacity-75">
+                {t("studyLimitIndicator", "Limit {limit}, available {total}", {
+                  limit: group.limit,
+                  total: group.total,
+                })}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       <div className="app-card p-3">

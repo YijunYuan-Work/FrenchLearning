@@ -135,6 +135,8 @@ export const zhCN = {
   studyCompleteTitle: "做得好，你完成了这一轮学习。",
   studyCompleteCopy: "你复习了 {count} 张卡片。",
   studyMode: "学习模式",
+  studyCurrentSection: "{section} {current}/{total}",
+  studyLimitIndicator: "上限 {limit}，可用 {total}",
   startNewStudy: "开始新一轮学习",
   finishStudy: "完成学习",
   tags: "标签",
