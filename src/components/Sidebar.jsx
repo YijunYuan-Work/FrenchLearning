@@ -25,7 +25,7 @@ export function Sidebar({ activeSection, dailyProgress, setActiveSection }) {
   const progressPercent = Math.round((completedTasks / dailyTasks.length) * 100);
 
   return (
-    <aside className="sticky top-0 z-30 min-w-0 overflow-hidden border-b border-line bg-white/95 px-3 py-2 shadow-sm backdrop-blur lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:px-5 lg:py-4">
+    <aside className="sticky top-0 z-30 min-w-0 overflow-hidden border-b border-line bg-white/95 px-3 py-2 shadow-sm backdrop-blur lg:fixed lg:inset-y-0 lg:left-0 lg:h-screen lg:w-[272px] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-5 lg:py-4">
       <div className="mb-2 flex items-center gap-2 lg:mb-7 lg:gap-3">
         <div className="grid size-10 place-items-center rounded-xl bg-frenchBlue text-white shadow-soft lg:size-11">
           <Sparkles size={20} />

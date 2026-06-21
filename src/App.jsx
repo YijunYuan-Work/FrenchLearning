@@ -875,7 +875,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-cloud text-ink">
-      <div className="grid min-h-screen min-w-0 lg:grid-cols-[272px_1fr]">
+      <div className="min-h-screen min-w-0 lg:pl-[272px]">
         <Sidebar
           activeSection={activeSection}
           dailyProgress={dailyProgress}
