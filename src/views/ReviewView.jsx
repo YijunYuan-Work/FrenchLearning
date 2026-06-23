@@ -6,11 +6,16 @@ import {
   Plus,
   RotateCcw,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { categories } from "../data/categories";
 import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
-import { MAX_CONFIDENCE, shuffleItems, uniqueLearningItems } from "../utils/quiz";
+import {
+  getTodayKey,
+  MAX_CONFIDENCE,
+  shuffleItems,
+  uniqueLearningItems,
+} from "../utils/quiz";
 import { RichTextContent } from "../components/RichTextEditor";
 import { defaultLearningSettings } from "../utils/learningSettings";
 
@@ -65,8 +70,10 @@ export function ReviewView({
   learningSettings = defaultLearningSettings,
   onStudyConfidenceChange,
   onStudyComplete,
+  onStudyStateChange,
   openEditItem,
   openNewItem,
+  savedStudyState,
 }) {
   const { t } = useLanguage();
   const studySettings = useMemo(
@@ -96,13 +103,26 @@ export function ReviewView({
     () => new Map(items.map((item) => [item.id, item])),
     [items]
   );
-  const [cardIndex, setCardIndex] = useState(0);
-  const [studyCycle, setStudyCycle] = useState(() =>
-    createStudyCycle(studyItems, studySettings)
+  const savedStateIsCurrent = savedStudyState?.date === getTodayKey();
+  const [cardIndex, setCardIndex] = useState(() =>
+    savedStateIsCurrent ? Number(savedStudyState.cardIndex) || 0 : 0
   );
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [isStudyComplete, setIsStudyComplete] = useState(false);
+  const [studyCycle, setStudyCycle] = useState(() =>
+    savedStateIsCurrent
+      ? {
+          cycleIds: savedStudyState.cycleIds ?? [],
+          seenIds: savedStudyState.seenIds ?? [],
+        }
+      : createStudyCycle(studyItems, studySettings)
+  );
+  const [isFlipped, setIsFlipped] = useState(() =>
+    savedStateIsCurrent ? Boolean(savedStudyState.isFlipped) : false
+  );
+  const [isStudyComplete, setIsStudyComplete] = useState(() =>
+    savedStateIsCurrent ? Boolean(savedStudyState.isStudyComplete) : false
+  );
   const cycleIds = studyCycle.cycleIds;
+  const previousCycleLengthRef = useRef(cycleIds.length);
   const cycleItems = useMemo(
     () => cycleIds.map((id) => itemsById.get(id)).filter(Boolean),
     [cycleIds, itemsById]
@@ -158,8 +178,29 @@ export function ReviewView({
     setCardIndex((current) =>
       Math.min(current, Math.max(0, cycleItems.length - 1))
     );
-    setIsFlipped(false);
+    if (previousCycleLengthRef.current !== cycleItems.length) {
+      setIsFlipped(false);
+      previousCycleLengthRef.current = cycleItems.length;
+    }
   }, [cycleItems.length]);
+
+  useEffect(() => {
+    onStudyStateChange?.({
+      cardIndex,
+      cycleIds: studyCycle.cycleIds,
+      date: getTodayKey(),
+      isFlipped,
+      isStudyComplete,
+      seenIds: studyCycle.seenIds,
+    });
+  }, [
+    cardIndex,
+    isFlipped,
+    isStudyComplete,
+    onStudyStateChange,
+    studyCycle.cycleIds,
+    studyCycle.seenIds,
+  ]);
 
   function moveToCard(nextIndex) {
     setCardIndex(nextIndex);
