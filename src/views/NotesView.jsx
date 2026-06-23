@@ -5,6 +5,7 @@ import { Metric } from "../components/Metric";
 import { PaginationControls } from "../components/PaginationControls";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { useLanguage } from "../i18n/LanguageContext";
+import { scrollToPageTop } from "../utils/scroll";
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
 
@@ -44,6 +45,11 @@ export function NotesView({
       ),
     [filteredItems, itemsPerPage, safePage]
   );
+
+  function changePage(nextPage) {
+    setPage(nextPage);
+    scrollToPageTop();
+  }
 
   return (
     <div className="min-w-0">
@@ -92,8 +98,8 @@ export function NotesView({
           <PaginationControls
             itemLabel="items"
             itemsPerPage={itemsPerPage}
-            onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
-            onPrevious={() => setPage((current) => Math.max(1, current - 1))}
+            onNext={() => changePage(Math.min(totalPages, safePage + 1))}
+            onPrevious={() => changePage(Math.max(1, safePage - 1))}
             page={safePage}
             totalItems={filteredItems.length}
             totalPages={totalPages}
@@ -148,8 +154,8 @@ export function NotesView({
           <PaginationControls
             itemLabel="items"
             itemsPerPage={itemsPerPage}
-            onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
-            onPrevious={() => setPage((current) => Math.max(1, current - 1))}
+            onNext={() => changePage(Math.min(totalPages, safePage + 1))}
+            onPrevious={() => changePage(Math.max(1, safePage - 1))}
             page={safePage}
             totalItems={filteredItems.length}
             totalPages={totalPages}

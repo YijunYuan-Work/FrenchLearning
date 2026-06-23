@@ -5,6 +5,7 @@ import { PaginationControls } from "../components/PaginationControls";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { partOfSpeechOptions } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
+import { scrollToPageTop } from "../utils/scroll";
 import { NotesView } from "./NotesView";
 
 const WORDS_PER_PAGE = 10;
@@ -49,6 +50,12 @@ export function VocabularyView(props) {
   function selectWordType(type) {
     setActiveWordType(type);
     setPage(1);
+    scrollToPageTop();
+  }
+
+  function changePage(nextPage) {
+    setPage(nextPage);
+    scrollToPageTop();
   }
 
   if (props.items.length === 0) {
@@ -107,8 +114,8 @@ export function VocabularyView(props) {
         <PaginationControls
           itemLabel={t("words", "words")}
           itemsPerPage={WORDS_PER_PAGE}
-          onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
-          onPrevious={() => setPage((current) => Math.max(1, current - 1))}
+          onNext={() => changePage(Math.min(totalPages, safePage + 1))}
+          onPrevious={() => changePage(Math.max(1, safePage - 1))}
           page={safePage}
           totalItems={vocabularyItems.length}
           totalPages={totalPages}
@@ -147,8 +154,8 @@ export function VocabularyView(props) {
         <PaginationControls
           itemLabel={t("words", "words")}
           itemsPerPage={WORDS_PER_PAGE}
-          onNext={() => setPage((current) => Math.min(totalPages, current + 1))}
-          onPrevious={() => setPage((current) => Math.max(1, current - 1))}
+          onNext={() => changePage(Math.min(totalPages, safePage + 1))}
+          onPrevious={() => changePage(Math.max(1, safePage - 1))}
           page={safePage}
           totalItems={vocabularyItems.length}
           totalPages={totalPages}

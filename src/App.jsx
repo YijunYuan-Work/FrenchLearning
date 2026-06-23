@@ -183,10 +183,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
     let isMounted = true;
-    setDataLoading(true);
+    setDataLoading(items.length === 0);
     setDataError("");
 
     listNotes(user.id)
@@ -208,7 +208,7 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) {
@@ -967,7 +967,7 @@ export default function App() {
                 {dataError}
               </div>
             )}
-            {dataLoading && (
+            {dataLoading && items.length === 0 && (
               <div className="app-card p-3 text-sm font-bold text-slate-600 xl:col-span-2">
                 {t("loadingNotes", "Loading notes...")}
               </div>

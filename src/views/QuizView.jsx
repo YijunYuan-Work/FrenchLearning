@@ -200,6 +200,35 @@ export function QuizView({
     setLastResult(null);
   }
 
+  function markLastResultCorrect() {
+    if (!lastResult || lastResult.correct) return;
+
+    const itemId = lastResult.item.id;
+    setQuizState((current) => ({
+      ...current,
+      answered: {
+        ...current.answered,
+        [itemId]: {
+          ...(current.answered[itemId] ?? {}),
+          answer: lastResult.answer,
+          correct: true,
+          genderAnswer: lastResult.genderAnswer,
+          manuallyMarkedCorrect: true,
+        },
+      },
+    }));
+    onQuizAnswer(itemId, true);
+    setLastResult((current) =>
+      current
+        ? {
+            ...current,
+            correct: true,
+            manuallyMarkedCorrect: true,
+          }
+        : current
+    );
+  }
+
   function startNewQuiz() {
     setAnswer("");
     setGenderAnswer("");
@@ -412,6 +441,16 @@ export function QuizView({
                       </p>
                     )}
                   </div>
+                )}
+                {!lastResult.correct && (
+                  <button
+                    className="secondary-action mt-3 h-9 bg-white/80 px-3 text-xs hover:bg-white"
+                    onClick={markLastResultCorrect}
+                    type="button"
+                  >
+                    <CheckCircle2 size={15} />
+                    {t("markCorrect", "Mark as correct")}
+                  </button>
                 )}
                 {lastResult.correct && (
                   <p className="mt-1 text-sm">
