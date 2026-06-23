@@ -187,6 +187,8 @@ export const zhCN = {
   notQuite: "还差一点",
   confidenceAdvanced: "掌握度已提升到 {value}。",
   checkAnswer: "检查答案",
+  showCorrectAnswer: "显示正确答案",
+  answerRevealedNoConfidence: "已显示答案。掌握度没有变化。",
   markCorrect: "标记为正确",
   signInCopy: "把你的词汇、语法、发音规则、测验和学习卡片都保存在自己的账号下。",
   username: "用户名",

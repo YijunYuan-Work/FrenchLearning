@@ -200,6 +200,34 @@ export function QuizView({
     setLastResult(null);
   }
 
+  function showCorrectAnswer() {
+    if (!currentItem || lastResult) return;
+
+    setQuizState((current) => ({
+      ...current,
+      answered: {
+        ...current.answered,
+        [currentItem.id]: {
+          answer: "",
+          correct: false,
+          genderAnswer: "",
+          revealedAnswer: true,
+        },
+      },
+    }));
+
+    setLastResult({
+      answer: "",
+      correct: false,
+      genderAnswer: "",
+      genderCorrect: false,
+      item: currentItem,
+      meaningCorrect: false,
+      needsGender: currentItemNeedsGender,
+      revealedAnswer: true,
+    });
+  }
+
   function markLastResultCorrect() {
     if (!lastResult || lastResult.correct) return;
 
@@ -426,23 +454,34 @@ export function QuizView({
                 )}
                 {!lastResult.correct && (
                   <div className="mt-2 grid gap-1 text-sm">
-                    <p>
-                      {t("meaning", "Meaning")}:{" "}
-                      {lastResult.meaningCorrect
-                        ? t("correct", "Correct")
-                        : t("notQuite", "Not quite")}
-                    </p>
-                    {lastResult.needsGender && (
+                    {lastResult.revealedAnswer ? (
                       <p>
-                        {t("gender", "Gender")}:{" "}
-                        {lastResult.genderCorrect
-                          ? t("correct", "Correct")
-                          : t("notQuite", "Not quite")}
+                        {t(
+                          "answerRevealedNoConfidence",
+                          "Answer revealed. Confidence was not changed."
+                        )}
                       </p>
+                    ) : (
+                      <>
+                        <p>
+                          {t("meaning", "Meaning")}:{" "}
+                          {lastResult.meaningCorrect
+                            ? t("correct", "Correct")
+                            : t("notQuite", "Not quite")}
+                        </p>
+                        {lastResult.needsGender && (
+                          <p>
+                            {t("gender", "Gender")}:{" "}
+                            {lastResult.genderCorrect
+                              ? t("correct", "Correct")
+                              : t("notQuite", "Not quite")}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
-                {!lastResult.correct && (
+                {!lastResult.correct && !lastResult.revealedAnswer && (
                   <button
                     className="secondary-action mt-3 h-9 bg-white/80 px-3 text-xs hover:bg-white"
                     onClick={markLastResultCorrect}
@@ -462,7 +501,7 @@ export function QuizView({
               </div>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               {lastResult ? (
                 <button
                   className="primary-action h-10"
@@ -472,16 +511,25 @@ export function QuizView({
                   {t("nextWord", "Next word")}
                 </button>
               ) : (
-                <button
-                  className="primary-action h-10 disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={
-                    !answer.trim() ||
-                    (currentItemNeedsGender && !genderAnswer.trim())
-                  }
-                  type="submit"
-                >
-                  {t("checkAnswer", "Check answer")}
-                </button>
+                <>
+                  <button
+                    className="secondary-action h-10"
+                    onClick={showCorrectAnswer}
+                    type="button"
+                  >
+                    {t("showCorrectAnswer", "Show correct answer")}
+                  </button>
+                  <button
+                    className="primary-action h-10 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={
+                      !answer.trim() ||
+                      (currentItemNeedsGender && !genderAnswer.trim())
+                    }
+                    type="submit"
+                  >
+                    {t("checkAnswer", "Check answer")}
+                  </button>
+                </>
               )}
             </div>
           </form>
