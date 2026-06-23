@@ -14,8 +14,10 @@ function isMissingDailyLearningTable(error) {
   const message = error?.message?.toLowerCase() ?? "";
   return (
     error?.code === "PGRST205" ||
+    error?.code === "PGRST204" ||
     error?.code === "42P01" ||
-    message.includes("daily_learning_state")
+    message.includes("daily_learning_state") ||
+    message.includes("study_state")
   );
 }
 
@@ -37,6 +39,26 @@ function normalizeQuizState(value, date) {
   };
 }
 
+function normalizeStudyState(value, date) {
+  if (
+    !value ||
+    value.date !== date ||
+    !Array.isArray(value.cycleIds) ||
+    !Array.isArray(value.seenIds)
+  ) {
+    return null;
+  }
+
+  return {
+    cardIndex: Math.max(0, Number(value.cardIndex) || 0),
+    cycleIds: value.cycleIds,
+    date,
+    isFlipped: Boolean(value.isFlipped),
+    isStudyComplete: Boolean(value.isStudyComplete),
+    seenIds: value.seenIds,
+  };
+}
+
 function toDailyLearningState(row, date) {
   return {
     progress: {
@@ -46,6 +68,7 @@ function toDailyLearningState(row, date) {
       quiz: Boolean(row?.quiz),
     },
     quizState: normalizeQuizState(row?.quiz_state, date),
+    studyState: normalizeStudyState(row?.study_state, date),
   };
 }
 
@@ -73,7 +96,7 @@ export async function getDailyLearningState(userId, date) {
 
   const { data, error } = await supabase
     .from("daily_learning_state")
-    .select("add_note, study, quiz, quiz_state")
+    .select("add_note, study, quiz, quiz_state, study_state")
     .eq("user_id", userId)
     .eq("date", date)
     .maybeSingle();
@@ -97,6 +120,7 @@ export async function updateDailyProgress(userId, progress) {
       study: Boolean(progress.study),
       quiz: Boolean(progress.quiz),
       quiz_state: current.quizState ?? {},
+      study_state: current.studyState ?? {},
     });
     return loadLocalDailyLearningState(userId, progress.date);
   }
@@ -113,7 +137,7 @@ export async function updateDailyProgress(userId, progress) {
       },
       { onConflict: "user_id,date" }
     )
-    .select("add_note, study, quiz, quiz_state")
+    .select("add_note, study, quiz, quiz_state, study_state")
     .single();
 
   if (error) {
@@ -135,6 +159,7 @@ export async function updateDailyQuizState(userId, quizState) {
       study: Boolean(current.progress.study),
       quiz: Boolean(current.progress.quiz),
       quiz_state: quizState,
+      study_state: current.studyState ?? {},
     });
     return loadLocalDailyLearningState(userId, quizState.date);
   }
@@ -149,7 +174,7 @@ export async function updateDailyQuizState(userId, quizState) {
       },
       { onConflict: "user_id,date" }
     )
-    .select("add_note, study, quiz, quiz_state")
+    .select("add_note, study, quiz, quiz_state, study_state")
     .single();
 
   if (error) {
@@ -161,4 +186,41 @@ export async function updateDailyQuizState(userId, quizState) {
   }
 
   return toDailyLearningState(data, quizState.date);
+}
+
+export async function updateDailyStudyState(userId, studyState) {
+  if (!dailyLearningSyncEnabled || !dailyLearningTableAvailable) {
+    const current = loadLocalDailyLearningState(userId, studyState.date);
+    saveLocalDailyLearningState(userId, studyState.date, {
+      add_note: Boolean(current.progress.addNote),
+      study: Boolean(current.progress.study),
+      quiz: Boolean(current.progress.quiz),
+      quiz_state: current.quizState ?? {},
+      study_state: studyState,
+    });
+    return loadLocalDailyLearningState(userId, studyState.date);
+  }
+
+  const { data, error } = await supabase
+    .from("daily_learning_state")
+    .upsert(
+      {
+        user_id: userId,
+        date: studyState.date,
+        study_state: studyState,
+      },
+      { onConflict: "user_id,date" }
+    )
+    .select("add_note, study, quiz, quiz_state, study_state")
+    .single();
+
+  if (error) {
+    if (isMissingDailyLearningTable(error)) {
+      dailyLearningTableAvailable = false;
+      return updateDailyStudyState(userId, studyState);
+    }
+    throw error;
+  }
+
+  return toDailyLearningState(data, studyState.date);
 }

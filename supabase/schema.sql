@@ -131,10 +131,14 @@ create table if not exists public.daily_learning_state (
   study boolean not null default false,
   quiz boolean not null default false,
   quiz_state jsonb not null default '{}'::jsonb,
+  study_state jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (user_id, date)
 );
+
+alter table public.daily_learning_state
+  add column if not exists study_state jsonb not null default '{}'::jsonb;
 
 alter table public.daily_learning_state enable row level security;
 

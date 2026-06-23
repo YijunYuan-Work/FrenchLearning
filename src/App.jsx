@@ -127,7 +127,6 @@ export default function App() {
   const [dataError, setDataError] = useState("");
   const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(false);
   const [learningSettings, setLearningSettings] = useState(defaultLearningSettings);
-  const [dailyStudyState, setDailyStudyState] = useState(null);
   const [activeSection, setActiveSection] = useState("today");
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
@@ -143,9 +142,11 @@ export default function App() {
     completeDailyTask,
     dailyProgress,
     dailyQuizState,
+    dailyStudyState,
     dailyStateLoaded,
     resetDailyLearningState,
     setDailyQuizState,
+    setDailyStudyState,
   } = useDailyLearningState(user, setDataError);
 
   useEffect(() => {
@@ -172,7 +173,6 @@ export default function App() {
         cancelImportRef.current = false;
         setActiveSection("today");
         resetDailyLearningState();
-        setDailyStudyState(null);
         setLanguagePreferenceLoaded(false);
         setLearningSettings(defaultLearningSettings);
       }
