@@ -17,21 +17,21 @@ export function AppHeader({
     "Learner";
 
   return (
-    <header className="border-b border-line bg-cloud/90 px-4 py-3 backdrop-blur md:px-7 md:py-4">
-      <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+    <header className="px-3 pb-4 pt-5 md:px-7 md:pb-5 md:pt-7">
+      <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="min-w-0">
-          <p className="hidden items-center gap-2 text-sm font-bold text-frenchRed sm:inline-flex">
+          <p className="hidden items-center gap-2 text-sm font-medium text-frenchRed sm:inline-flex">
             <Sparkle size={15} />
             {t("personalWorkspace", "Personal French workspace")}
           </p>
-          <h2 className="max-w-3xl break-words text-xl font-black leading-tight tracking-[-0.01em] sm:text-2xl md:text-3xl">
+          <h2 className="max-w-3xl break-words text-[1.35rem] font-light leading-[1.12] tracking-[-0.02em] sm:text-2xl md:text-3xl">
             {pageTitle}
           </h2>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
           <LanguageToggle />
           {user && (
-            <div className="hidden h-10 items-center rounded-lg border border-line bg-white px-3 text-sm font-bold text-slate-600 shadow-sm sm:flex">
+            <div className="hidden h-10 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-inkSecondary shadow-sm sm:flex">
               {displayName}
             </div>
           )}
@@ -54,7 +54,7 @@ export function AppHeader({
             {t("addNote", "Add note")}
           </button>
           <button
-            className="secondary-action order-2 h-10 hover:text-frenchRed sm:order-none"
+            className="secondary-action order-2 h-10 hover:border-frenchRed hover:bg-blush hover:text-frenchRed sm:order-none"
             onClick={onSignOut}
             type="button"
           >

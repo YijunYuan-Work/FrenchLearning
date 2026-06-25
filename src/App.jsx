@@ -17,8 +17,6 @@ import {
 } from "./api/preferences";
 import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
-import { FrenchInTheWild } from "./components/FrenchInTheWild";
-import { PracticeQueue } from "./components/PracticeQueue";
 import { Sidebar } from "./components/Sidebar";
 import { categories } from "./data/categories";
 import { hasSupabaseConfig, supabase } from "./lib/supabase";
@@ -74,6 +72,8 @@ const viewBySection = {
   import: ImportView,
   settings: SettingsView,
 };
+
+const noteSections = new Set(["vocabulary", "phrases", "grammar", "pronunciation"]);
 
 function getFriendlyAuthError(error) {
   const message = error?.message ?? "Something went wrong.";
@@ -282,9 +282,17 @@ export default function App() {
   }, [language, languagePreferenceLoaded, user]);
 
   const tags = useMemo(() => {
-    const unique = new Set(items.flatMap((item) => item.tags ?? []));
+    const tagSourceItems = noteSections.has(activeSection)
+      ? items.filter((item) => item.category === activeSection)
+      : items;
+    const unique = new Set(tagSourceItems.flatMap((item) => item.tags ?? []));
     return ["all", ...Array.from(unique).sort()];
-  }, [items]);
+  }, [activeSection, items]);
+
+  useEffect(() => {
+    if (selectedTag === "all" || tags.includes(selectedTag)) return;
+    setSelectedTag("all");
+  }, [selectedTag, tags]);
 
   const weakItems = useMemo(
     () => items.filter((item) => item.confidence <= 2),
@@ -873,6 +881,8 @@ export default function App() {
       : t(categories[activeSection].labelKey, categories[activeSection].label);
 
   const viewProps = {
+    activeSection,
+    dailyProgress,
     filteredItems,
     items,
     markReviewed,
@@ -919,7 +929,7 @@ export default function App() {
 
   if (authLoading && !user) {
     return (
-      <div className="grid min-h-screen place-items-center bg-cloud px-4 text-ink">
+      <div className="grid min-h-screen place-items-center bg-cloud/80 px-4 text-ink">
         <div className="app-card p-5 font-semibold">
           {t("loadingWorkspace", "Loading your French workspace...")}
         </div>
@@ -938,59 +948,35 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-cloud text-ink">
-      <div className="min-h-screen min-w-0 lg:pl-[272px]">
-        <Sidebar
+    <div className="min-h-screen overflow-x-hidden bg-cloud/80 pt-[61px] text-ink md:pt-[121px]">
+      <Sidebar
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+      />
+
+      <main className="mx-auto min-w-0 max-w-7xl">
+        <AppHeader
           activeSection={activeSection}
-          dailyProgress={dailyProgress}
-          setActiveSection={setActiveSection}
+          onSignOut={handleSignOut}
+          openNewItem={openNewItem}
+          pageTitle={pageTitle}
+          user={user}
         />
 
-        <main className="min-w-0">
-          <AppHeader
-            activeSection={activeSection}
-            onSignOut={handleSignOut}
-            openNewItem={openNewItem}
-            pageTitle={pageTitle}
-            user={user}
-          />
-
-          <section
-            className={`grid gap-4 px-3 py-4 sm:px-4 sm:py-5 md:px-7 lg:gap-5 lg:py-7 ${
-              activeSection === "today" ||
-              activeSection === "quiz" ||
-              activeSection === "review" ||
-              activeSection === "import" ||
-              activeSection === "settings"
-                ? ""
-                : "xl:grid-cols-[minmax(0,1fr)_320px]"
-            }`}
-          >
-            {dataError && (
-              <div className="rounded-xl border border-frenchRed/25 bg-blush p-3 text-sm font-bold text-frenchRed xl:col-span-2">
-                {dataError}
-              </div>
-            )}
-            {dataLoading && items.length === 0 && (
-              <div className="app-card p-3 text-sm font-bold text-slate-600 xl:col-span-2">
-                {t("loadingNotes", "Loading notes...")}
-              </div>
-            )}
-            <ActiveView {...viewProps} />
-
-            {activeSection !== "today" &&
-              activeSection !== "quiz" &&
-              activeSection !== "review" &&
-              activeSection !== "import" &&
-              activeSection !== "settings" && (
-              <aside className="grid content-start gap-4">
-                <PracticeQueue items={weakItems} markReviewed={markReviewed} />
-                <FrenchInTheWild />
-              </aside>
-            )}
-          </section>
-        </main>
-      </div>
+        <section className="grid gap-4 px-3 pb-6 pt-2 sm:px-4 sm:pb-8 md:px-7 lg:gap-5">
+          {dataError && (
+            <div className="rounded-xl border border-frenchRed/25 bg-blush p-3 text-sm font-medium text-frenchRed">
+              {dataError}
+            </div>
+          )}
+          {dataLoading && items.length === 0 && (
+            <div className="app-card p-3 text-sm font-medium text-inkSecondary">
+              {t("loadingNotes", "Loading notes...")}
+            </div>
+          )}
+          <ActiveView {...viewProps} />
+        </section>
+      </main>
 
       {isEditorOpen && (
         <EditorModal

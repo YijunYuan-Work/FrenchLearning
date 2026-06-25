@@ -1,107 +1,73 @@
-import { CheckCircle2, Circle, Gauge, Sparkles } from "lucide-react";
+import { Menu, Sparkles, X } from "lucide-react";
+import { useState } from "react";
 import { categories } from "../data/categories";
 import { useLanguage } from "../i18n/LanguageContext";
 
-export function Sidebar({ activeSection, dailyProgress, setActiveSection }) {
+export function Sidebar({ activeSection, setActiveSection }) {
   const { t } = useLanguage();
-  const dailyTasks = [
-    {
-      key: "addNote",
-      label: t("dailyTaskAddNote", "Add a note"),
-      done: Boolean(dailyProgress?.addNote),
-    },
-    {
-      key: "study",
-      label: t("dailyTaskStudy", "Complete daily study"),
-      done: Boolean(dailyProgress?.study),
-    },
-    {
-      key: "quiz",
-      label: t("dailyTaskQuiz", "Complete daily quiz"),
-      done: Boolean(dailyProgress?.quiz),
-    },
-  ];
-  const completedTasks = dailyTasks.filter((task) => task.done).length;
-  const progressPercent = Math.round((completedTasks / dailyTasks.length) * 100);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const activeCategory = categories[activeSection] ?? categories.today;
+  const ActiveIcon = activeCategory.icon;
 
   return (
-    <aside className="sticky top-0 z-30 min-w-0 overflow-hidden border-b border-line bg-white/95 px-3 py-2 shadow-sm backdrop-blur lg:fixed lg:inset-y-0 lg:left-0 lg:h-screen lg:w-[272px] lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-5 lg:py-4">
-      <div className="mb-2 flex items-center gap-2 lg:mb-7 lg:gap-3">
-        <div className="grid size-10 place-items-center rounded-xl bg-frenchBlue text-white shadow-soft lg:size-11">
-          <Sparkles size={20} />
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-xs font-bold text-frenchRed lg:text-sm">
-            {t("frenchDesk", "French Desk")}
-          </p>
-          <h1 className="truncate text-lg font-black tracking-[-0.01em] lg:text-xl">
-            {t("learningHub", "Learning Hub")}
-          </h1>
-        </div>
-      </div>
-
-      <nav className="flex max-w-full gap-1.5 overflow-x-auto pb-1 lg:grid lg:gap-1.5 lg:overflow-visible lg:pb-0">
-        {Object.entries(categories).map(([key, item]) => {
-          const Icon = item.icon;
-          const isActive = activeSection === key;
-          return (
-            <button
-              className={`focus-ring flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-left text-sm font-bold transition lg:h-11 lg:shrink lg:gap-3 ${
-                isActive
-                  ? "bg-frenchBlue text-white shadow-soft"
-                  : "text-slate-700 hover:bg-sky/70 hover:text-frenchBlue"
-              }`}
-              key={key}
-              onClick={() => setActiveSection(key)}
-              type="button"
-            >
-              <Icon size={17} />
-              <span className="whitespace-nowrap">{t(item.labelKey, item.label)}</span>
-            </button>
-          );
-        })}
-      </nav>
-
-      <div className="mt-4 hidden rounded-xl bg-mint p-4 shadow-inset lg:mt-7 lg:block">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-sm font-black">
-            <Gauge size={17} className="text-sage" />
-            {t("dailyProgress", "Daily progress")}
+    <header className="fixed inset-x-0 top-0 z-30 border-b border-line bg-white/92 shadow-soft backdrop-blur">
+      <div className="mx-auto grid max-w-7xl gap-2 px-3 py-2 sm:px-4 md:px-7 lg:py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2 lg:gap-3">
+            <div className="grid size-10 place-items-center rounded-xl bg-frenchBlue text-white shadow-soft">
+              <Sparkles size={20} />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-xs font-bold text-frenchRed">
+                {t("frenchDesk", "French Desk")}
+              </p>
+              <h1 className="truncate text-lg font-black tracking-[-0.01em] sm:text-xl">
+                {t("learningHub", "Learning Hub")}
+              </h1>
+            </div>
           </div>
-          <span className="rounded-full bg-white/85 px-2 py-1 text-xs font-black text-sage">
-            {progressPercent}%
-          </span>
+
+          <button
+            aria-expanded={isMobileMenuOpen}
+            className="focus-ring inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-line bg-white px-3 text-sm font-medium text-ink shadow-sm md:hidden"
+            onClick={() => setIsMobileMenuOpen((current) => !current)}
+            type="button"
+          >
+            <ActiveIcon size={16} className="text-frenchBlue" />
+            <span>{t(activeCategory.labelKey, activeCategory.label)}</span>
+            {isMobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
         </div>
-        <div className="h-2 rounded-full bg-white/80">
-          <div
-            className="h-2 rounded-full bg-sage"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-        <p className="mt-3 text-xs font-bold text-slate-700">
-          {t(
-            "dailyProgressCopy",
-            "{completed}/3 tasks complete today.",
-            { completed: completedTasks }
-          )}
-        </p>
-        <div className="mt-3 grid gap-2">
-          {dailyTasks.map((task) => {
-            const Icon = task.done ? CheckCircle2 : Circle;
+
+        <nav
+          className={`grid max-w-full gap-1.5 md:flex md:overflow-x-auto md:pb-1 ${
+            isMobileMenuOpen ? "" : "hidden md:flex"
+          }`}
+        >
+          {Object.entries(categories).map(([key, item]) => {
+            const Icon = item.icon;
+            const isActive = activeSection === key;
             return (
-              <div
-                className={`flex items-center gap-2 text-xs font-semibold ${
-                  task.done ? "text-sage" : "text-slate-600"
+              <button
+                className={`focus-ring flex min-h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full px-3 text-left text-sm font-medium transition ${
+                  isActive
+                    ? "bg-frenchBlue text-white shadow-soft"
+                    : "text-inkSecondary hover:bg-sky hover:text-frenchBlue"
                 }`}
-                key={task.key}
+                key={key}
+                onClick={() => {
+                  setActiveSection(key);
+                  setIsMobileMenuOpen(false);
+                }}
+                type="button"
               >
-                <Icon size={15} />
-                <span>{task.label}</span>
-              </div>
+                <Icon size={17} />
+                <span className="whitespace-nowrap">{t(item.labelKey, item.label)}</span>
+              </button>
             );
           })}
-        </div>
+        </nav>
       </div>
-    </aside>
+    </header>
   );
 }

@@ -4,12 +4,14 @@ import { LearningCard } from "../components/LearningCard";
 import { Metric } from "../components/Metric";
 import { PaginationControls } from "../components/PaginationControls";
 import { SelectionToolbar } from "../components/SelectionToolbar";
+import { categories } from "../data/categories";
 import { useLanguage } from "../i18n/LanguageContext";
 import { scrollToPageTop } from "../utils/scroll";
 
 const DEFAULT_ITEMS_PER_PAGE = 10;
 
 export function NotesView({
+  activeSection,
   allowConfidenceActions = true,
   filteredItems,
   itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
@@ -35,6 +37,33 @@ export function NotesView({
 }) {
   const { t } = useLanguage();
   const [page, setPage] = useState(1);
+  const metricItems = useMemo(() => {
+    if (!activeSection || !categories[activeSection]) {
+      return items;
+    }
+
+    return items.filter((item) => item.category === activeSection);
+  }, [activeSection, items]);
+  const sectionStats = useMemo(() => {
+    const confidenceTotal = metricItems.reduce(
+      (sum, item) => sum + Number(item.confidence ?? 0),
+      0
+    );
+    const uniqueTags = new Set(metricItems.flatMap((item) => item.tags ?? []));
+
+    return {
+      average: metricItems.length
+        ? Math.round((confidenceTotal / (metricItems.length * 4)) * 100)
+        : 0,
+      tags: uniqueTags.size,
+      total: metricItems.length,
+      weak: metricItems.filter((item) => Number(item.confidence) <= 2).length,
+    };
+  }, [metricItems]);
+  const totalMetricLabel =
+    activeSection && categories[activeSection]
+      ? t(categories[activeSection].labelKey, categories[activeSection].label)
+      : t("savedNotes", "Saved notes");
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
   const safePage = Math.min(page, totalPages);
   const visibleItems = useMemo(
@@ -55,10 +84,10 @@ export function NotesView({
     <div className="min-w-0">
       {showMetrics && (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label={t("savedNotes", "Saved notes")} value={stats.total} />
-          <Metric label={t("needsPractice", "Needs practice")} value={stats.weak} tone="red" />
-          <Metric label={t("activeTags", "Active tags")} value={stats.tags} tone="blue" />
-          <Metric label={t("confidence", "Confidence")} value={`${stats.average}%`} tone="green" />
+          <Metric label={totalMetricLabel} value={sectionStats.total} />
+          <Metric label={t("needsPractice", "Needs practice")} value={sectionStats.weak} tone="red" />
+          <Metric label={t("activeTags", "Active tags")} value={sectionStats.tags} tone="blue" />
+          <Metric label={t("confidence", "Confidence")} value={`${sectionStats.average}%`} tone="green" />
         </div>
       )}
 

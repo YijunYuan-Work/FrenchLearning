@@ -46,6 +46,23 @@ export function VocabularyView(props) {
       { all: 0 }
     );
   }, [props.filteredItems]);
+  const vocabularyStats = useMemo(() => {
+    const confidenceTotal = props.filteredItems.reduce(
+      (sum, item) => sum + Number(item.confidence ?? 0),
+      0
+    );
+    const uniqueTags = new Set(
+      props.filteredItems.flatMap((item) => item.tags ?? [])
+    );
+
+    return {
+      average: props.filteredItems.length
+        ? Math.round((confidenceTotal / (props.filteredItems.length * 4)) * 100)
+        : 0,
+      tags: uniqueTags.size,
+      weak: props.filteredItems.filter((item) => Number(item.confidence) <= 2).length,
+    };
+  }, [props.filteredItems]);
 
   function selectWordType(type) {
     setActiveWordType(type);
@@ -66,9 +83,9 @@ export function VocabularyView(props) {
     <div className="min-w-0">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label={t("categoryVocabulary", "Vocabulary")} value={props.filteredItems.length} />
-        <Metric label={t("currentType", "Current type")} value={typeCounts[activeWordType] ?? 0} tone="blue" />
-        <Metric label={t("perPage", "Per page")} value={WORDS_PER_PAGE} />
-        <Metric label={t("page", "Page")} value={`${safePage}/${totalPages}`} tone="green" />
+        <Metric label={t("needsPractice", "Needs practice")} value={vocabularyStats.weak} tone="red" />
+        <Metric label={t("activeTags", "Active tags")} value={vocabularyStats.tags} tone="blue" />
+        <Metric label={t("confidence", "Confidence")} value={`${vocabularyStats.average}%`} tone="green" />
       </div>
 
       <NotesView

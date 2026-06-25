@@ -3,21 +3,30 @@
 @tailwind utilities;
 
 :root {
-  color: #102033;
-  background: #f5f9ff;
+  color: #0d253d;
+  background: #f6f9fc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01";
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  font-weight: 300;
   background:
-    linear-gradient(180deg, rgba(220, 238, 255, 0.42), rgba(245, 249, 255, 0) 260px),
-    #f5f9ff;
+    radial-gradient(1100px 420px at 18% -120px, rgba(245, 233, 212, 0.92), transparent 70%),
+    radial-gradient(980px 390px at 56% -140px, rgba(249, 107, 238, 0.26), transparent 68%),
+    radial-gradient(900px 340px at 92% -110px, rgba(83, 58, 253, 0.30), transparent 70%),
+    linear-gradient(180deg, rgba(246, 249, 252, 0.32), #f6f9fc 360px);
+}
+
+#root {
+  min-height: 100vh;
+  isolation: isolate;
 }
 
 button,
@@ -42,7 +51,7 @@ p {
 }
 
 ::placeholder {
-  color: #5d7189;
+  color: #64748d;
   opacity: 1;
 }
 
@@ -51,19 +60,45 @@ p {
 }
 
 .app-card {
-  @apply rounded-xl border border-[#d8e5f5] bg-paper shadow-soft;
+  @apply rounded-xl border border-line bg-paper shadow-soft;
 }
 
 .soft-panel {
-  @apply rounded-xl border border-[#d8e5f5] bg-white/90 shadow-soft;
+  @apply rounded-xl border border-line bg-white/90 shadow-soft;
 }
 
 .primary-action {
-  @apply focus-ring inline-flex items-center justify-center gap-2 rounded-lg bg-frenchBlue px-4 text-sm font-bold text-white shadow-soft transition hover:bg-frenchBlue/90 disabled:cursor-not-allowed disabled:opacity-60;
+  @apply focus-ring inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-frenchBlue px-4 text-sm font-medium leading-none text-white shadow-soft transition hover:bg-[#4434d4] active:bg-[#2e2b8c] disabled:cursor-not-allowed disabled:opacity-60;
 }
 
 .secondary-action {
-  @apply focus-ring inline-flex items-center justify-center gap-2 rounded-lg border border-[#d8e5f5] bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-frenchBlue/35 hover:text-frenchBlue disabled:cursor-not-allowed disabled:opacity-55;
+  @apply focus-ring inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-frenchBlue bg-white px-4 text-sm font-medium leading-none text-frenchBlue transition hover:bg-sky disabled:cursor-not-allowed disabled:opacity-55;
+}
+
+.mesh-panel {
+  background:
+    radial-gradient(520px 180px at 12% 0%, rgba(245, 233, 212, 0.95), transparent 72%),
+    radial-gradient(460px 190px at 58% -20%, rgba(249, 107, 238, 0.18), transparent 70%),
+    radial-gradient(420px 170px at 94% 0%, rgba(83, 58, 253, 0.20), transparent 72%),
+    #ffffff;
+}
+
+.numeric {
+  font-feature-settings: "ss01", "tnum";
+  letter-spacing: -0.03em;
+}
+
+.font-black,
+.font-extrabold {
+  font-weight: 500;
+}
+
+.font-bold {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 400;
 }
 
 .rich-text-editor:empty::before {
@@ -73,7 +108,7 @@ p {
 
 .rich-text-editor :where(h1, h2, h3, h4),
 .rich-text-content :where(h1, h2, h3, h4) {
-  @apply mb-2 mt-3 font-black leading-tight text-ink;
+  @apply mb-2 mt-3 font-medium leading-tight text-ink;
 }
 
 .rich-text-editor :where(h1),
