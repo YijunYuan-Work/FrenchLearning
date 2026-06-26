@@ -10,8 +10,8 @@ export function Sidebar({ activeSection, setActiveSection }) {
   const ActiveIcon = activeCategory.icon;
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 border-b border-line bg-white/92 shadow-soft backdrop-blur">
-      <div className="mx-auto grid max-w-7xl gap-2 px-3 py-2 sm:px-4 md:px-7 lg:py-3">
+    <aside className="fixed inset-x-0 top-0 z-30 border-b border-line bg-white/92 shadow-soft backdrop-blur md:inset-y-0 md:right-auto md:w-64 md:border-b-0 md:border-r">
+      <div className="flex h-full flex-col gap-2 px-3 py-2 sm:px-4 md:px-4 md:py-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2 lg:gap-3">
             <div className="grid size-10 place-items-center rounded-xl bg-frenchBlue text-white shadow-soft">
@@ -40,8 +40,8 @@ export function Sidebar({ activeSection, setActiveSection }) {
         </div>
 
         <nav
-          className={`grid max-w-full gap-1.5 md:flex md:overflow-x-auto md:pb-1 ${
-            isMobileMenuOpen ? "" : "hidden md:flex"
+          className={`grid max-w-full gap-1.5 border-t border-line pt-2 md:mt-5 md:flex-1 md:content-start md:border-t-0 md:pt-0 ${
+            isMobileMenuOpen ? "" : "hidden md:grid"
           }`}
         >
           {Object.entries(categories).map(([key, item]) => {
@@ -49,7 +49,7 @@ export function Sidebar({ activeSection, setActiveSection }) {
             const isActive = activeSection === key;
             return (
               <button
-                className={`focus-ring flex min-h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full px-3 text-left text-sm font-medium transition ${
+                className={`focus-ring flex min-h-10 cursor-pointer items-center gap-2 rounded-xl px-3 text-left text-sm font-medium transition ${
                   isActive
                     ? "bg-frenchBlue text-white shadow-soft"
                     : "text-inkSecondary hover:bg-sky hover:text-frenchBlue"
@@ -68,6 +68,6 @@ export function Sidebar({ activeSection, setActiveSection }) {
           })}
         </nav>
       </div>
-    </header>
+    </aside>
   );
 }

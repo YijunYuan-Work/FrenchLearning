@@ -361,170 +361,178 @@ export function ReviewView({
       </div>
 
       <div className="app-card p-3">
-        {!isFlipped ? (
-          <button
-            aria-label={`Reveal details for ${currentItem.french}`}
-            className="focus-ring grid min-h-[360px] w-full place-items-center rounded-xl border border-dashed border-frenchBlue/30 bg-sky/35 p-6 text-center hover:border-frenchBlue/45"
-            onClick={() => setIsFlipped(true)}
-            type="button"
-          >
-            <span className="break-words text-4xl font-black leading-tight tracking-[-0.02em] text-ink md:text-6xl">
-              {currentItem.french}
-            </span>
-          </button>
-        ) : (
-          <div className="min-h-[360px] rounded-xl border border-line bg-white p-5">
-            <div className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-lg bg-sky px-2 py-1 text-xs font-bold text-frenchBlue">
-                    <CategoryIcon size={13} />
-                    {t(categories[currentItem.category].labelKey, categories[currentItem.category].label)}
-                  </span>
-                  <span className="rounded-lg bg-mint px-2 py-1 text-xs font-bold text-sage">
-                    {confidenceLabel(Number(currentItem.confidence), t)}
-                  </span>
-                </div>
-                <h3 className="mt-3 text-3xl font-black leading-tight tracking-[-0.01em]">
-                  {currentItem.french}
-                </h3>
-                {currentItem.english && !isPhraseNote && (
-                  <p className="mt-2 text-lg font-bold text-slate-700">
-                    {currentItem.english}
-                  </p>
-                )}
-              </div>
-              <button
-                className="secondary-action h-9 shrink-0 px-3 text-xs"
-                onClick={() => openEditItem(currentItem)}
-                type="button"
-              >
-                <Edit3 size={15} />
-                {t("editNote", "Edit note")}
-              </button>
-            </div>
+        <div className="flip-scene min-h-[360px]">
+          <div className={`flip-card ${isFlipped ? "is-flipped" : ""}`}>
+            <button
+              aria-label={`Reveal details for ${currentItem.french}`}
+              aria-hidden={isFlipped}
+              className="focus-ring flip-card-face grid min-h-[360px] w-full place-items-center rounded-xl border border-dashed border-frenchBlue/30 bg-sky/35 p-6 text-center hover:border-frenchBlue/45"
+              onClick={() => setIsFlipped(true)}
+              tabIndex={isFlipped ? -1 : 0}
+              type="button"
+            >
+              <span className="break-words text-4xl font-black leading-tight tracking-[-0.02em] text-ink md:text-6xl">
+                {currentItem.french}
+              </span>
+            </button>
 
-            <div className="mt-5 grid gap-5 md:grid-cols-2">
-              {canAdjustConfidence && (
-                <DetailBlock label={t("confidence", "Confidence")}>
-                  <div className="flex flex-wrap gap-2">
-                    {[1, 2, 3, 4].map((value) => {
-                      const isActive = Number(currentItem.confidence) === value;
-                      return (
-                        <button
-                          className={`focus-ring rounded-lg px-3 py-2 text-xs font-black transition ${
-                            isActive
-                              ? "bg-frenchBlue text-white shadow-soft"
-                              : "bg-sky text-frenchBlue hover:bg-frenchBlue hover:text-white"
-                          }`}
-                          key={value}
-                          onClick={() =>
-                            onStudyConfidenceChange?.(currentItem.id, value)
-                          }
-                          type="button"
-                        >
-                          {confidenceLabel(value, t)}
-                        </button>
-                      );
-                    })}
+            <div
+              aria-hidden={!isFlipped}
+              className="flip-card-face flip-card-back min-h-[360px] rounded-xl border border-line bg-white p-5"
+              inert={!isFlipped ? "" : undefined}
+            >
+              <div className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-sky px-2 py-1 text-xs font-bold text-frenchBlue">
+                      <CategoryIcon size={13} />
+                      {t(categories[currentItem.category].labelKey, categories[currentItem.category].label)}
+                    </span>
+                    <span className="rounded-lg bg-mint px-2 py-1 text-xs font-bold text-sage">
+                      {confidenceLabel(Number(currentItem.confidence), t)}
+                    </span>
                   </div>
-                </DetailBlock>
-              )}
-              {isPhraseNote && (
-                <DetailBlock label={t("translation", "Translation")}>
-                  {currentItem.english || t("unknown", "Unknown")}
-                </DetailBlock>
-              )}
-              {!isGrammarNote && !isPhraseNote && (
-                <DetailBlock label={t("example", "Example")}>
-                  {currentItem.example || t("noExampleYet", "No example yet.")}
-                </DetailBlock>
-              )}
-              {!isPhraseNote && (
-                <DetailBlock label={isGrammarNote ? t("grammarNote", "Grammar note") : t("notes", "Notes")}>
-                  {isGrammarNote && currentItem.notes ? (
-                    <RichTextContent html={currentItem.notes} />
-                  ) : (
-                    <p className="whitespace-pre-line">
-                      {currentItem.notes || t("noNotesYet", "No notes yet.")}
+                  <h3 className="mt-3 text-3xl font-black leading-tight tracking-[-0.01em]">
+                    {currentItem.french}
+                  </h3>
+                  {currentItem.english && !isPhraseNote && (
+                    <p className="mt-2 text-lg font-bold text-slate-700">
+                      {currentItem.english}
                     </p>
                   )}
-                </DetailBlock>
-              )}
-              {(currentItem.partOfSpeech || currentItem.ipa || currentItem.gender) && (
-                <DetailBlock label={t("wordDetails", "Word details")}>
-                  <div className="grid gap-1">
-                    {currentItem.partOfSpeech && (
-                      <p>
-                        <span className="font-semibold">{t("type", "Type")}:</span>{" "}
-                        {partOfSpeechLabel(currentItem.partOfSpeech, t)}
+                </div>
+                <button
+                  className="secondary-action h-9 shrink-0 px-3 text-xs"
+                  onClick={() => openEditItem(currentItem)}
+                  type="button"
+                >
+                  <Edit3 size={15} />
+                  {t("editNote", "Edit note")}
+                </button>
+              </div>
+
+              <div className="mt-5 grid gap-5 md:grid-cols-2">
+                {canAdjustConfidence && (
+                  <DetailBlock label={t("confidence", "Confidence")}>
+                    <div className="flex flex-wrap gap-2">
+                      {[1, 2, 3, 4].map((value) => {
+                        const isActive = Number(currentItem.confidence) === value;
+                        return (
+                          <button
+                            className={`focus-ring rounded-lg px-3 py-2 text-xs font-black transition ${
+                              isActive
+                                ? "bg-frenchBlue text-white shadow-soft"
+                                : "bg-sky text-frenchBlue hover:bg-frenchBlue hover:text-white"
+                            }`}
+                            key={value}
+                            onClick={() =>
+                              onStudyConfidenceChange?.(currentItem.id, value)
+                            }
+                            type="button"
+                          >
+                            {confidenceLabel(value, t)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </DetailBlock>
+                )}
+                {isPhraseNote && (
+                  <DetailBlock label={t("translation", "Translation")}>
+                    {currentItem.english || t("unknown", "Unknown")}
+                  </DetailBlock>
+                )}
+                {!isGrammarNote && !isPhraseNote && (
+                  <DetailBlock label={t("example", "Example")}>
+                    {currentItem.example || t("noExampleYet", "No example yet.")}
+                  </DetailBlock>
+                )}
+                {!isPhraseNote && (
+                  <DetailBlock label={isGrammarNote ? t("grammarNote", "Grammar note") : t("notes", "Notes")}>
+                    {isGrammarNote && currentItem.notes ? (
+                      <RichTextContent html={currentItem.notes} />
+                    ) : (
+                      <p className="whitespace-pre-line">
+                        {currentItem.notes || t("noNotesYet", "No notes yet.")}
                       </p>
                     )}
-                    {currentItem.ipa && (
-                      <p>
-                        <span className="font-semibold">IPA:</span>{" "}
-                        {currentItem.ipa}
-                      </p>
-                    )}
-                    {currentItem.gender && (
-                      <p>
-                        <span className="font-semibold">{t("gender", "Gender")}:</span>{" "}
-                        {currentItem.gender}
-                      </p>
-                    )}
-                  </div>
-                </DetailBlock>
-              )}
-              {hasConjugation && (
-                <DetailBlock label={t("conjugation", "Conjugation")}>
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    {conjugationPronouns.map((pronoun) =>
-                      currentItem.conjugation?.[pronoun] ? (
-                        <div className="flex gap-2" key={pronoun}>
-                          <dt className="font-semibold">{pronoun}</dt>
-                          <dd>{currentItem.conjugation[pronoun]}</dd>
-                        </div>
-                      ) : null
-                    )}
-                  </dl>
-                </DetailBlock>
-              )}
-              {hasAdjectiveForms && (
-                <DetailBlock label={t("adjectiveForms", "Adjective forms")}>
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    {[
-                      ["masculine", "masc."],
-                      ["feminine", "fem."],
-                      ["masculinePlural", "masc. pl."],
-                      ["femininePlural", "fem. pl."],
-                    ].map(([field, label]) =>
-                      currentItem.adjectiveForms?.[field] ? (
-                        <div className="flex gap-2" key={field}>
-                          <dt className="font-semibold">{label}</dt>
-                          <dd>{currentItem.adjectiveForms[field]}</dd>
-                        </div>
-                      ) : null
-                    )}
-                  </dl>
-                </DetailBlock>
-              )}
-              {(currentItem.tags ?? []).length > 0 && (
-                <DetailBlock label={t("tags", "Tags")}>
-                  <div className="flex flex-wrap gap-2">
-                    {currentItem.tags.map((tag) => (
-                      <span
-                        className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600"
-                        key={tag}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </DetailBlock>
-              )}
+                  </DetailBlock>
+                )}
+                {(currentItem.partOfSpeech || currentItem.ipa || currentItem.gender) && (
+                  <DetailBlock label={t("wordDetails", "Word details")}>
+                    <div className="grid gap-1">
+                      {currentItem.partOfSpeech && (
+                        <p>
+                          <span className="font-semibold">{t("type", "Type")}:</span>{" "}
+                          {partOfSpeechLabel(currentItem.partOfSpeech, t)}
+                        </p>
+                      )}
+                      {currentItem.ipa && (
+                        <p>
+                          <span className="font-semibold">IPA:</span>{" "}
+                          {currentItem.ipa}
+                        </p>
+                      )}
+                      {currentItem.gender && (
+                        <p>
+                          <span className="font-semibold">{t("gender", "Gender")}:</span>{" "}
+                          {currentItem.gender}
+                        </p>
+                      )}
+                    </div>
+                  </DetailBlock>
+                )}
+                {hasConjugation && (
+                  <DetailBlock label={t("conjugation", "Conjugation")}>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
+                      {conjugationPronouns.map((pronoun) =>
+                        currentItem.conjugation?.[pronoun] ? (
+                          <div className="flex gap-2" key={pronoun}>
+                            <dt className="font-semibold">{pronoun}</dt>
+                            <dd>{currentItem.conjugation[pronoun]}</dd>
+                          </div>
+                        ) : null
+                      )}
+                    </dl>
+                  </DetailBlock>
+                )}
+                {hasAdjectiveForms && (
+                  <DetailBlock label={t("adjectiveForms", "Adjective forms")}>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
+                      {[
+                        ["masculine", "masc."],
+                        ["feminine", "fem."],
+                        ["masculinePlural", "masc. pl."],
+                        ["femininePlural", "fem. pl."],
+                      ].map(([field, label]) =>
+                        currentItem.adjectiveForms?.[field] ? (
+                          <div className="flex gap-2" key={field}>
+                            <dt className="font-semibold">{label}</dt>
+                            <dd>{currentItem.adjectiveForms[field]}</dd>
+                          </div>
+                        ) : null
+                      )}
+                    </dl>
+                  </DetailBlock>
+                )}
+                {(currentItem.tags ?? []).length > 0 && (
+                  <DetailBlock label={t("tags", "Tags")}>
+                    <div className="flex flex-wrap gap-2">
+                      {currentItem.tags.map((tag) => (
+                        <span
+                          className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600"
+                          key={tag}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </DetailBlock>
+                )}
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -948,7 +948,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-cloud/80 pt-[61px] text-ink md:pt-[121px]">
+    <div className="min-h-screen overflow-x-hidden bg-cloud/80 pt-[61px] text-ink md:pl-64 md:pt-0">
       <Sidebar
         activeSection={activeSection}
         setActiveSection={setActiveSection}

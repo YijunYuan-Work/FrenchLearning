@@ -88,6 +88,29 @@ p {
   letter-spacing: -0.03em;
 }
 
+.flip-scene {
+  perspective: 1400px;
+}
+
+.flip-card {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.flip-card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-card-face {
+  backface-visibility: hidden;
+  grid-area: 1 / 1;
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
 .font-black,
 .font-extrabold {
   font-weight: 500;
