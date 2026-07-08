@@ -4,6 +4,7 @@ import { LanguageToggle } from "./LanguageToggle";
 
 export function AppHeader({
   activeSection,
+  isDemo = false,
   onSignOut,
   openNewItem,
   pageTitle,
@@ -53,14 +54,16 @@ export function AppHeader({
             <Plus size={17} />
             {t("addNote", "Add note")}
           </button>
-          <button
-            className="secondary-action order-2 h-10 hover:border-frenchRed hover:bg-blush hover:text-frenchRed sm:order-none"
-            onClick={onSignOut}
-            type="button"
-          >
-            <LogOut size={17} />
-            {t("signOut", "Sign out")}
-          </button>
+          {!isDemo && (
+            <button
+              className="secondary-action order-2 h-10 hover:border-frenchRed hover:bg-blush hover:text-frenchRed sm:order-none"
+              onClick={onSignOut}
+              type="button"
+            >
+              <LogOut size={17} />
+              {t("signOut", "Sign out")}
+            </button>
+          )}
         </div>
       </div>
     </header>

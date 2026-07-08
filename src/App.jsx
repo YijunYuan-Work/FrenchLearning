@@ -19,6 +19,7 @@ import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
 import { Sidebar } from "./components/Sidebar";
 import { categories } from "./data/categories";
+import { demoNotes, demoUser } from "./data/demoData";
 import { hasSupabaseConfig, supabase } from "./lib/supabase";
 import { useDailyLearningState } from "./hooks/useDailyLearningState";
 import { useLanguage } from "./i18n/LanguageContext";
@@ -38,6 +39,7 @@ import { ReviewView } from "./views/ReviewView";
 import { TodayView } from "./views/TodayView";
 import { VocabularyView } from "./views/VocabularyView";
 import { createEmptyWordDetails, normalizeWordDetails } from "./data/wordFields";
+import { createDailyProgress } from "./utils/dailyProgress";
 import { defaultLearningSettings } from "./utils/learningSettings";
 
 const emptyForm = {
@@ -117,16 +119,29 @@ function getDisplayName(user) {
   );
 }
 
+function isPublicDemoRoute() {
+  return window.location.hash.replace(/^#/, "").replace(/\/$/, "") === "/demo";
+}
+
 export default function App() {
+  const isDemoRoute = isPublicDemoRoute();
   const { language, setLanguage, t } = useLanguage();
-  const [items, setItems] = useState([]);
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(hasSupabaseConfig);
+  const [items, setItems] = useState(() => (isDemoRoute ? demoNotes : []));
+  const [user, setUser] = useState(() => (isDemoRoute ? demoUser : null));
+  const [authLoading, setAuthLoading] = useState(
+    isDemoRoute ? false : hasSupabaseConfig
+  );
   const [authError, setAuthError] = useState("");
   const [dataLoading, setDataLoading] = useState(false);
   const [dataError, setDataError] = useState("");
-  const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(false);
+  const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(
+    isDemoRoute
+  );
   const [learningSettings, setLearningSettings] = useState(defaultLearningSettings);
+  const [demoDailyProgress, setDemoDailyProgress] = useState(() => ({
+    ...createDailyProgress(),
+    addNote: true,
+  }));
   const [activeSection, setActiveSection] = useState("today");
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
@@ -147,9 +162,10 @@ export default function App() {
     resetDailyLearningState,
     setDailyQuizState,
     setDailyStudyState,
-  } = useDailyLearningState(user, setDataError);
+  } = useDailyLearningState(isDemoRoute ? null : user, setDataError);
 
   useEffect(() => {
+    if (isDemoRoute) return undefined;
     if (!hasSupabaseConfig) return undefined;
 
     let isMounted = true;
@@ -182,9 +198,10 @@ export default function App() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isDemoRoute]);
 
   useEffect(() => {
+    if (isDemoRoute) return undefined;
     if (!user?.id) return;
 
     let isMounted = true;
@@ -210,9 +227,15 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [user?.id]);
+  }, [isDemoRoute, user?.id]);
 
   useEffect(() => {
+    if (isDemoRoute) {
+      setLanguagePreferenceLoaded(true);
+      savedLanguageRef.current = language;
+      return undefined;
+    }
+
     if (!user) {
       setLanguagePreferenceLoaded(false);
       return undefined;
@@ -242,9 +265,14 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [setLanguage, user]);
+  }, [isDemoRoute, language, setLanguage, user]);
 
   useEffect(() => {
+    if (isDemoRoute) {
+      setLearningSettings(defaultLearningSettings);
+      return undefined;
+    }
+
     if (!user) {
       setLearningSettings(defaultLearningSettings);
       return undefined;
@@ -266,9 +294,10 @@ export default function App() {
     return () => {
       isMounted = false;
     };
-  }, [user]);
+  }, [isDemoRoute, user]);
 
   useEffect(() => {
+    if (isDemoRoute) return;
     if (!user || !languagePreferenceLoaded) return;
     if (language === savedLanguageRef.current) return;
 
@@ -279,7 +308,7 @@ export default function App() {
       .catch((error) => {
         console.warn("Language preference could not be saved.", error);
       });
-  }, [language, languagePreferenceLoaded, user]);
+  }, [isDemoRoute, language, languagePreferenceLoaded, user]);
 
   const tags = useMemo(() => {
     const tagSourceItems = noteSections.has(activeSection)
@@ -342,6 +371,21 @@ export default function App() {
     };
   }, [items, tags.length, weakItems.length]);
 
+  const visibleDailyProgress = isDemoRoute ? demoDailyProgress : dailyProgress;
+
+  function completeTask(task) {
+    if (isDemoRoute) {
+      setDemoDailyProgress((current) => ({
+        ...current,
+        date: createDailyProgress().date,
+        [task]: true,
+      }));
+      return;
+    }
+
+    completeDailyTask(task);
+  }
+
   function openNewItem(category = "vocabulary") {
     setEditingItem(null);
     setEditorError("");
@@ -378,6 +422,11 @@ export default function App() {
   }
 
   async function handleSignOut() {
+    if (isDemoRoute) {
+      window.location.href = "/";
+      return;
+    }
+
     setAuthLoading(true);
     setDataError("");
 
@@ -447,6 +496,22 @@ export default function App() {
       });
     }
 
+    if (isDemoRoute) {
+      setItems((current) =>
+        editingItem
+          ? current.map((item) => (item.id === editingItem.id ? nextItem : item))
+          : [nextItem, ...current]
+      );
+      if (!editingItem) {
+        completeTask("addNote");
+      }
+      setSelectedIds((current) => current.filter((id) => id !== nextItem.id));
+      setEditorError("");
+      setDataError("");
+      setIsEditorOpen(false);
+      return;
+    }
+
     try {
       const savedItem = editingItem
         ? await updateNote(editingItem.id, nextItem, user.id)
@@ -458,7 +523,7 @@ export default function App() {
           : [savedItem, ...current]
       );
       if (!editingItem) {
-        completeDailyTask("addNote");
+        completeTask("addNote");
       }
       setSelectedIds((current) => current.filter((id) => id !== savedItem.id));
       setEditorError("");
@@ -567,7 +632,7 @@ export default function App() {
 
         knownWords.add(savedItem.french.trim().toLocaleLowerCase("fr"));
         setItems((current) => [savedItem, ...current]);
-        completeDailyTask("addNote");
+        completeTask("addNote");
         results.push({
           word,
           status: "added",
@@ -661,7 +726,7 @@ export default function App() {
 
         knownPhrases.add(savedItem.french.trim().toLocaleLowerCase("fr"));
         setItems((current) => [savedItem, ...current]);
-        completeDailyTask("addNote");
+        completeTask("addNote");
         results.push({
           word: french,
           item: row,
@@ -687,6 +752,16 @@ export default function App() {
 
   async function startImportJob(nextItems = importJob.importItems) {
     if (!user || importJob.isImporting || nextItems.length === 0) return;
+
+    if (isDemoRoute) {
+      updateImportJob({
+        error: t(
+          "demoImportDisabled",
+          "Import is disabled in the public demo."
+        ),
+      });
+      return;
+    }
 
     const mode = importJob.importMode;
     cancelImportRef.current = false;
@@ -736,6 +811,11 @@ export default function App() {
       )
     );
 
+    if (isDemoRoute) {
+      setDataError("");
+      return;
+    }
+
     try {
       const savedItem = await updateNote(item.id, nextItem, user.id);
       setItems((current) =>
@@ -768,6 +848,11 @@ export default function App() {
       )
     );
 
+    if (isDemoRoute) {
+      setDataError("");
+      return;
+    }
+
     try {
       const savedItem = await updateNote(itemId, nextItem, user.id);
       setItems((current) =>
@@ -797,6 +882,11 @@ export default function App() {
     setItems((current) =>
       current.map((entry) => (entry.id === itemId ? nextItem : entry))
     );
+
+    if (isDemoRoute) {
+      setDataError("");
+      return;
+    }
 
     try {
       const savedItem = await updateNote(itemId, nextItem, user.id);
@@ -840,6 +930,13 @@ export default function App() {
     const shouldDelete = window.confirm(`Delete "${item.french}"?`);
     if (!shouldDelete) return;
 
+    if (isDemoRoute) {
+      setItems((current) => current.filter((entry) => entry.id !== item.id));
+      setSelectedIds((current) => current.filter((id) => id !== item.id));
+      setDataError("");
+      return;
+    }
+
     try {
       await deleteStoredNote(item.id, user.id);
       setItems((current) => current.filter((entry) => entry.id !== item.id));
@@ -856,6 +953,15 @@ export default function App() {
       `Delete ${selectedIds.length} selected note${selectedIds.length === 1 ? "" : "s"}?`
     );
     if (!shouldDelete) return;
+
+    if (isDemoRoute) {
+      setItems((current) =>
+        current.filter((entry) => !selectedIds.includes(entry.id))
+      );
+      setSelectedIds([]);
+      setDataError("");
+      return;
+    }
 
     try {
       await Promise.all(
@@ -882,7 +988,7 @@ export default function App() {
 
   const viewProps = {
     activeSection,
-    dailyProgress,
+    dailyProgress: visibleDailyProgress,
     filteredItems,
     items,
     markReviewed,
@@ -900,11 +1006,11 @@ export default function App() {
     onImportVocabulary: importVocabularyWords,
     onStartImport: startImportJob,
     onUpdateImportJob: updateImportJob,
-    onQuizComplete: () => completeDailyTask("quiz"),
+    onQuizComplete: () => completeTask("quiz"),
     onQuizStateChange: dailyStateLoaded ? setDailyQuizState : undefined,
     onStartStudy: () => setActiveSection("review"),
     onStartQuiz: () => setActiveSection("quiz"),
-    onStudyComplete: () => completeDailyTask("study"),
+    onStudyComplete: () => completeTask("study"),
     onStudyConfidenceChange: handleStudyConfidenceChange,
     onStudyStateChange: setDailyStudyState,
     onLearningSettingsUpdated: setLearningSettings,
@@ -923,7 +1029,7 @@ export default function App() {
     user,
   };
 
-  if (!hasSupabaseConfig) {
+  if (!isDemoRoute && !hasSupabaseConfig) {
     return <SetupPage />;
   }
 
@@ -957,6 +1063,7 @@ export default function App() {
       <main className="mx-auto min-w-0 max-w-7xl">
         <AppHeader
           activeSection={activeSection}
+          isDemo={isDemoRoute}
           onSignOut={handleSignOut}
           openNewItem={openNewItem}
           pageTitle={pageTitle}
