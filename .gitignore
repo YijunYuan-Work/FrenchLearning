@@ -20,5 +20,13 @@ supabase/.temp/
 # deployment state
 .vercel/
 
+# Local AI agent instructions and design working files
+.agents/
+.codex/
+AGENTS.md
+DESIGN.md
+PRODUCT.md
+design-qa.md
+
 # misc
 .DS_Store
