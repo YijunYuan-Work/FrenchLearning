@@ -1,3 +1,4 @@
+import { ArrowUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LearningCard } from "../components/LearningCard";
 import { Metric } from "../components/Metric";
@@ -9,6 +10,10 @@ import { scrollToPageTop } from "../utils/scroll";
 import { NotesView } from "./NotesView";
 
 const WORDS_PER_PAGE = 10;
+const frenchCollator = new Intl.Collator("fr", {
+  numeric: true,
+  sensitivity: "base",
+});
 const vocabularyTabs = [
   { value: "all", label: "All", labelKey: "all" },
   ...partOfSpeechOptions.filter((option) => option.value),
@@ -19,14 +24,36 @@ export function VocabularyView(props) {
   const { t } = useLanguage();
   const [activeWordType, setActiveWordType] = useState("all");
   const [page, setPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState("alphabetical");
 
   const vocabularyItems = useMemo(() => {
-    return props.filteredItems.filter((item) => {
+    const matchingItems = props.filteredItems.filter((item) => {
       if (activeWordType === "all") return true;
       if (activeWordType === "uncategorized") return !item.partOfSpeech;
       return item.partOfSpeech === activeWordType;
     });
-  }, [activeWordType, props.filteredItems]);
+
+    return matchingItems
+      .map((item, index) => ({ item, index }))
+      .sort((left, right) => {
+        if (sortOrder === "dateAdded") {
+          const leftTime = Date.parse(left.item.createdAt ?? "");
+          const rightTime = Date.parse(right.item.createdAt ?? "");
+
+          if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
+            return rightTime - leftTime;
+          }
+
+          return left.index - right.index;
+        }
+
+        return (
+          frenchCollator.compare(left.item.french ?? "", right.item.french ?? "") ||
+          left.index - right.index
+        );
+      })
+      .map(({ item }) => item);
+  }, [activeWordType, props.filteredItems, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(vocabularyItems.length / WORDS_PER_PAGE));
   const safePage = Math.min(page, totalPages);
@@ -75,6 +102,12 @@ export function VocabularyView(props) {
     scrollToPageTop();
   }
 
+  function changeSortOrder(nextSortOrder) {
+    setSortOrder(nextSortOrder);
+    setPage(1);
+    scrollToPageTop();
+  }
+
   if (props.items.length === 0) {
     return <NotesView {...props} />;
   }
@@ -96,32 +129,52 @@ export function VocabularyView(props) {
         showMetrics={false}
         topContent={
           <div className="mt-5 rounded-xl border border-line bg-white/90 p-3 shadow-soft">
-            <div className="flex flex-wrap gap-2">
-              {vocabularyTabs.map((tab) => {
-                const isActive = activeWordType === tab.value;
-                const count = typeCounts[tab.value] ?? 0;
-                return (
-                  <button
-                    className={`focus-ring inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-bold ${
-                      isActive
-                        ? "bg-frenchBlue text-white"
-                        : "border border-line bg-white text-slate-700 hover:border-frenchBlue/35 hover:text-frenchBlue"
-                    }`}
-                    key={tab.value}
-                    onClick={() => selectWordType(tab.value)}
-                    type="button"
-                  >
-                    {t(tab.labelKey, tab.label)}
-                    <span
-                      className={`rounded px-1.5 py-0.5 text-xs ${
-                        isActive ? "bg-white/20" : "bg-slate-100 text-slate-500"
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex flex-wrap gap-2">
+                {vocabularyTabs.map((tab) => {
+                  const isActive = activeWordType === tab.value;
+                  const count = typeCounts[tab.value] ?? 0;
+                  return (
+                    <button
+                      className={`focus-ring inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-bold ${
+                        isActive
+                          ? "bg-frenchBlue text-white"
+                          : "border border-line bg-white text-slate-700 hover:border-frenchBlue/35 hover:text-frenchBlue"
                       }`}
+                      key={tab.value}
+                      onClick={() => selectWordType(tab.value)}
+                      type="button"
                     >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
+                      {t(tab.labelKey, tab.label)}
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-xs ${
+                          isActive ? "bg-white/20" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <label className="flex h-9 w-full shrink-0 items-center gap-2 rounded-lg border border-line bg-white px-3 shadow-sm lg:w-auto lg:min-w-[210px]">
+                <ArrowUpDown aria-hidden="true" className="text-slate-500" size={16} />
+                <span className="sr-only">{t("sortVocabulary", "Sort vocabulary")}</span>
+                <select
+                  aria-label={t("sortVocabulary", "Sort vocabulary")}
+                  className="focus-ring h-8 min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700"
+                  onChange={(event) => changeSortOrder(event.target.value)}
+                  value={sortOrder}
+                >
+                  <option value="alphabetical">
+                    {t("sortAlphabetical", "Alphabetical (A-Z)")}
+                  </option>
+                  <option value="dateAdded">
+                    {t("sortDateAdded", "Date added (newest)")}
+                  </option>
+                </select>
+              </label>
             </div>
           </div>
         }

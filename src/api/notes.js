@@ -16,6 +16,7 @@ function toNote(row) {
     conjugation: row.conjugation ?? {},
     adjectiveForms: row.adjective_forms ?? {},
     lastReviewed: row.last_reviewed ?? "Not reviewed",
+    createdAt: row.created_at ?? "",
   };
 }
 

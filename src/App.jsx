@@ -478,6 +478,7 @@ export default function App() {
       tags: normalizeTags(form.tags),
       confidence: Number(form.confidence),
       lastReviewed: editingItem?.lastReviewed ?? "Not reviewed",
+      createdAt: editingItem?.createdAt ?? new Date().toISOString(),
     };
     if (nextItem.category === "grammar") {
       const sanitizedNotes = sanitizeRichTextHtml(nextItem.notes);
