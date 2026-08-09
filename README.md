@@ -36,7 +36,7 @@ The app includes a read-only-style public demo populated with sample learning no
 After starting the app, open:
 
 ```text
-http://localhost:5173/#/demo
+https://french-learning-theta.vercel.app/#/demo
 ```
 
 The same `/#/demo` path can be appended to a deployed URL for portfolio previews.
