@@ -22,7 +22,7 @@ The Today dashboard keeps this routine visible through three daily goals: add a 
 - Uses AI to auto-fill vocabulary details after validating the French entry with Wiktionary.
 - Builds randomized study sessions from vocabulary, phrases, and grammar notes that have not yet been mastered.
 - Creates vocabulary-only quizzes with confidence progression, noun-gender questions, answer reveal, and manual correction for close answers.
-- Imports semicolon-separated vocabulary files and two-column phrase CSV files while detecting duplicates and reporting failures.
+- Imports prepared vocabulary and phrase CSV files while detecting duplicates, validating rows, and reporting failures.
 - Supports English and Simplified Chinese interfaces, including localized AI-generated meanings and notes.
 - Keeps notes, preferences, learning settings, quiz state, and study progress attached to each signed-in user.
 - Provides configurable daily quiz and study amounts from the Settings page.
@@ -46,6 +46,19 @@ The same `/#/demo` path can be appended to a deployed URL for portfolio previews
 The frontend is a React 19 single-page application built with Vite and Tailwind CSS. Supabase provides authentication, Postgres storage, row-level security, and optional cloud persistence for daily learning state.
 
 Vocabulary auto-fill runs through a Vercel serverless function so the OpenAI API key never reaches the browser. The function authenticates the user, checks their daily allowance, validates the French entry with Wiktionary, requests structured vocabulary data from OpenAI, and returns the result to the editor for review before it is saved.
+
+## Import Formats
+
+Vocabulary imports use a prepared CSV so a complete dataset can be saved directly without spending AI auto-fill quota or calling Wiktionary. Keep every header below in the file, even when some optional cells are empty:
+
+```csv
+french,chinese,part_of_speech,gender,ipa,tags,example,notes,conjugation_je,conjugation_tu,conjugation_il_elle,conjugation_nous,conjugation_vous,conjugation_ils_elles,adjective_masculine,adjective_feminine,adjective_masculine_plural,adjective_feminine_plural
+école,学校,noun,feminine,/e.kɔl/,school;daily,Je vais à l'école.,A common noun.,,,,,,,,,,
+```
+
+`french`, `chinese`, and `part_of_speech` are required on every row. Supported parts of speech are `noun`, `verb`, `adjective`, `adverb`, `pronoun`, `preposition`, `conjunction`, `interjection`, `article`, and `numeral`. Noun gender can be `masculine`, `feminine`, or `masculine or feminine`. Tags may be separated with semicolons.
+
+Short-phrase CSV files remain intentionally compact: column 1 is French, column 2 is the translation, and optional column 3 contains tags.
 
 ### Technology
 

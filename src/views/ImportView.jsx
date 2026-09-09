@@ -1,8 +1,12 @@
-import { FileText, Languages, Upload } from "lucide-react";
+import { Download, FileText, Languages, Upload } from "lucide-react";
 import { useMemo } from "react";
 import { Metric } from "../components/Metric";
 import { useLanguage } from "../i18n/LanguageContext";
-import { parsePhraseCsv, parseVocabularyText } from "../utils/importParsers";
+import {
+  parsePhraseCsv,
+  parseVocabularyCsv,
+  VOCABULARY_CSV_HEADERS,
+} from "../utils/importParsers";
 
 const importModes = [
   { value: "vocabulary", labelKey: "categoryVocabulary", label: "Vocabulary" },
@@ -43,7 +47,7 @@ export function ImportView({
     [results]
   );
   const isPhraseMode = importMode === "phrases";
-  const fileAccept = isPhraseMode ? ".csv,text/csv" : ".txt,text/plain";
+  const fileAccept = ".csv,text/csv";
   const readyCopy = isPhraseMode
     ? t("importPhrasesReady", "{count} phrases ready to import.", {
         count: importItems.length,
@@ -63,11 +67,9 @@ export function ImportView({
 
     if (!file) return;
     const lowerFileName = file.name.toLowerCase();
-    if (isPhraseMode ? !lowerFileName.endsWith(".csv") : !lowerFileName.endsWith(".txt")) {
+    if (!lowerFileName.endsWith(".csv")) {
       onUpdateImportJob({
-        error: isPhraseMode
-          ? t("importCsvOnly", "Please choose a .csv file.")
-          : t("importTxtOnly", "Please choose a .txt file."),
+        error: t("importCsvOnly", "Please choose a .csv file."),
       });
       return;
     }
@@ -76,18 +78,25 @@ export function ImportView({
       const text = await file.text();
       const parsedItems = isPhraseMode
         ? parsePhraseCsv(text)
-        : parseVocabularyText(text);
+        : parseVocabularyCsv(text);
       onUpdateImportJob({ importItems: parsedItems });
       if (parsedItems.length === 0) {
         onUpdateImportJob({
           error: isPhraseMode
             ? t("importNoPhrases", "No phrase rows were found in this CSV.")
-            : t("importNoWords", "No semicolon-separated words were found."),
+            : t("importNoWords", "No vocabulary rows were found in this CSV."),
         });
       }
-    } catch {
+    } catch (fileError) {
       onUpdateImportJob({
-        error: t("importReadFailed", "Could not read this file."),
+        error:
+          fileError.code === "VOCABULARY_CSV_MISSING_HEADERS"
+            ? t(
+                "importMissingHeaders",
+                "Missing required CSV headers: {headers}",
+                { headers: fileError.missingHeaders.join(", ") }
+              )
+            : t("importReadFailed", "Could not read this CSV file."),
       });
     }
   }
@@ -109,6 +118,18 @@ export function ImportView({
       progress: { current: 0, total: 0 },
       results: [],
     });
+  }
+
+  function downloadVocabularyTemplate() {
+    const csv = `${VOCABULARY_CSV_HEADERS.join(",")}\r\n`;
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "french-desk-vocabulary-template.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -139,7 +160,7 @@ export function ImportView({
             <h3 className="text-xl font-black">
               {isPhraseMode
                 ? t("importPhraseTitle", "Import short phrases from a CSV")
-                : t("importTitle", "Import vocabulary from a text file")}
+                : t("importTitle", "Import vocabulary from a CSV")}
             </h3>
             <p className="mt-1 text-sm leading-6 text-slate-600">
               {isPhraseMode
@@ -149,7 +170,7 @@ export function ImportView({
                   )
                 : t(
                     "importCopy",
-                    "Upload a .txt file with French vocabulary separated by semicolons. Each new word will use the same AI auto-fill flow as Add note."
+                    "Upload a prepared vocabulary CSV. Its meanings and learning details are saved directly without AI or Wiktionary calls."
                   )}
             </p>
           </div>
@@ -174,10 +195,34 @@ export function ImportView({
             ))}
           </div>
 
+          {!isPhraseMode && (
+            <div className="flex flex-col gap-3 rounded-xl border border-line bg-sky/35 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-black">
+                  {t("importVocabularyFormat", "Prepared vocabulary CSV")}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-600">
+                  {t(
+                    "importVocabularyRequired",
+                    "French, Chinese, and part of speech are required. Keep the remaining headers even when their cells are empty."
+                  )}
+                </p>
+              </div>
+              <button
+                className="secondary-action h-10 shrink-0"
+                onClick={downloadVocabularyTemplate}
+                type="button"
+              >
+                <Download size={16} />
+                {t("importDownloadTemplate", "Download template")}
+              </button>
+            </div>
+          )}
+
           <label className="grid gap-2 rounded-xl border border-dashed border-frenchBlue/30 bg-sky/35 p-5 text-sm font-bold">
             <span className="flex items-center gap-2">
               <FileText size={18} className="text-frenchBlue" />
-              {isPhraseMode ? t("importCsvFile", "CSV file") : t("importFile", "Text file")}
+              {t("importCsvFile", "CSV file")}
             </span>
             <input
               accept={fileAccept}
@@ -197,21 +242,53 @@ export function ImportView({
             </div>
           )}
 
-          {isPhraseMode && importItems.length > 0 && (
+          {importItems.length > 0 && (
             <div className="overflow-x-auto rounded-xl border border-line bg-white shadow-sm">
-              <div className="min-w-[720px]">
-                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_160px] gap-3 border-b border-line bg-sky/45 px-3 py-2 text-xs font-black uppercase text-slate-500">
+              <div className={isPhraseMode ? "min-w-[720px]" : "min-w-[900px]"}>
+                <div
+                  className={`grid gap-3 border-b border-line bg-sky/45 px-3 py-2 text-xs font-black uppercase text-slate-500 ${
+                    isPhraseMode
+                      ? "grid-cols-[minmax(0,1fr)_minmax(0,1fr)_160px]"
+                      : "grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_140px_minmax(160px,0.7fr)]"
+                  }`}
+                >
                   <span>{t("french", "French")}</span>
-                  <span>{t("translation", "Translation")}</span>
-                  <span>{t("tags", "Tags")}</span>
+                  <span>
+                    {isPhraseMode
+                      ? t("translation", "Translation")
+                      : t("importChinese", "Chinese")}
+                  </span>
+                  {isPhraseMode ? (
+                    <span>{t("tags", "Tags")}</span>
+                  ) : (
+                    <>
+                      <span>{t("wordType", "Part of speech")}</span>
+                      <span>{t("ipa", "IPA")}</span>
+                      <span>{t("tags", "Tags")}</span>
+                    </>
+                  )}
                 </div>
                 {importItems.slice(0, 5).map((item, index) => (
                   <div
-                    className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_160px] gap-3 border-b border-line px-3 py-2 text-sm last:border-b-0"
+                    className={`grid gap-3 border-b border-line px-3 py-2 text-sm last:border-b-0 ${
+                      isPhraseMode
+                        ? "grid-cols-[minmax(0,1fr)_minmax(0,1fr)_160px]"
+                        : "grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_140px_minmax(160px,0.7fr)]"
+                    } ${item.validationIssues?.length ? "bg-blush/40" : ""}`}
                     key={`${item.french}-${index}`}
                   >
                     <span className="min-w-0 truncate font-bold">{item.french || "-"}</span>
                     <span className="min-w-0 truncate text-slate-700">{item.english || "-"}</span>
+                    {!isPhraseMode && (
+                      <>
+                        <span className="min-w-0 truncate text-slate-600">
+                          {item.partOfSpeech || "-"}
+                        </span>
+                        <span className="min-w-0 truncate text-slate-600">
+                          {item.ipa || "-"}
+                        </span>
+                      </>
+                    )}
                     <span className="min-w-0 truncate text-slate-500">
                       {(item.tags ?? []).join(", ") || "-"}
                     </span>
