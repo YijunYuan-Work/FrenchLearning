@@ -25,10 +25,10 @@ import { useDailyLearningState } from "./hooks/useDailyLearningState";
 import { useLanguage } from "./i18n/LanguageContext";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
-import { autoFillFrenchVocabulary } from "./services/vocabularyAutofill";
 import { normalizeTags } from "./utils/tags";
 import { MAX_CONFIDENCE } from "./utils/quiz";
 import { isRichTextEmpty, sanitizeRichTextHtml } from "./utils/richText";
+import { importVocabularyRecords } from "./utils/vocabularyImport";
 import { GrammarView } from "./views/GrammarView";
 import { ImportView } from "./views/ImportView";
 import { PhrasesView } from "./views/PhrasesView";
@@ -89,25 +89,6 @@ function getFriendlyAuthError(error) {
   }
 
   return message;
-}
-
-function wait(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-function isTemporaryWiktionaryError(error) {
-  return error?.code === "WIKTIONARY_TEMPORARY" || error?.status === 503;
-}
-
-function getImportRetryDelay(error, attempt) {
-  const retryAfterMs = Number(error?.retryAfterMs);
-  if (Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
-    return Math.min(retryAfterMs + 750, 30000);
-  }
-
-  return Math.min(2500 * attempt, 10000);
 }
 
 function getDisplayName(user) {
@@ -535,124 +516,51 @@ export default function App() {
     }
   }
 
-  async function importVocabularyWords(words, onProgress, shouldCancel) {
+  async function importVocabularyRows(rows, onProgress, shouldCancel) {
     if (!user) return [];
 
-    const results = [];
-    const seenInFile = new Set();
-    const knownWords = new Set(
-      items
-        .filter((item) => item.category === "vocabulary")
-        .map((item) => item.french.trim().toLocaleLowerCase("fr"))
-    );
+    const reasonFor = (code, value) => {
+      const reasons = {
+        added: t("importReasonAdded", "Added successfully."),
+        duplicateFile: t("importReasonDuplicateFile", "Duplicate in this file."),
+        duplicateExisting: t(
+          "importReasonDuplicate",
+          "Already exists in Vocabulary."
+        ),
+        missingFrench: t("importReasonMissingFrench", "French is required."),
+        missingChinese: t(
+          "importReasonMissingChinese",
+          "Chinese meaning is required."
+        ),
+        missingPartOfSpeech: t(
+          "importReasonMissingPartOfSpeech",
+          "Part of speech is required."
+        ),
+        invalidPartOfSpeech: t(
+          "importReasonInvalidPartOfSpeech",
+          'Unsupported part of speech: "{value}".',
+          { value }
+        ),
+        invalidGender: t(
+          "importReasonInvalidGender",
+          'Unsupported noun gender: "{value}".',
+          { value }
+        ),
+      };
+      return reasons[code] ?? t("importReasonInvalidRow", "Invalid CSV row.");
+    };
 
-    for (const [index, rawWord] of words.entries()) {
-      if (shouldCancel?.()) {
-        break;
-      }
-
-      const word = rawWord.trim();
-      const normalizedWord = word.toLocaleLowerCase("fr");
-      onProgress?.(index + 1, words.length);
-
-      if (!word) {
-        results.push({
-          word: rawWord,
-          status: "skipped",
-          reason: t("importReasonEmpty", "Empty entry."),
-        });
-        continue;
-      }
-
-      if (seenInFile.has(normalizedWord)) {
-        results.push({
-          word,
-          status: "skipped",
-          reason: t("importReasonDuplicateFile", "Duplicate in this file."),
-        });
-        continue;
-      }
-      seenInFile.add(normalizedWord);
-
-      if (knownWords.has(normalizedWord)) {
-        results.push({
-          word,
-          status: "skipped",
-          reason: t("importReasonDuplicate", "Already exists in Vocabulary."),
-        });
-        continue;
-      }
-
-      try {
-        let result;
-        for (let attempt = 1; attempt <= 3; attempt += 1) {
-          try {
-            result = await autoFillFrenchVocabulary(word, language);
-            break;
-          } catch (error) {
-            if (
-              !isTemporaryWiktionaryError(error) ||
-              attempt === 3 ||
-              shouldCancel?.()
-            ) {
-              throw error;
-            }
-
-            await wait(getImportRetryDelay(error, attempt));
-          }
-        }
-
-        const resultWordKey = result.word.trim().toLocaleLowerCase("fr");
-        if (knownWords.has(resultWordKey)) {
-          results.push({
-            word,
-            status: "skipped",
-            reason: t("importReasonDuplicate", "Already exists in Vocabulary."),
-          });
-          continue;
-        }
-
-        const nextItem = {
-          ...emptyForm,
-          category: "vocabulary",
-          french: result.word,
-          partOfSpeech: result.partOfSpeech,
-          ipa: result.ipa,
-          gender: result.gender,
-          conjugation: result.conjugation ?? createEmptyWordDetails().conjugation,
-          adjectiveForms:
-            result.adjectiveForms ?? createEmptyWordDetails().adjectiveForms,
-          english: result.english,
-          example: result.example,
-          notes: result.notes,
-          tags: result.tags ?? [],
-          confidence: 1,
-          lastReviewed: "Not reviewed",
-        };
-        const savedItem = await createNote(nextItem, user.id);
-
-        knownWords.add(savedItem.french.trim().toLocaleLowerCase("fr"));
+    return importVocabularyRecords({
+      records: rows,
+      existingItems: items,
+      saveNote: (nextItem) => createNote(nextItem, user.id),
+      onSaved: (savedItem) => {
         setItems((current) => [savedItem, ...current]);
-        completeTask("addNote");
-        results.push({
-          word,
-          status: "added",
-          reason: t("importReasonAdded", "Added successfully."),
-        });
-      } catch (error) {
-        results.push({
-          word,
-          status: "failed",
-          reason: error.message,
-        });
-      } finally {
-        if (!shouldCancel?.()) {
-          await wait(900);
-        }
-      }
-    }
-
-    return results;
+      },
+      onProgress,
+      shouldCancel,
+      reasonFor,
+    });
   }
 
   async function importPhraseRows(rows, onProgress, shouldCancel) {
@@ -727,7 +635,6 @@ export default function App() {
 
         knownPhrases.add(savedItem.french.trim().toLocaleLowerCase("fr"));
         setItems((current) => [savedItem, ...current]);
-        completeTask("addNote");
         results.push({
           word: french,
           item: row,
@@ -776,7 +683,7 @@ export default function App() {
 
     try {
       const importHandler =
-        mode === "phrases" ? importPhraseRows : importVocabularyWords;
+        mode === "phrases" ? importPhraseRows : importVocabularyRows;
       const importResults = await importHandler(
         nextItems,
         (current, total) => {
@@ -785,6 +692,9 @@ export default function App() {
         () => cancelImportRef.current
       );
 
+      if (importResults.some((result) => result.status === "added")) {
+        completeTask("addNote");
+      }
       updateImportJob({ results: importResults });
     } catch (importError) {
       updateImportJob({ error: importError.message });
@@ -1003,8 +913,6 @@ export default function App() {
     onQuizAnswer: handleQuizAnswer,
     importJob,
     onCancelImport: cancelImportJob,
-    onImportPhrases: importPhraseRows,
-    onImportVocabulary: importVocabularyWords,
     onStartImport: startImportJob,
     onUpdateImportJob: updateImportJob,
     onQuizComplete: () => completeTask("quiz"),
