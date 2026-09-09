@@ -214,6 +214,21 @@ test("phrase import remains compatible with its header format", () => {
   ]);
 });
 
+test("phrase import supports semicolon-separated tags", () => {
+  const csv = [
+    "french,translation,tags",
+    "Je m'appelle...,我叫……,A1;Unit 1;Core;identity",
+  ].join("\n");
+
+  assert.deepEqual(parsePhraseCsv(csv), [
+    {
+      french: "Je m'appelle...",
+      english: "我叫……",
+      tags: ["A1", "Unit 1", "Core", "identity"],
+    },
+  ]);
+});
+
 test("phrase import still supports quoted commas and doubled quotes", () => {
   const csv =
     'French,English,Usage\n"Oui, bien sûr !","Yes, of course!","polite, daily"\n"Il dit ""bonjour"".","He says ""hello"".",speech';

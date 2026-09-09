@@ -200,6 +200,6 @@ export function parsePhraseCsv(text) {
   return dataRows.map((row) => ({
     french: row[0]?.trim() ?? "",
     english: row[1]?.trim() ?? "",
-    tags: normalizeTags(row[2] ?? ""),
+    tags: normalizeTags((row[2] ?? "").replaceAll(";", ",")),
   }));
 }

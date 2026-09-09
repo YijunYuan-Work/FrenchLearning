@@ -556,7 +556,6 @@ export default function App() {
       saveNote: (nextItem) => createNote(nextItem, user.id),
       onSaved: (savedItem) => {
         setItems((current) => [savedItem, ...current]);
-        completeTask("addNote");
       },
       onProgress,
       shouldCancel,
@@ -636,7 +635,6 @@ export default function App() {
 
         knownPhrases.add(savedItem.french.trim().toLocaleLowerCase("fr"));
         setItems((current) => [savedItem, ...current]);
-        completeTask("addNote");
         results.push({
           word: french,
           item: row,
@@ -694,6 +692,9 @@ export default function App() {
         () => cancelImportRef.current
       );
 
+      if (importResults.some((result) => result.status === "added")) {
+        completeTask("addNote");
+      }
       updateImportJob({ results: importResults });
     } catch (importError) {
       updateImportJob({ error: importError.message });
