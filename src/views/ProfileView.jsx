@@ -11,8 +11,9 @@ import { useEffect, useState } from "react";
 import {
   changeUserPassword,
   getAutofillUsageStatus,
+  getDisplayName,
+  getLoginUsername,
   getProfileRecoveryEmail,
-  getProfileUsername,
   updateUserProfile,
 } from "../api/profile";
 import { updateLearningPreferences } from "../api/preferences";
@@ -44,7 +45,7 @@ export function SettingsView({
   user,
 }) {
   const { t } = useLanguage();
-  const [username, setUsername] = useState(() => getProfileUsername(user));
+  const [displayName, setDisplayName] = useState(() => getDisplayName(user));
   const [recoveryEmail, setRecoveryEmail] = useState(() =>
     getProfileRecoveryEmail(user)
   );
@@ -86,7 +87,7 @@ export function SettingsView({
   }
 
   useEffect(() => {
-    setUsername(getProfileUsername(user));
+    setDisplayName(getDisplayName(user));
     setRecoveryEmail(getProfileRecoveryEmail(user));
   }, [user]);
 
@@ -103,8 +104,10 @@ export function SettingsView({
     setProfileError("");
     setProfileMessage("");
 
-    if (!username.trim()) {
-      setProfileError(t("profileUsernameRequired", "Username is required."));
+    if (!displayName.trim()) {
+      setProfileError(
+        t("profileDisplayNameRequired", "Display name is required.")
+      );
       return;
     }
 
@@ -119,8 +122,8 @@ export function SettingsView({
 
     try {
       const updatedUser = await updateUserProfile({
+        displayName,
         recoveryEmail,
-        username,
       });
       onUserUpdated(updatedUser);
       setProfileMessage(t("profileSaved", "Profile updated."));
@@ -234,11 +237,26 @@ export function SettingsView({
 
         <form className="grid gap-4" onSubmit={handleProfileSubmit}>
           <label className="grid gap-1 text-sm font-bold">
-            {t("username", "Username")}
+            {t("profileLoginUsername", "Login username")}
+            <input
+              className="h-11 rounded-lg border border-line bg-slate-50 px-3 font-normal text-slate-600 shadow-sm"
+              readOnly
+              value={getLoginUsername(user)}
+            />
+            <span className="text-xs font-normal text-slate-500">
+              {t(
+                "profileLoginUsernameCopy",
+                "Used to sign in and cannot be changed."
+              )}
+            </span>
+          </label>
+
+          <label className="grid gap-1 text-sm font-bold">
+            {t("profileDisplayName", "Display name")}
             <input
               className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-              onChange={(event) => setUsername(event.target.value)}
-              value={username}
+              onChange={(event) => setDisplayName(event.target.value)}
+              value={displayName}
             />
           </label>
 

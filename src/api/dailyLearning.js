@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
 import { createDailyProgress } from "../utils/dailyProgress";
+import { normalizeStudyState } from "../utils/studyState";
 
 const dailyLearningStorageKey = "french-learning-daily-learning-state-v1";
 const dailyLearningSyncEnabled =
@@ -36,26 +37,6 @@ function normalizeQuizState(value, date) {
     queueIds: value.queueIds,
     answered: value.answered ?? {},
     seenIds: Array.isArray(value.seenIds) ? value.seenIds : value.queueIds,
-  };
-}
-
-function normalizeStudyState(value, date) {
-  if (
-    !value ||
-    value.date !== date ||
-    !Array.isArray(value.cycleIds) ||
-    !Array.isArray(value.seenIds)
-  ) {
-    return null;
-  }
-
-  return {
-    cardIndex: Math.max(0, Number(value.cardIndex) || 0),
-    cycleIds: value.cycleIds,
-    date,
-    isFlipped: Boolean(value.isFlipped),
-    isStudyComplete: Boolean(value.isStudyComplete),
-    seenIds: value.seenIds,
   };
 }
 

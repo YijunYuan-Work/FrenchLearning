@@ -1,4 +1,10 @@
 import { supabase } from "../lib/supabase";
+import {
+  createUpdatedProfileMetadata,
+  getDisplayName,
+  getLoginUsername,
+  getProfileRecoveryEmail,
+} from "../utils/accountIdentity";
 
 const freeAutofillDailyLimit = 10;
 const subscriberAutofillDailyLimit = 1000;
@@ -17,26 +23,7 @@ function getTodayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function getProfileUsername(user) {
-  return (
-    user?.user_metadata?.name ||
-    user?.user_metadata?.username ||
-    user?.email?.split("@")[0] ||
-    "Learner"
-  );
-}
-
-export function getProfileRecoveryEmail(user) {
-  const metadata = user?.user_metadata ?? {};
-  const email = String(metadata.profileEmail || metadata.recoveryEmail || "").trim();
-  const authEmail = String(user?.email || "").trim().toLowerCase();
-
-  if (!email || email.toLowerCase() === authEmail) {
-    return "";
-  }
-
-  return email;
-}
+export { getDisplayName, getLoginUsername, getProfileRecoveryEmail };
 
 export function getAutofillLimit(subscriptionTier) {
   return subscriptionTier === "subscriber"
@@ -44,10 +31,7 @@ export function getAutofillLimit(subscriptionTier) {
     : freeAutofillDailyLimit;
 }
 
-export async function updateUserProfile({ recoveryEmail, username }) {
-  const trimmedUsername = username.trim();
-  const trimmedRecoveryEmail = recoveryEmail.trim();
-
+export async function updateUserProfile({ displayName, recoveryEmail }) {
   const {
     data: { user },
     error: currentUserError,
@@ -58,13 +42,7 @@ export async function updateUserProfile({ recoveryEmail, username }) {
   }
 
   const { data, error } = await supabase.auth.updateUser({
-    data: {
-      ...(user?.user_metadata ?? {}),
-      name: trimmedUsername,
-      profileEmail: trimmedRecoveryEmail,
-      recoveryEmail: trimmedRecoveryEmail,
-      username: trimmedUsername,
-    },
+    data: createUpdatedProfileMetadata(user, { displayName, recoveryEmail }),
   });
 
   if (error) {

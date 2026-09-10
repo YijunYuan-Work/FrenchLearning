@@ -26,9 +26,11 @@ import { useLanguage } from "./i18n/LanguageContext";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
 import { normalizeTags } from "./utils/tags";
+import { getDisplayName } from "./utils/accountIdentity";
 import { MAX_CONFIDENCE } from "./utils/quiz";
 import { isRichTextEmpty, sanitizeRichTextHtml } from "./utils/richText";
 import { importVocabularyRecords } from "./utils/vocabularyImport";
+import { shouldDelayStudyMount } from "./utils/studyState";
 import { GrammarView } from "./views/GrammarView";
 import { ImportView } from "./views/ImportView";
 import { PhrasesView } from "./views/PhrasesView";
@@ -89,15 +91,6 @@ function getFriendlyAuthError(error) {
   }
 
   return message;
-}
-
-function getDisplayName(user) {
-  return (
-    user?.user_metadata?.name ||
-    user?.user_metadata?.username ||
-    user?.email?.split("@")[0] ||
-    "Learner"
-  );
 }
 
 function isPublicDemoRoute() {
@@ -890,6 +883,11 @@ export default function App() {
 
   const ActiveView = viewBySection[activeSection] ?? TodayView;
   const displayName = getDisplayName(user);
+  const isStudyStateLoading = shouldDelayStudyMount({
+    activeSection,
+    dailyStateLoaded,
+    isDemo: isDemoRoute,
+  });
   const pageTitle =
     activeSection === "today"
       ? t("todayTitle", "Bonjour, {username}. Ready for 12 minutes of French?", {
@@ -990,7 +988,13 @@ export default function App() {
               {t("loadingNotes", "Loading notes...")}
             </div>
           )}
-          <ActiveView {...viewProps} />
+          {isStudyStateLoading ? (
+            <div className="app-card p-5 text-sm font-medium text-inkSecondary">
+              {t("loadingStudyState", "Loading your saved study session...")}
+            </div>
+          ) : (
+            <ActiveView {...viewProps} />
+          )}
         </section>
       </main>
 

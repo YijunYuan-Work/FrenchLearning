@@ -15,12 +15,6 @@ const allowedPartsOfSpeech = [
 
 const allowedOutputLanguages = new Set(["en", "zh"]);
 
-const requestLog = new Map();
-const freeAutofillDailyLimit = 10;
-const subscriberAutofillDailyLimit = 1000;
-const rateWindowMs = 24 * 60 * 60 * 1000;
-let rateLimitTableAvailable = true;
-let subscriptionRoleTableAvailable = true;
 const wiktionaryHeaders = {
   "User-Agent": "FrenchLearning/0.1 vocabulary import and lookup",
 };
@@ -208,10 +202,6 @@ function sleep(ms) {
   });
 }
 
-function getTodayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function getWiktionaryCacheKey(word) {
   return normalizeWord(stripLeadingFrenchArticle(word)).toLocaleLowerCase("fr-FR");
 }
@@ -343,84 +333,35 @@ function getBearerToken(request) {
   return authorization.replace(/^Bearer\s+/i, "");
 }
 
-function isMissingRateLimitTable(error) {
-  const message = error?.message?.toLowerCase() ?? "";
-  return (
-    error?.code === "PGRST205" ||
-    error?.code === "42P01" ||
-    message.includes("ai_autofill_usage")
-  );
-}
+export function normalizeQuotaRpcResult(data) {
+  const result = Array.isArray(data) ? data[0] : data;
+  const requestCount = Number(result?.request_count);
+  const limit = Number(result?.daily_limit);
 
-function isMissingSubscriptionRoleTable(error) {
-  const message = error?.message?.toLowerCase() ?? "";
-  return (
-    error?.code === "PGRST205" ||
-    error?.code === "42P01" ||
-    message.includes("user_subscription_roles")
-  );
-}
-
-function getAutofillLimit(subscriptionTier) {
-  return subscriptionTier === "subscriber"
-    ? subscriberAutofillDailyLimit
-    : freeAutofillDailyLimit;
-}
-
-function checkMemoryRateLimit(userId, limit = freeAutofillDailyLimit, subscriptionTier = "free") {
-  const now = Date.now();
-  const current = requestLog.get(userId) ?? [];
-  const recent = current.filter((timestamp) => now - timestamp < rateWindowMs);
-
-  if (recent.length >= limit) {
-    requestLog.set(userId, recent);
-    return {
-      allowed: false,
-      limit,
-      requestCount: recent.length,
-      subscriptionTier,
-    };
+  if (
+    typeof result?.allowed !== "boolean" ||
+    !Number.isInteger(requestCount) ||
+    requestCount < 0 ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    !["free", "subscriber"].includes(result?.subscription_tier)
+  ) {
+    throw new Error("Secure quota RPC returned an invalid result.");
   }
 
-  requestLog.set(userId, [...recent, now]);
   return {
-    allowed: true,
+    allowed: result.allowed,
     limit,
-    requestCount: recent.length + 1,
-    subscriptionTier,
+    requestCount,
+    subscriptionTier: result.subscription_tier,
   };
 }
 
-async function getSubscriptionTier(supabase, userId) {
-  if (!subscriptionRoleTableAvailable) return "free";
-
-  const { data, error } = await supabase
-    .from("user_subscription_roles")
-    .select("subscription_tier")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) {
-    if (isMissingSubscriptionRoleTable(error)) {
-      subscriptionRoleTableAvailable = false;
-      return "free";
-    }
-
-    throw error;
-  }
-
-  return data?.subscription_tier === "subscriber" ? "subscriber" : "free";
-}
-
-async function checkRateLimit(request, userId) {
-  if (!rateLimitTableAvailable) {
-    return checkMemoryRateLimit(userId);
-  }
-
+async function consumeAutofillQuota(request) {
   const token = getBearerToken(request);
   const { supabaseUrl, supabaseKey } = getSupabaseEnvironment();
   if (!token || !supabaseUrl || !supabaseKey) {
-    return checkMemoryRateLimit(userId);
+    throw new Error("Authenticated Supabase environment is unavailable.");
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -431,60 +372,11 @@ async function checkRateLimit(request, userId) {
       },
     },
   });
-  const today = getTodayKey();
-  const subscriptionTier = await getSubscriptionTier(supabase, userId);
-  const limit = getAutofillLimit(subscriptionTier);
+  const { data, error } = await supabase.rpc("consume_ai_autofill_quota");
 
-  const { data, error } = await supabase
-    .from("ai_autofill_usage")
-    .select("request_count")
-    .eq("user_id", userId)
-    .eq("date", today)
-    .maybeSingle();
+  if (error) throw error;
 
-  if (error) {
-    if (isMissingRateLimitTable(error)) {
-      rateLimitTableAvailable = false;
-      return checkMemoryRateLimit(userId, limit, subscriptionTier);
-    }
-    throw error;
-  }
-
-  const nextCount = Number(data?.request_count ?? 0) + 1;
-  if (nextCount > limit) {
-    return {
-      allowed: false,
-      limit,
-      requestCount: Number(data?.request_count ?? 0),
-      subscriptionTier,
-    };
-  }
-
-  const { error: upsertError } = await supabase
-    .from("ai_autofill_usage")
-    .upsert(
-      {
-        user_id: userId,
-        date: today,
-        request_count: nextCount,
-      },
-      { onConflict: "user_id,date" }
-    );
-
-  if (upsertError) {
-    if (isMissingRateLimitTable(upsertError)) {
-      rateLimitTableAvailable = false;
-      return checkMemoryRateLimit(userId, limit, subscriptionTier);
-    }
-    throw upsertError;
-  }
-
-  return {
-    allowed: true,
-    limit,
-    requestCount: nextCount,
-    subscriptionTier,
-  };
+  return normalizeQuotaRpcResult(data);
 }
 
 function cleanAutofillResult(value, requestedWord) {
@@ -582,11 +474,6 @@ export default async function handler(request, response) {
     return;
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    sendJson(response, 500, { error: "OPENAI_API_KEY is not configured." });
-    return;
-  }
-
   let user;
   try {
     user = await authenticateUser(request);
@@ -597,26 +484,6 @@ export default async function handler(request, response) {
 
   if (!user) {
     sendJson(response, 401, { error: "Sign in before using AI auto-fill." });
-    return;
-  }
-
-  let rateLimitResult;
-  try {
-    rateLimitResult = await checkRateLimit(request, user.id);
-  } catch (error) {
-    sendJson(response, 500, {
-      error: `AI usage tracking failed: ${error.message}`,
-    });
-    return;
-  }
-
-  if (!rateLimitResult.allowed) {
-    sendJson(response, 429, {
-      error: `Daily AI auto-fill limit reached (${rateLimitResult.requestCount}/${rateLimitResult.limit} used for the ${rateLimitResult.subscriptionTier} plan). Try again tomorrow.`,
-      limit: rateLimitResult.limit,
-      requestCount: rateLimitResult.requestCount,
-      subscriptionTier: rateLimitResult.subscriptionTier,
-    });
     return;
   }
 
@@ -671,6 +538,31 @@ export default async function handler(request, response) {
     sendJson(response, 422, {
       error:
         "I could not find this as a French entry in Wiktionary. Check the spelling and try again.",
+    });
+    return;
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    sendJson(response, 500, { error: "OPENAI_API_KEY is not configured." });
+    return;
+  }
+
+  let rateLimitResult;
+  try {
+    rateLimitResult = await consumeAutofillQuota(request);
+  } catch (error) {
+    sendJson(response, 500, {
+      error: `Secure AI usage tracking failed: ${error.message}`,
+    });
+    return;
+  }
+
+  if (!rateLimitResult.allowed) {
+    sendJson(response, 429, {
+      error: `Daily AI auto-fill limit reached (${rateLimitResult.requestCount}/${rateLimitResult.limit} used for the ${rateLimitResult.subscriptionTier} plan). Try again tomorrow.`,
+      limit: rateLimitResult.limit,
+      requestCount: rateLimitResult.requestCount,
+      subscriptionTier: rateLimitResult.subscriptionTier,
     });
     return;
   }

@@ -1,5 +1,6 @@
 import { LogOut, Plus, Sparkle } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
+import { getDisplayName } from "../utils/accountIdentity";
 import { LanguageToggle } from "./LanguageToggle";
 
 export function AppHeader({
@@ -11,11 +12,7 @@ export function AppHeader({
   user,
 }) {
   const { t } = useLanguage();
-  const displayName =
-    user?.user_metadata?.name ||
-    user?.user_metadata?.username ||
-    user?.email?.split("@")[0] ||
-    "Learner";
+  const displayName = getDisplayName(user);
 
   return (
     <header className="px-3 pb-4 pt-5 md:px-7 md:pb-5 md:pt-7">
