@@ -1,14 +1,11 @@
 import { supabase } from "../lib/supabase";
+import {
+  createAuthEmailForProject,
+  createSignupMetadata,
+} from "../utils/accountIdentity";
 
 function createAuthEmail(username) {
-  const projectHost = new URL(import.meta.env.VITE_SUPABASE_URL).hostname;
-  const normalizedUsername = username
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-
-  return `${normalizedUsername}@${projectHost}`;
+  return createAuthEmailForProject(username, import.meta.env.VITE_SUPABASE_URL);
 }
 
 export async function getCurrentUser() {
@@ -39,11 +36,7 @@ export async function signUpWithEmail(username, email, password) {
     email: createAuthEmail(username),
     password,
     options: {
-      data: {
-        name: username,
-        profileEmail: email.trim(),
-        username,
-      },
+      data: createSignupMetadata(username, email),
     },
   });
 

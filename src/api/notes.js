@@ -1,4 +1,8 @@
 import { supabase } from "../lib/supabase";
+import {
+  collectPaginatedRows,
+  NOTES_PAGE_SIZE,
+} from "../utils/notePagination";
 
 function toNote(row) {
   return {
@@ -40,17 +44,23 @@ function toNoteRow(note, userId) {
 }
 
 export async function listNotes(userId) {
-  const { data, error } = await supabase
-    .from("notes")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+  const rows = await collectPaginatedRows(async (from, to) => {
+    const { data, error } = await supabase
+      .from("notes")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, to);
 
-  if (error) {
-    throw error;
-  }
+    if (error) {
+      throw error;
+    }
 
-  return data.map(toNote);
+    return data ?? [];
+  }, NOTES_PAGE_SIZE);
+
+  return rows.map(toNote);
 }
 
 export async function createNote(note, userId) {

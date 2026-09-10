@@ -96,6 +96,11 @@ cp .env.example .env.local
 
 Add your Supabase and OpenAI configuration to `.env.local`, then run `supabase/schema.sql` in the Supabase SQL Editor.
 
+For an existing French Desk database, run
+`supabase/patches/2026-09-10-ai-autofill-quota-security.sql` in the SQL
+Editor before deploying this version. The API intentionally rejects AI
+auto-fill when the secure quota function has not been installed.
+
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
