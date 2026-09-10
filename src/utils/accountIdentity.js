@@ -68,5 +68,6 @@ export function createUpdatedProfileMetadata(
     name: String(displayName ?? "").trim(),
     profileEmail: trimmedRecoveryEmail,
     recoveryEmail: trimmedRecoveryEmail,
+    username: getLoginUsername(user),
   };
 }

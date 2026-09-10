@@ -70,4 +70,17 @@ test("the immutable auth email repairs display of previously overwritten usernam
 
   assert.equal(getLoginUsername(user), "original-login");
   assert.equal(getDisplayName(user), "Display Name");
+
+  assert.deepEqual(
+    createUpdatedProfileMetadata(user, {
+      displayName: "Updated Display Name",
+      recoveryEmail: "recovery@example.com",
+    }),
+    {
+      name: "Updated Display Name",
+      profileEmail: "recovery@example.com",
+      recoveryEmail: "recovery@example.com",
+      username: "original-login",
+    },
+  );
 });
