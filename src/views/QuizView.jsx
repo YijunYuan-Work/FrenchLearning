@@ -9,9 +9,7 @@ import {
   getTodayKey,
   isGenderCorrect,
   isMeaningCorrect,
-  loadDailyQuizState,
   MAX_CONFIDENCE,
-  saveDailyQuizState,
 } from "../utils/quiz";
 import { useLanguage } from "../i18n/LanguageContext";
 
@@ -23,12 +21,11 @@ export function QuizView({
   openNewItem,
   savedQuizState,
   learningSettings,
-  user,
 }) {
   const { t } = useLanguage();
   const quizLimit = learningSettings?.quizVocabularyLimit ?? DAILY_QUIZ_LIMIT;
   const [quizState, setQuizState] = useState(() =>
-    savedQuizState ?? loadDailyQuizState(items, user?.id, quizLimit)
+    savedQuizState ?? createDailyQuizState(items, getTodayKey(), [], quizLimit)
   );
   const [answer, setAnswer] = useState("");
   const [genderAnswer, setGenderAnswer] = useState("");
@@ -87,9 +84,8 @@ export function QuizView({
   }, [items, quizLimit]);
 
   useEffect(() => {
-    saveDailyQuizState(quizState, user?.id);
     onQuizStateChange?.(quizState);
-  }, [onQuizStateChange, quizState, user?.id]);
+  }, [onQuizStateChange, quizState]);
 
   useEffect(() => {
     if (!savedQuizState) return;

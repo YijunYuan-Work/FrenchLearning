@@ -2,11 +2,6 @@ import { defaultLearningSettings } from "./learningSettings.js";
 
 export const DAILY_QUIZ_LIMIT = defaultLearningSettings.quizVocabularyLimit;
 export const MAX_CONFIDENCE = 4;
-export const QUIZ_STORAGE_KEY = "french-learning-daily-quiz-v1";
-
-function getQuizStorageKey(userId) {
-  return userId ? `${QUIZ_STORAGE_KEY}:${userId}` : QUIZ_STORAGE_KEY;
-}
 
 export function getTodayKey() {
   const today = new Date();
@@ -91,33 +86,6 @@ export function createDailyQuizState(
     answered: {},
     seenIds: Array.from(new Set([...excludedIds, ...queueIds])),
   };
-}
-
-export function loadDailyQuizState(items, userId, limit = DAILY_QUIZ_LIMIT) {
-  try {
-    const today = getTodayKey();
-    const saved = JSON.parse(localStorage.getItem(getQuizStorageKey(userId)));
-    if (!saved || saved.date !== today || !Array.isArray(saved.queueIds)) {
-      return createDailyQuizState(items, today, [], limit);
-    }
-
-    const existingIds = new Set(items.map((item) => item.id));
-    return {
-      date: today,
-      limit: Number(saved.limit) || limit,
-      queueIds: saved.queueIds.filter((id) => existingIds.has(id)),
-      answered: saved.answered ?? {},
-      seenIds: Array.from(
-        new Set([...(saved.seenIds ?? saved.queueIds)])
-      ).filter((id) => existingIds.has(id)),
-    };
-  } catch {
-    return createDailyQuizState(items, getTodayKey(), [], limit);
-  }
-}
-
-export function saveDailyQuizState(state, userId) {
-  localStorage.setItem(getQuizStorageKey(userId), JSON.stringify(state));
 }
 
 export function normalizeAnswer(value) {

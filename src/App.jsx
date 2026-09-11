@@ -5,12 +5,6 @@ import {
   signUpWithEmail,
 } from "./api/auth";
 import {
-  createNote,
-  deleteNote as deleteStoredNote,
-  listNotes,
-  updateNote,
-} from "./api/notes";
-import {
   getLearningPreferences,
   getLanguagePreference,
   updateLanguagePreference,
@@ -22,6 +16,8 @@ import { categories } from "./data/categories";
 import { demoNotes, demoUser } from "./data/demoData";
 import { hasSupabaseConfig, supabase } from "./lib/supabase";
 import { useDailyLearningState } from "./hooks/useDailyLearningState";
+import { useImportJob } from "./hooks/useImportJob";
+import { useNotes } from "./hooks/useNotes";
 import { useLanguage } from "./i18n/LanguageContext";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
@@ -29,7 +25,6 @@ import { normalizeTags } from "./utils/tags";
 import { getDisplayName } from "./utils/accountIdentity";
 import { MAX_CONFIDENCE } from "./utils/quiz";
 import { isRichTextEmpty, sanitizeRichTextHtml } from "./utils/richText";
-import { importVocabularyRecords } from "./utils/vocabularyImport";
 import { shouldDelayStudyMount } from "./utils/studyState";
 import { GrammarView } from "./views/GrammarView";
 import { ImportView } from "./views/ImportView";
@@ -53,16 +48,6 @@ const emptyForm = {
   tags: "",
   confidence: 1,
   ...createEmptyWordDetails(),
-};
-
-const emptyImportJob = {
-  error: "",
-  fileName: "",
-  importItems: [],
-  importMode: "vocabulary",
-  isImporting: false,
-  progress: { current: 0, total: 0 },
-  results: [],
 };
 
 const viewBySection = {
@@ -100,13 +85,11 @@ function isPublicDemoRoute() {
 export default function App() {
   const isDemoRoute = isPublicDemoRoute();
   const { language, setLanguage, t } = useLanguage();
-  const [items, setItems] = useState(() => (isDemoRoute ? demoNotes : []));
   const [user, setUser] = useState(() => (isDemoRoute ? demoUser : null));
   const [authLoading, setAuthLoading] = useState(
     isDemoRoute ? false : hasSupabaseConfig
   );
   const [authError, setAuthError] = useState("");
-  const [dataLoading, setDataLoading] = useState(false);
   const [dataError, setDataError] = useState("");
   const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(
     isDemoRoute
@@ -120,13 +103,17 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [importJob, setImportJob] = useState(emptyImportJob);
   const [editingItem, setEditingItem] = useState(null);
   const [editorError, setEditorError] = useState("");
-  const [selectedIds, setSelectedIds] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const savedLanguageRef = useRef(language);
-  const cancelImportRef = useRef(false);
+  const notes = useNotes({
+    demoItems: demoNotes,
+    isDemo: isDemoRoute,
+    setError: setDataError,
+    user,
+  });
+  const { items, selectedIds } = notes;
   const {
     completeDailyTask,
     dailyProgress,
@@ -137,6 +124,19 @@ export default function App() {
     setDailyQuizState,
     setDailyStudyState,
   } = useDailyLearningState(isDemoRoute ? null : user, setDataError);
+  const {
+    cancelImportJob,
+    importJob,
+    startImportJob,
+    updateImportJob,
+  } = useImportJob({
+    createImportedNote: notes.createImportedNote,
+    isDemo: isDemoRoute,
+    items,
+    onNotesAdded: () => completeTask("addNote"),
+    t,
+    user,
+  });
 
   useEffect(() => {
     if (isDemoRoute) return undefined;
@@ -157,10 +157,6 @@ export default function App() {
       setAuthLoading(false);
       setAuthError("");
       if (!session?.user) {
-        setItems([]);
-        setSelectedIds([]);
-        setImportJob(emptyImportJob);
-        cancelImportRef.current = false;
         setActiveSection("today");
         resetDailyLearningState();
         setLanguagePreferenceLoaded(false);
@@ -173,35 +169,6 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, [isDemoRoute]);
-
-  useEffect(() => {
-    if (isDemoRoute) return undefined;
-    if (!user?.id) return;
-
-    let isMounted = true;
-    setDataLoading(items.length === 0);
-    setDataError("");
-
-    listNotes(user.id)
-      .then((savedNotes) => {
-        if (!isMounted) return;
-        setItems(savedNotes);
-        setSelectedIds([]);
-      })
-      .catch((error) => {
-        if (!isMounted) return;
-        setDataError(error.message);
-      })
-      .finally(() => {
-        if (isMounted) {
-          setDataLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isDemoRoute, user?.id]);
 
   useEffect(() => {
     if (isDemoRoute) {
@@ -407,9 +374,6 @@ export default function App() {
     try {
       await signOutUser();
       setUser(null);
-      setItems([]);
-      setImportJob(emptyImportJob);
-      cancelImportRef.current = false;
       resetDailyLearningState();
       setLanguagePreferenceLoaded(false);
       setLearningSettings(defaultLearningSettings);
@@ -471,361 +435,16 @@ export default function App() {
       });
     }
 
-    if (isDemoRoute) {
-      setItems((current) =>
-        editingItem
-          ? current.map((item) => (item.id === editingItem.id ? nextItem : item))
-          : [nextItem, ...current]
-      );
-      if (!editingItem) {
-        completeTask("addNote");
-      }
-      setSelectedIds((current) => current.filter((id) => id !== nextItem.id));
-      setEditorError("");
-      setDataError("");
-      setIsEditorOpen(false);
-      return;
-    }
-
     try {
-      const savedItem = editingItem
-        ? await updateNote(editingItem.id, nextItem, user.id)
-        : await createNote(nextItem, user.id);
-
-      setItems((current) =>
-        editingItem
-          ? current.map((item) => (item.id === editingItem.id ? savedItem : item))
-          : [savedItem, ...current]
-      );
+      await notes.save(nextItem, editingItem?.id);
       if (!editingItem) {
         completeTask("addNote");
       }
-      setSelectedIds((current) => current.filter((id) => id !== savedItem.id));
       setEditorError("");
-      setDataError("");
       setIsEditorOpen(false);
     } catch (error) {
       setEditorError(error.message);
     }
-  }
-
-  async function importVocabularyRows(rows, onProgress, shouldCancel) {
-    if (!user) return [];
-
-    const reasonFor = (code, value) => {
-      const reasons = {
-        added: t("importReasonAdded", "Added successfully."),
-        duplicateFile: t("importReasonDuplicateFile", "Duplicate in this file."),
-        duplicateExisting: t(
-          "importReasonDuplicate",
-          "Already exists in Vocabulary."
-        ),
-        missingFrench: t("importReasonMissingFrench", "French is required."),
-        missingChinese: t(
-          "importReasonMissingChinese",
-          "Chinese meaning is required."
-        ),
-        missingPartOfSpeech: t(
-          "importReasonMissingPartOfSpeech",
-          "Part of speech is required."
-        ),
-        invalidPartOfSpeech: t(
-          "importReasonInvalidPartOfSpeech",
-          'Unsupported part of speech: "{value}".',
-          { value }
-        ),
-        invalidGender: t(
-          "importReasonInvalidGender",
-          'Unsupported noun gender: "{value}".',
-          { value }
-        ),
-      };
-      return reasons[code] ?? t("importReasonInvalidRow", "Invalid CSV row.");
-    };
-
-    return importVocabularyRecords({
-      records: rows,
-      existingItems: items,
-      saveNote: (nextItem) => createNote(nextItem, user.id),
-      onSaved: (savedItem) => {
-        setItems((current) => [savedItem, ...current]);
-      },
-      onProgress,
-      shouldCancel,
-      reasonFor,
-    });
-  }
-
-  async function importPhraseRows(rows, onProgress, shouldCancel) {
-    if (!user) return [];
-
-    const results = [];
-    const seenInFile = new Set();
-    const knownPhrases = new Set(
-      items
-        .filter((item) => item.category === "phrases")
-        .map((item) => item.french.trim().toLocaleLowerCase("fr"))
-    );
-
-    for (const [index, row] of rows.entries()) {
-      if (shouldCancel?.()) {
-        break;
-      }
-
-      const french = row.french.trim();
-      const english = row.english.trim();
-      const normalizedFrench = french.toLocaleLowerCase("fr");
-      onProgress?.(index + 1, rows.length);
-
-      if (!french || !english) {
-        results.push({
-          word: french || english || t("unknown", "Unknown"),
-          item: row,
-          status: "skipped",
-          reason: t(
-            "importReasonMissingPhraseColumns",
-            "Missing French phrase or translation."
-          ),
-        });
-        continue;
-      }
-
-      if (seenInFile.has(normalizedFrench)) {
-        results.push({
-          word: french,
-          item: row,
-          status: "skipped",
-          reason: t("importReasonDuplicateFile", "Duplicate in this file."),
-        });
-        continue;
-      }
-      seenInFile.add(normalizedFrench);
-
-      if (knownPhrases.has(normalizedFrench)) {
-        results.push({
-          word: french,
-          item: row,
-          status: "skipped",
-          reason: t("importReasonDuplicatePhrase", "Already exists in Short phrases."),
-        });
-        continue;
-      }
-
-      try {
-        const nextItem = {
-          ...emptyForm,
-          category: "phrases",
-          french,
-          english,
-          example: "",
-          notes: "",
-          tags: row.tags ?? [],
-          confidence: 1,
-          lastReviewed: "Not reviewed",
-          ...createEmptyWordDetails(),
-        };
-        const savedItem = await createNote(nextItem, user.id);
-
-        knownPhrases.add(savedItem.french.trim().toLocaleLowerCase("fr"));
-        setItems((current) => [savedItem, ...current]);
-        results.push({
-          word: french,
-          item: row,
-          status: "added",
-          reason: t("importReasonAdded", "Added successfully."),
-        });
-      } catch (error) {
-        results.push({
-          word: french,
-          item: row,
-          status: "failed",
-          reason: error.message,
-        });
-      }
-    }
-
-    return results;
-  }
-
-  function updateImportJob(patch) {
-    setImportJob((current) => ({ ...current, ...patch }));
-  }
-
-  async function startImportJob(nextItems = importJob.importItems) {
-    if (!user || importJob.isImporting || nextItems.length === 0) return;
-
-    if (isDemoRoute) {
-      updateImportJob({
-        error: t(
-          "demoImportDisabled",
-          "Import is disabled in the public demo."
-        ),
-      });
-      return;
-    }
-
-    const mode = importJob.importMode;
-    cancelImportRef.current = false;
-    updateImportJob({
-      error: "",
-      importItems: nextItems,
-      isImporting: true,
-      progress: { current: 0, total: nextItems.length },
-      results: [],
-    });
-
-    try {
-      const importHandler =
-        mode === "phrases" ? importPhraseRows : importVocabularyRows;
-      const importResults = await importHandler(
-        nextItems,
-        (current, total) => {
-          updateImportJob({ progress: { current, total } });
-        },
-        () => cancelImportRef.current
-      );
-
-      if (importResults.some((result) => result.status === "added")) {
-        completeTask("addNote");
-      }
-      updateImportJob({ results: importResults });
-    } catch (importError) {
-      updateImportJob({ error: importError.message });
-    } finally {
-      updateImportJob({ isImporting: false });
-    }
-  }
-
-  function cancelImportJob() {
-    cancelImportRef.current = true;
-  }
-
-  async function markReviewed(item, delta) {
-    if (!user) return;
-
-    const nextItem = {
-      ...item,
-      confidence: Math.min(4, Math.max(1, Number(item.confidence) + delta)),
-      lastReviewed: "Today",
-    };
-
-    setItems((current) =>
-      current.map((entry) =>
-        entry.id === item.id ? nextItem : entry
-      )
-    );
-
-    if (isDemoRoute) {
-      setDataError("");
-      return;
-    }
-
-    try {
-      const savedItem = await updateNote(item.id, nextItem, user.id);
-      setItems((current) =>
-        current.map((entry) => (entry.id === item.id ? savedItem : entry))
-      );
-      setDataError("");
-    } catch (error) {
-      setDataError(error.message);
-      setItems((current) =>
-        current.map((entry) => (entry.id === item.id ? item : entry))
-      );
-    }
-  }
-
-  async function handleQuizAnswer(itemId, isCorrect) {
-    if (!isCorrect || !user) return;
-
-    const currentItem = items.find((item) => item.id === itemId);
-    if (!currentItem) return;
-
-    const nextItem = {
-      ...currentItem,
-      confidence: Math.min(4, Number(currentItem.confidence) + 1),
-      lastReviewed: "Today",
-    };
-
-    setItems((current) =>
-      current.map((entry) =>
-        entry.id === itemId ? nextItem : entry
-      )
-    );
-
-    if (isDemoRoute) {
-      setDataError("");
-      return;
-    }
-
-    try {
-      const savedItem = await updateNote(itemId, nextItem, user.id);
-      setItems((current) =>
-        current.map((entry) => (entry.id === itemId ? savedItem : entry))
-      );
-      setDataError("");
-    } catch (error) {
-      setDataError(error.message);
-      setItems((current) =>
-        current.map((entry) => (entry.id === itemId ? currentItem : entry))
-      );
-    }
-  }
-
-  async function handleStudyConfidenceChange(itemId, nextConfidence) {
-    if (!user) return;
-
-    const currentItem = items.find((item) => item.id === itemId);
-    if (!currentItem) return;
-
-    const nextItem = {
-      ...currentItem,
-      confidence: Math.min(4, Math.max(1, Number(nextConfidence))),
-      lastReviewed: "Today",
-    };
-
-    setItems((current) =>
-      current.map((entry) => (entry.id === itemId ? nextItem : entry))
-    );
-
-    if (isDemoRoute) {
-      setDataError("");
-      return;
-    }
-
-    try {
-      const savedItem = await updateNote(itemId, nextItem, user.id);
-      setItems((current) =>
-        current.map((entry) => (entry.id === itemId ? savedItem : entry))
-      );
-      setDataError("");
-    } catch (error) {
-      setDataError(error.message);
-      setItems((current) =>
-        current.map((entry) => (entry.id === itemId ? currentItem : entry))
-      );
-    }
-  }
-
-  function toggleSelected(id) {
-    setSelectedIds((current) =>
-      current.includes(id)
-        ? current.filter((selectedId) => selectedId !== id)
-        : [...current, id]
-    );
-  }
-
-  function selectItems(ids, shouldSelect) {
-    setSelectedIds((current) => {
-      if (!shouldSelect) {
-        return current.filter((id) => !ids.includes(id));
-      }
-
-      return Array.from(new Set([...current, ...ids]));
-    });
-  }
-
-  function clearSelection() {
-    setSelectedIds([]);
   }
 
   async function deleteItem(item) {
@@ -834,21 +453,7 @@ export default function App() {
     const shouldDelete = window.confirm(`Delete "${item.french}"?`);
     if (!shouldDelete) return;
 
-    if (isDemoRoute) {
-      setItems((current) => current.filter((entry) => entry.id !== item.id));
-      setSelectedIds((current) => current.filter((id) => id !== item.id));
-      setDataError("");
-      return;
-    }
-
-    try {
-      await deleteStoredNote(item.id, user.id);
-      setItems((current) => current.filter((entry) => entry.id !== item.id));
-      setSelectedIds((current) => current.filter((id) => id !== item.id));
-      setDataError("");
-    } catch (error) {
-      setDataError(error.message);
-    }
+    await notes.deleteOne(item.id);
   }
 
   async function deleteSelected() {
@@ -858,27 +463,7 @@ export default function App() {
     );
     if (!shouldDelete) return;
 
-    if (isDemoRoute) {
-      setItems((current) =>
-        current.filter((entry) => !selectedIds.includes(entry.id))
-      );
-      setSelectedIds([]);
-      setDataError("");
-      return;
-    }
-
-    try {
-      await Promise.all(
-        selectedIds.map((id) => deleteStoredNote(id, user.id))
-      );
-      setItems((current) =>
-        current.filter((entry) => !selectedIds.includes(entry.id))
-      );
-      setSelectedIds([]);
-      setDataError("");
-    } catch (error) {
-      setDataError(error.message);
-    }
+    await notes.deleteSelected();
   }
 
   const ActiveView = viewBySection[activeSection] ?? TodayView;
@@ -888,6 +473,8 @@ export default function App() {
     dailyStateLoaded,
     isDemo: isDemoRoute,
   });
+  const isQuizStateLoading =
+    !isDemoRoute && activeSection === "quiz" && !dailyStateLoaded;
   const pageTitle =
     activeSection === "today"
       ? t("todayTitle", "Bonjour, {username}. Ready for 12 minutes of French?", {
@@ -900,15 +487,15 @@ export default function App() {
     dailyProgress: visibleDailyProgress,
     filteredItems,
     items,
-    markReviewed,
-    onClearSelection: clearSelection,
+    markReviewed: notes.markReviewed,
+    onClearSelection: notes.clearSelection,
     onDeleteItem: deleteItem,
     onDeleteSelected: deleteSelected,
-    onSelectItems: selectItems,
-    onToggleSelected: toggleSelected,
+    onSelectItems: notes.selectItems,
+    onToggleSelected: notes.toggleSelected,
     openEditItem,
     openNewItem,
-    onQuizAnswer: handleQuizAnswer,
+    onQuizAnswer: notes.recordQuizCorrect,
     importJob,
     onCancelImport: cancelImportJob,
     onStartImport: startImportJob,
@@ -918,7 +505,7 @@ export default function App() {
     onStartStudy: () => setActiveSection("review"),
     onStartQuiz: () => setActiveSection("quiz"),
     onStudyComplete: () => completeTask("study"),
-    onStudyConfidenceChange: handleStudyConfidenceChange,
+    onStudyConfidenceChange: notes.setStudyConfidence,
     onStudyStateChange: setDailyStudyState,
     onLearningSettingsUpdated: setLearningSettings,
     onUserUpdated: setUser,
@@ -983,14 +570,14 @@ export default function App() {
               {dataError}
             </div>
           )}
-          {dataLoading && items.length === 0 && (
+          {notes.isLoading && items.length === 0 && (
             <div className="app-card p-3 text-sm font-medium text-inkSecondary">
               {t("loadingNotes", "Loading notes...")}
             </div>
           )}
-          {isStudyStateLoading ? (
+          {isStudyStateLoading || isQuizStateLoading ? (
             <div className="app-card p-5 text-sm font-medium text-inkSecondary">
-              {t("loadingStudyState", "Loading your saved study session...")}
+              {t("loadingLearningState", "Loading your saved learning session...")}
             </div>
           ) : (
             <ActiveView {...viewProps} />
