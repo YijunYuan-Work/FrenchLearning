@@ -57,10 +57,31 @@ test("daily learning normalization safely loads legacy and answered quiz states"
   });
 });
 
-test("meaning answers accept Chinese punctuation and exact normalized matches", () => {
-  assert.equal(isMeaningCorrect("学校", "学校，学院"), true);
-  assert.equal(isMeaningCorrect("college", "school, college"), true);
+test("meaning answers accept complete English and Chinese choices", () => {
+  for (const meanings of [
+    "school, college",
+    "school / college",
+    "school; college",
+    "school or college",
+  ]) {
+    assert.equal(isMeaningCorrect("school", meanings), true);
+    assert.equal(isMeaningCorrect("COLLEGE", meanings), true);
+  }
+
+  for (const meanings of ["学校，学院", "学校、学院", "学校；学院", "学校或学院"]) {
+    assert.equal(isMeaningCorrect("学校", meanings), true);
+    assert.equal(isMeaningCorrect("学院", meanings), true);
+  }
+
+  assert.equal(isMeaningCorrect("ECOLE", "école"), true);
   assert.equal(isMeaningCorrect("office", "school, college"), false);
+});
+
+test("meaning answers reject arbitrary substrings and partial fragments", () => {
+  assert.equal(isMeaningCorrect("cat", "education"), false);
+  assert.equal(isMeaningCorrect("cat", "vacation"), false);
+  assert.equal(isMeaningCorrect("coll", "college"), false);
+  assert.equal(isMeaningCorrect("edu", "education"), false);
 });
 
 test("noun gender answers accept dropdown values and Chinese labels", () => {
@@ -121,16 +142,30 @@ test("quiz queue defaults to 50 words and accepts a custom limit", () => {
   assert.equal(createQuizQueueIds(items, [], 12).length, 12);
 });
 
-test("study queues can share the same item de-duplication helper", () => {
+test("learning items de-duplicate French text only within a category", () => {
   const items = [
-    { id: "1", french: "bonjour" },
-    { id: "1", french: "bonjour" },
-    { id: "2", french: "Bonjour" },
-    { id: "3", french: "merci" },
+    { id: "1", category: "vocabulary", french: "aller" },
+    { id: "2", category: "vocabulary", french: "Aller" },
+    { id: "3", category: "grammar", french: "aller" },
+    { id: "4", category: "vocabulary", french: "bonjour" },
+    { id: "5", category: "phrases", french: "bonjour" },
   ];
 
   assert.deepEqual(
     uniqueLearningItems(items).map((item) => item.id),
-    ["1", "3"]
+    ["1", "3", "4", "5"]
+  );
+});
+
+test("learning items still de-duplicate repeated IDs", () => {
+  const items = [
+    { id: "1", category: "vocabulary", french: "aller" },
+    { id: "1", category: "grammar", french: "venir" },
+    { id: "2", category: "grammar", french: "venir" },
+  ];
+
+  assert.deepEqual(
+    uniqueLearningItems(items).map((item) => item.id),
+    ["1", "2"]
   );
 });

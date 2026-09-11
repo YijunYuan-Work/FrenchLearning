@@ -31,17 +31,23 @@ function normalizeFrenchKey(value) {
 
 export function uniqueLearningItems(items) {
   const seenIds = new Set();
-  const seenWords = new Set();
+  const seenContent = new Set();
 
   return items.filter((item) => {
     const id = String(item.id ?? "");
     const wordKey = normalizeFrenchKey(item.french);
-    const duplicate = seenIds.has(id) || (wordKey && seenWords.has(wordKey));
+    const categoryKey = String(item.category ?? "")
+      .trim()
+      .toLowerCase();
+    const contentKey = wordKey ? `${categoryKey}\u0000${wordKey}` : "";
+
+    if ((id && seenIds.has(id)) || (contentKey && seenContent.has(contentKey))) {
+      return false;
+    }
 
     if (id) seenIds.add(id);
-    if (wordKey) seenWords.add(wordKey);
-
-    return !duplicate;
+    if (contentKey) seenContent.add(contentKey);
+    return true;
   });
 }
 
@@ -109,17 +115,6 @@ export function normalizeQuizState(value, date) {
   };
 }
 
-export function normalizeAnswer(value) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/['’]/g, "")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 export function normalizeMeaningText(value) {
   return String(value ?? "")
     .toLowerCase()
@@ -133,9 +128,9 @@ export function normalizeMeaningText(value) {
 }
 
 export function getAcceptedMeanings(english) {
-  return english
-    .split(/;|,|\/|\bor\b/i)
-    .map(normalizeAnswer)
+  return String(english ?? "")
+    .split(/;|,|\/|\bor\b|，|、|；|或/i)
+    .map(normalizeMeaningText)
     .filter(Boolean);
 }
 
@@ -143,16 +138,7 @@ export function isMeaningCorrect(answer, english) {
   const normalizedAnswer = normalizeMeaningText(answer);
   if (!normalizedAnswer) return false;
 
-  const accepted = String(english ?? "")
-    .split(/;|,|\/|\bor\b|，|、|；|或/g)
-    .map(normalizeMeaningText)
-    .filter(Boolean);
-
-  return accepted.some(
-    (meaning) =>
-      normalizedAnswer === meaning ||
-      (normalizedAnswer.length >= 3 && meaning.includes(normalizedAnswer))
-  );
+  return getAcceptedMeanings(english).includes(normalizedAnswer);
 }
 
 export function normalizeGenderAnswer(value) {
