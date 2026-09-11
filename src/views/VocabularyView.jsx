@@ -2,6 +2,7 @@ import { ArrowUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import { LearningCard } from "../components/LearningCard";
 import { Metric } from "../components/Metric";
+import { NotesToolbar } from "../components/NotesToolbar";
 import { PaginationControls } from "../components/PaginationControls";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { partOfSpeechOptions } from "../data/wordFields";
@@ -121,64 +122,63 @@ export function VocabularyView(props) {
         <Metric label={t("confidence", "Confidence")} value={`${vocabularyStats.average}%`} tone="green" />
       </div>
 
-      <NotesView
-        {...props}
-        filteredItems={[]}
-        items={[]}
-        showList={false}
-        showMetrics={false}
-        topContent={
-          <div className="mt-5 rounded-xl border border-line bg-white/90 p-3 shadow-soft">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex flex-wrap gap-2">
-                {vocabularyTabs.map((tab) => {
-                  const isActive = activeWordType === tab.value;
-                  const count = typeCounts[tab.value] ?? 0;
-                  return (
-                    <button
-                      className={`focus-ring inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-bold ${
-                        isActive
-                          ? "bg-frenchBlue text-white"
-                          : "border border-line bg-white text-slate-700 hover:border-frenchBlue/35 hover:text-frenchBlue"
-                      }`}
-                      key={tab.value}
-                      onClick={() => selectWordType(tab.value)}
-                      type="button"
-                    >
-                      {t(tab.labelKey, tab.label)}
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-xs ${
-                          isActive ? "bg-white/20" : "bg-slate-100 text-slate-500"
-                        }`}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <label className="flex h-9 w-full shrink-0 items-center gap-2 rounded-lg border border-line bg-white px-3 shadow-sm lg:w-auto lg:min-w-[210px]">
-                <ArrowUpDown aria-hidden="true" className="text-slate-500" size={16} />
-                <span className="sr-only">{t("sortVocabulary", "Sort vocabulary")}</span>
-                <select
-                  aria-label={t("sortVocabulary", "Sort vocabulary")}
-                  className="focus-ring h-8 min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700"
-                  onChange={(event) => changeSortOrder(event.target.value)}
-                  value={sortOrder}
-                >
-                  <option value="alphabetical">
-                    {t("sortAlphabetical", "Alphabetical (A-Z)")}
-                  </option>
-                  <option value="dateAdded">
-                    {t("sortDateAdded", "Date added (newest)")}
-                  </option>
-                </select>
-              </label>
-            </div>
-          </div>
-        }
+      <NotesToolbar
+        query={props.query}
+        selectedTag={props.selectedTag}
+        setQuery={props.setQuery}
+        setSelectedTag={props.setSelectedTag}
+        tags={props.tags}
       />
+
+      <div className="mt-5 rounded-xl border border-line bg-white/90 p-3 shadow-soft">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {vocabularyTabs.map((tab) => {
+              const isActive = activeWordType === tab.value;
+              const count = typeCounts[tab.value] ?? 0;
+              return (
+                <button
+                  className={`focus-ring inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-bold ${
+                    isActive
+                      ? "bg-frenchBlue text-white"
+                      : "border border-line bg-white text-slate-700 hover:border-frenchBlue/35 hover:text-frenchBlue"
+                  }`}
+                  key={tab.value}
+                  onClick={() => selectWordType(tab.value)}
+                  type="button"
+                >
+                  {t(tab.labelKey, tab.label)}
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-xs ${
+                      isActive ? "bg-white/20" : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <label className="flex h-9 w-full shrink-0 items-center gap-2 rounded-lg border border-line bg-white px-3 shadow-sm lg:w-auto lg:min-w-[210px]">
+            <ArrowUpDown aria-hidden="true" className="text-slate-500" size={16} />
+            <span className="sr-only">{t("sortVocabulary", "Sort vocabulary")}</span>
+            <select
+              aria-label={t("sortVocabulary", "Sort vocabulary")}
+              className="focus-ring h-8 min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700"
+              onChange={(event) => changeSortOrder(event.target.value)}
+              value={sortOrder}
+            >
+              <option value="alphabetical">
+                {t("sortAlphabetical", "Alphabetical (A-Z)")}
+              </option>
+              <option value="dateAdded">
+                {t("sortDateAdded", "Date added (newest)")}
+              </option>
+            </select>
+          </label>
+        </div>
+      </div>
 
       <div className="mt-5 grid gap-3">
         <PaginationControls
