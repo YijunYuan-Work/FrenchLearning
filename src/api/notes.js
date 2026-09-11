@@ -28,7 +28,7 @@ function toNoteRow(note, userId) {
   return {
     user_id: userId,
     category: note.category,
-    french: note.french,
+    french: String(note.french ?? "").trim(),
     english: note.english,
     example: note.example ?? "",
     notes: note.notes ?? "",

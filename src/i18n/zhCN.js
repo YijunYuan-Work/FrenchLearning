@@ -6,7 +6,7 @@ export const zhCN = {
   adjectiveForms: "形容词形式",
   activeTags: "活跃标签",
   aiAutofillUnavailable:
-    "AI 自动填充接口不可用。请使用 Vercel 部署版本，或用 vercel dev 在本地运行。",
+    "AI 自动填充返回了不完整的响应。请检查 API 配置后重试。",
   allTags: "所有标签",
   autoFill: "自动填充",
   autoFillLoading: "正在让 AI 生成词汇笔记...",

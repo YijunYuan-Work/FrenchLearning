@@ -388,7 +388,8 @@ export default function App() {
     event.preventDefault();
     if (!user) return;
 
-    const normalizedFrench = form.french.trim().toLocaleLowerCase("fr");
+    const trimmedFrench = form.french.trim();
+    const normalizedFrench = trimmedFrench.toLocaleLowerCase("fr");
     const duplicate = items.find(
       (item) =>
         item.id !== editingItem?.id &&
@@ -399,7 +400,7 @@ export default function App() {
     if (duplicate) {
       setEditorError(
         t("duplicateNote", '"{word}" already exists in {category}.', {
-          word: form.french.trim(),
+          word: trimmedFrench,
           category: t(
             categories[form.category].labelKey,
             categories[form.category].label
@@ -411,6 +412,7 @@ export default function App() {
 
     const nextItem = {
       ...form,
+      french: trimmedFrench,
       id: editingItem?.id ?? crypto.randomUUID(),
       ...normalizeWordDetails(form),
       tags: normalizeTags(form.tags),

@@ -71,3 +71,18 @@ export function createUpdatedProfileMetadata(
     username: getLoginUsername(user),
   };
 }
+
+export function assertAuthenticatedUser(authResult, expectedUserId) {
+  if (authResult?.error) {
+    throw authResult.error;
+  }
+
+  const authenticatedUser = authResult?.data?.user;
+  if (!authenticatedUser || authenticatedUser.id !== expectedUserId) {
+    throw new Error(
+      "Your session is no longer valid. Sign in again before saving settings."
+    );
+  }
+
+  return authenticatedUser;
+}

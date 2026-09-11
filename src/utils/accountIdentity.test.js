@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  assertAuthenticatedUser,
   createAuthEmailForProject,
   createSignupMetadata,
   createUpdatedProfileMetadata,
@@ -9,6 +10,47 @@ import {
   getLoginUsername,
   getProfileRecoveryEmail,
 } from "./accountIdentity.js";
+
+test("authenticated-user validation propagates auth failures", () => {
+  const authError = new Error("Authentication failed.");
+
+  assert.throws(
+    () =>
+      assertAuthenticatedUser(
+        { data: { user: null }, error: authError },
+        "user-1",
+      ),
+    (error) => error === authError,
+  );
+});
+
+test("authenticated-user validation rejects missing or mismatched sessions", () => {
+  assert.throws(
+    () =>
+      assertAuthenticatedUser(
+        { data: { user: null }, error: null },
+        "user-1",
+      ),
+    /session is no longer valid/i,
+  );
+  assert.throws(
+    () =>
+      assertAuthenticatedUser(
+        { data: { user: { id: "user-2" } }, error: null },
+        "user-1",
+      ),
+    /session is no longer valid/i,
+  );
+});
+
+test("authenticated-user validation returns the matching user", () => {
+  const user = { id: "user-1" };
+
+  assert.equal(
+    assertAuthenticatedUser({ data: { user }, error: null }, "user-1"),
+    user,
+  );
+});
 
 test("signup metadata preserves the login username and initial display name", () => {
   assert.deepEqual(createSignupMetadata(" John Smith ", " john@example.com "), {
