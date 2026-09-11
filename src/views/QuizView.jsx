@@ -142,10 +142,11 @@ export function QuizView({
     quizItems.length > 0 && answeredCount >= quizItems.length && !lastResult;
   const currentItemNeedsGender =
     currentItem?.partOfSpeech === "noun" && Boolean(currentItem.gender);
+  const quizQueueKey = quizState.queueIds.join("|");
 
   useEffect(() => {
     reportedCompletionRef.current = false;
-  }, [quizState.date, quizState.queueIds.join("|")]);
+  }, [quizQueueKey, quizState.date]);
 
   useEffect(() => {
     if (!isQuizComplete || reportedCompletionRef.current) return;

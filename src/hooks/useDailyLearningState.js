@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getDailyLearningState,
   updateDailyProgress,
@@ -78,12 +78,12 @@ export function useDailyLearningState(user, setDataError) {
     }));
   }
 
-  function resetDailyLearningState() {
+  const resetDailyLearningState = useCallback(() => {
     setDailyProgress(createDailyProgress());
     setDailyQuizState(null);
     setDailyStudyState(null);
     setDailyStateLoaded(false);
-  }
+  }, []);
 
   return {
     completeDailyTask,

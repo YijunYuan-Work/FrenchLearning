@@ -115,15 +115,21 @@ Start the frontend:
 npm run dev
 ```
 
-Plain Vite development does not serve the Vercel API route. Use a Vercel deployment or `vercel dev` when testing real AI auto-fill requests.
+The Vite development server routes `/api/autofill-vocabulary` through its local middleware. Real AI auto-fill still requires the appropriate local environment variables plus working OpenAI, Wiktionary, and Supabase services.
 
 ## Verification
 
 ```bash
+npm run lint
+npm run test
+npm run build
 npm run check
+npm run test:e2e
 ```
 
-This runs the focused utility tests and creates a production build.
+`npm run check` runs ESLint, the focused Node tests, and a production build. `npm run test:e2e` runs the Playwright critical-flow suite against the public demo using Chromium; it does not require Supabase credentials or call AI services.
+
+GitHub Actions runs both commands for pull requests and pushes to `main`.
 
 ## Security And Usage Limits
 

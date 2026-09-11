@@ -7,7 +7,7 @@ import {
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   changeUserPassword,
   getAutofillUsageStatus,
@@ -70,7 +70,7 @@ export function SettingsView({
     confirmPassword: "",
   });
 
-  async function loadQuotaStatus() {
+  const loadQuotaStatus = useCallback(async () => {
     if (!user?.id) return;
 
     setIsLoadingQuota(true);
@@ -84,7 +84,7 @@ export function SettingsView({
     } finally {
       setIsLoadingQuota(false);
     }
-  }
+  }, [user?.id]);
 
   useEffect(() => {
     setDisplayName(getDisplayName(user));
@@ -93,7 +93,7 @@ export function SettingsView({
 
   useEffect(() => {
     loadQuotaStatus();
-  }, [user?.id]);
+  }, [loadQuotaStatus]);
 
   useEffect(() => {
     setSettingsForm(normalizeLearningSettings(learningSettings));
