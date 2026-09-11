@@ -88,6 +88,27 @@ export function createDailyQuizState(
   };
 }
 
+export function normalizeQuizState(value, date) {
+  if (
+    !value ||
+    value.date !== date ||
+    !Array.isArray(value.queueIds) ||
+    typeof value.answered !== "object"
+  ) {
+    return null;
+  }
+
+  const limit = Number(value.limit);
+
+  return {
+    date,
+    ...(Number.isFinite(limit) && limit > 0 ? { limit } : {}),
+    queueIds: value.queueIds,
+    answered: value.answered ?? {},
+    seenIds: Array.isArray(value.seenIds) ? value.seenIds : value.queueIds,
+  };
+}
+
 export function normalizeAnswer(value) {
   return value
     .toLowerCase()

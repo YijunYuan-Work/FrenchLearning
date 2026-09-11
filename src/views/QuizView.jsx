@@ -62,6 +62,7 @@ export function QuizView({
 
       if (
         Object.keys(current.answered).length === 0 &&
+        current.limit != null &&
         current.limit !== quizLimit &&
         eligible.length > 0
       ) {
