@@ -33,7 +33,7 @@ export async function autoFillFrenchVocabulary(word, language = "en") {
 
   if (!payload?.word || !payload?.english || !payload?.partOfSpeech) {
     throw new Error(
-      "AI auto-fill endpoint is unavailable. Use the Vercel deployment or run the app with vercel dev."
+      "AI auto-fill returned an incomplete response. Check the API configuration and try again."
     );
   }
 
