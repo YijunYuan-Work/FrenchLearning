@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   signInWithEmail,
   signOut as signOutUser,
@@ -168,7 +168,7 @@ export default function App() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [isDemoRoute]);
+  }, [isDemoRoute, resetDailyLearningState]);
 
   useEffect(() => {
     if (isDemoRoute) {

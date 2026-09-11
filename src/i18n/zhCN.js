@@ -63,7 +63,6 @@ export const zhCN = {
   addNewNoteCopy: "记录一个词汇、短语、语法笔记或发音规则，别让它溜走。",
   editLearningNote: "编辑学习笔记",
   editNote: "编辑笔记",
-  english: "英文",
   example: "例句",
   familiar: "熟悉",
   flashcards: "抽认卡",

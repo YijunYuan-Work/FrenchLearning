@@ -38,7 +38,7 @@ export function LanguageProvider({ children }) {
         );
       },
     }),
-    [language]
+    [changeLanguage, language]
   );
 
   return (

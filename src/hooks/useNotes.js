@@ -44,7 +44,7 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
     return () => {
       isMounted = false;
     };
-  }, [isDemo, userId]);
+  }, [isDemo, setError, userId]);
 
   async function save(nextItem, editingId) {
     if (!userId) throw new Error("Sign in before saving notes.");

@@ -30,7 +30,6 @@ export function NotesView({
   selectedIds,
   setQuery,
   setSelectedTag,
-  stats,
   tags,
 }) {
   const { t } = useLanguage();
