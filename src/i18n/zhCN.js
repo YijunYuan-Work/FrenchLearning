@@ -79,6 +79,7 @@ export const zhCN = {
   loadingNotes: "正在加载笔记...",
   loadingWorkspace: "正在加载你的法语工作区...",
   loadingStudyState: "正在加载已保存的学习进度...",
+  loadingLearningState: "正在加载已保存的学习进度...",
   mastered: "已掌握",
   meaning: "意思",
   needsPractice: "需要练习",

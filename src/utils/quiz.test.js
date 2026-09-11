@@ -8,8 +8,54 @@ import {
   isGenderCorrect,
   isMeaningCorrect,
   MAX_CONFIDENCE,
+  normalizeQuizState,
   uniqueLearningItems,
 } from "./quiz.js";
+
+test("daily learning normalization preserves an unanswered quiz limit and queue", () => {
+  const savedState = normalizeQuizState(
+    {
+      date: "2026-09-10",
+      limit: 23,
+      queueIds: ["word-3", "word-8"],
+      answered: {},
+      seenIds: ["word-3", "word-8"],
+    },
+    "2026-09-10"
+  );
+
+  assert.equal(savedState.limit, 23);
+  assert.deepEqual(savedState.queueIds, ["word-3", "word-8"]);
+  assert.deepEqual(savedState.answered, {});
+});
+
+test("daily learning normalization safely loads legacy and answered quiz states", () => {
+  const legacyState = normalizeQuizState(
+    {
+      date: "2026-09-10",
+      queueIds: ["legacy-word"],
+      answered: {},
+    },
+    "2026-09-10"
+  );
+  const answeredState = normalizeQuizState(
+    {
+      date: "2026-09-10",
+      limit: 23,
+      queueIds: ["answered-word"],
+      answered: { "answered-word": { correct: true } },
+    },
+    "2026-09-10"
+  );
+
+  assert.equal(legacyState.limit, undefined);
+  assert.deepEqual(legacyState.queueIds, ["legacy-word"]);
+  assert.deepEqual(legacyState.seenIds, ["legacy-word"]);
+  assert.equal(answeredState.limit, 23);
+  assert.deepEqual(answeredState.answered, {
+    "answered-word": { correct: true },
+  });
+});
 
 test("meaning answers accept Chinese punctuation and exact normalized matches", () => {
   assert.equal(isMeaningCorrect("学校", "学校，学院"), true);

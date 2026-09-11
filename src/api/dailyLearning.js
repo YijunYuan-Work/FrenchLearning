@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
 import { createDailyProgress } from "../utils/dailyProgress";
+import { normalizeQuizState } from "../utils/quiz";
 import { normalizeStudyState } from "../utils/studyState";
 
 const dailyLearningStorageKey = "french-learning-daily-learning-state-v1";
@@ -20,24 +21,6 @@ function isMissingDailyLearningTable(error) {
     message.includes("daily_learning_state") ||
     message.includes("study_state")
   );
-}
-
-function normalizeQuizState(value, date) {
-  if (
-    !value ||
-    value.date !== date ||
-    !Array.isArray(value.queueIds) ||
-    typeof value.answered !== "object"
-  ) {
-    return null;
-  }
-
-  return {
-    date,
-    queueIds: value.queueIds,
-    answered: value.answered ?? {},
-    seenIds: Array.isArray(value.seenIds) ? value.seenIds : value.queueIds,
-  };
 }
 
 function toDailyLearningState(row, date) {
