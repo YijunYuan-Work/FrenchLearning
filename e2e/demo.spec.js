@@ -46,7 +46,7 @@ test("demo vocabulary can be created, edited, and deleted", async ({ page }) => 
 
   await page.getByRole("button", { name: "Add note", exact: true }).click();
   const createDialog = page.getByRole("dialog", { name: "Add learning note" });
-  await createDialog.getByLabel("French").fill(french);
+  await createDialog.getByLabel("French").fill(`   ${french}   `);
   await createDialog.getByLabel("English").fill("quality check");
   await createDialog.getByRole("button", { name: "Save note" }).click();
 
@@ -55,6 +55,7 @@ test("demo vocabulary can be created, edited, and deleted", async ({ page }) => 
 
   await page.getByRole("button", { name: `Edit ${french}` }).click();
   const editDialog = page.getByRole("dialog", { name: "Edit learning note" });
+  await expect(editDialog.getByLabel("French")).toHaveValue(french);
   await editDialog.getByLabel("English").fill("updated quality check");
   await editDialog.getByRole("button", { name: "Save note" }).click();
   await expect(page.getByText("updated quality check")).toBeVisible();

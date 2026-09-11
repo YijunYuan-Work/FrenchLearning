@@ -3,6 +3,7 @@ import {
   defaultLearningSettings,
   normalizeLearningSettings,
 } from "../utils/learningSettings";
+import { assertAuthenticatedUser } from "../utils/accountIdentity";
 
 const allowedLanguages = new Set(["en", "zh"]);
 
@@ -35,14 +36,8 @@ export async function getLanguagePreference(userId) {
 export async function updateLanguagePreference(userId, language) {
   const nextLanguage = allowedLanguages.has(language) ? language : "en";
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || user?.id !== userId) {
-    return nextLanguage;
-  }
+  const authResult = await supabase.auth.getUser();
+  assertAuthenticatedUser(authResult, userId);
 
   const { data, error } = await supabase
     .from("user_preferences")
@@ -91,14 +86,8 @@ export async function getLearningPreferences(userId) {
 export async function updateLearningPreferences(userId, settings) {
   const nextSettings = normalizeLearningSettings(settings);
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || user?.id !== userId) {
-    return nextSettings;
-  }
+  const authResult = await supabase.auth.getUser();
+  assertAuthenticatedUser(authResult, userId);
 
   const { data, error } = await supabase
     .from("user_preferences")
