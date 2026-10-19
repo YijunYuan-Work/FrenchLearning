@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { zhCN } from "./zhCN";
-import { isPublicDemoRoute } from "../utils/demoMode";
+import { useLanguagePreference } from "../hooks/useLanguagePreference";
 
 const dictionaries = {
   en: {},
@@ -9,30 +9,16 @@ const dictionaries = {
 
 const LanguageContext = createContext(null);
 
-export function LanguageProvider({ children, isDemo = false }) {
-  const [language, setLanguage] = useState(() => {
-    if (isDemo) return "en";
-    try {
-      return localStorage.getItem("french-learning-language") || "en";
-    } catch {
-      return "en";
-    }
-  });
-
-  const changeLanguage = useCallback((nextLanguage) => {
-    setLanguage(nextLanguage);
-    if (isDemo || isPublicDemoRoute()) return;
-    try {
-      localStorage.setItem("french-learning-language", nextLanguage);
-    } catch {
-      // Ignore storage failures; the in-memory toggle still works.
-    }
-  }, [isDemo]);
+export function LanguageProvider({ children, isDemo = false, userId, isCurrentAccount }) {
+  const { language, setLanguage, languagePreferenceStatus, retryLanguagePreference } =
+    useLanguagePreference({ userId, isDemo, isCurrentAccount });
 
   const value = useMemo(
     () => ({
       language,
-      setLanguage: changeLanguage,
+      setLanguage,
+      languagePreferenceStatus,
+      retryLanguagePreference,
       t(key, fallback, replacements = {}) {
         const template = dictionaries[language]?.[key] ?? fallback;
         return Object.entries(replacements).reduce(
@@ -41,7 +27,7 @@ export function LanguageProvider({ children, isDemo = false }) {
         );
       },
     }),
-    [changeLanguage, language]
+    [language, languagePreferenceStatus, retryLanguagePreference, setLanguage]
   );
 
   return (
