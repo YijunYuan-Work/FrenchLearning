@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { normalizeStudyState, shouldDelayStudyMount } from "./studyState.js";
+import { normalizeStudyState, shouldDelayLearningMount } from "./studyState.js";
 
 test("same-day study state preserves the current card and cycle", () => {
   const state = {
@@ -31,29 +31,14 @@ test("study state from a previous day is discarded", () => {
   );
 });
 
-test("signed-in Study waits for hydration before its first mount", () => {
-  assert.equal(
-    shouldDelayStudyMount({
-      activeSection: "review",
-      dailyStateLoaded: false,
-      isDemo: false,
-    }),
-    true,
-  );
-  assert.equal(
-    shouldDelayStudyMount({
-      activeSection: "review",
-      dailyStateLoaded: true,
-      isDemo: false,
-    }),
-    false,
-  );
-  assert.equal(
-    shouldDelayStudyMount({
-      activeSection: "review",
-      dailyStateLoaded: false,
-      isDemo: true,
-    }),
-    false,
-  );
+test("Quiz and Study wait for daily state, notes, and settings to hydrate", () => {
+  const ready = { dailyStateLoaded: true, notesLoaded: true, learningSettingsLoaded: true, isDemo: false };
+  for (const activeSection of ["review", "quiz"]) {
+    assert.equal(shouldDelayLearningMount({ ...ready, activeSection }), false);
+    for (const flag of ["dailyStateLoaded", "notesLoaded", "learningSettingsLoaded"]) {
+      assert.equal(shouldDelayLearningMount({ ...ready, activeSection, [flag]: false }), true);
+    }
+    assert.equal(shouldDelayLearningMount({ activeSection, isDemo: true }), false);
+  }
+  assert.equal(shouldDelayLearningMount({ activeSection: "today", isDemo: false }), false);
 });

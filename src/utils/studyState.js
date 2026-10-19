@@ -18,10 +18,13 @@ export function normalizeStudyState(value, date) {
   };
 }
 
-export function shouldDelayStudyMount({
+export function shouldDelayLearningMount({
   activeSection,
   dailyStateLoaded,
+  notesLoaded,
+  learningSettingsLoaded,
   isDemo,
 }) {
-  return !isDemo && activeSection === "review" && !dailyStateLoaded;
+  return !isDemo && ["review", "quiz"].includes(activeSection) &&
+    !(dailyStateLoaded && notesLoaded && learningSettingsLoaded);
 }

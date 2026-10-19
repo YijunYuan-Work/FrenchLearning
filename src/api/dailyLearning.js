@@ -19,8 +19,7 @@ function isMissingDailyLearningTable(error) {
     error?.code === "PGRST205" ||
     error?.code === "PGRST204" ||
     error?.code === "42P01" ||
-    message.includes("daily_learning_state") ||
-    message.includes("study_state")
+    (message.includes("does not exist") && message.includes("daily_learning_state"))
   );
 }
 
@@ -38,20 +37,12 @@ function toDailyLearningState(row, date) {
 }
 
 function loadLocalDailyLearningState(userId, date) {
-  try {
-    const saved = JSON.parse(localStorage.getItem(getLocalStateKey(userId, date)));
-    return toDailyLearningState(saved, date);
-  } catch {
-    return toDailyLearningState(null, date);
-  }
+  const saved = JSON.parse(localStorage.getItem(getLocalStateKey(userId, date)));
+  return toDailyLearningState(saved, date);
 }
 
 function saveLocalDailyLearningState(userId, date, nextState) {
-  try {
-    localStorage.setItem(getLocalStateKey(userId, date), JSON.stringify(nextState));
-  } catch {
-    // Local fallback is best effort only.
-  }
+  localStorage.setItem(getLocalStateKey(userId, date), JSON.stringify(nextState));
 }
 
 export async function getDailyLearningState(userId, date) {
