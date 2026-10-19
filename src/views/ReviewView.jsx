@@ -67,6 +67,7 @@ function createStudyCycle(studyItems, settings, excludedIds = []) {
 
 export function ReviewView({
   items,
+  learningDay = getTodayKey(),
   learningSettings = defaultLearningSettings,
   onStudyConfidenceChange,
   onStudyComplete,
@@ -103,7 +104,7 @@ export function ReviewView({
     () => new Map(items.map((item) => [item.id, item])),
     [items]
   );
-  const savedStateIsCurrent = savedStudyState?.date === getTodayKey();
+  const savedStateIsCurrent = savedStudyState?.date === learningDay;
   const [cardIndex, setCardIndex] = useState(() =>
     savedStateIsCurrent ? Number(savedStudyState.cardIndex) || 0 : 0
   );
@@ -188,13 +189,14 @@ export function ReviewView({
     onStudyStateChange?.({
       cardIndex,
       cycleIds: studyCycle.cycleIds,
-      date: getTodayKey(),
+      date: learningDay,
       isFlipped,
       isStudyComplete,
       seenIds: studyCycle.seenIds,
     });
   }, [
     cardIndex,
+    learningDay,
     isFlipped,
     isStudyComplete,
     onStudyStateChange,

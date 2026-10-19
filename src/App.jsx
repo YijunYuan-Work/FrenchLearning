@@ -11,6 +11,7 @@ import { categories } from "./data/categories";
 import { demoNotes, demoUser } from "./data/demoData";
 import { hasSupabaseConfig } from "./lib/supabase";
 import { useDailyLearningState } from "./hooks/useDailyLearningState";
+import { useLocalLearningDay } from "./hooks/useLocalLearningDay";
 import { useImportJob } from "./hooks/useImportJob";
 import { useNotes } from "./hooks/useNotes";
 import { useAuthSession } from "./hooks/useAuthSession";
@@ -20,7 +21,7 @@ import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
 import { normalizeTags } from "./utils/tags";
 import { getDisplayName } from "./utils/accountIdentity";
-import { MAX_CONFIDENCE } from "./utils/quiz";
+import { getTodayKey, MAX_CONFIDENCE } from "./utils/quiz";
 import { isRichTextEmpty, sanitizeRichTextHtml } from "./utils/richText";
 import { shouldDelayLearningMount } from "./utils/studyState";
 import { GrammarView } from "./views/GrammarView";
@@ -99,6 +100,7 @@ function AccountSession({ isDemoRoute }) {
 }
 
 function Workspace({ isDemoRoute, auth }) {
+  const learningDay = useLocalLearningDay();
   const { language, setLanguage, t } = useLanguage();
   const { user, loading: authLoading, error: authError, isCurrentAccount, updateUser: setUser,
     handleAuthSubmit, handleSignOut } = auth;
@@ -137,10 +139,14 @@ function Workspace({ isDemoRoute, auth }) {
     dailyStudyState,
     dailyStateLoaded,
     dailyStateError,
+    dailySaveError,
+    dailySaveConflict,
+    retryDailySaves,
+    reloadSavedDailyProgress,
     retryDailyLearningState,
     setDailyQuizState,
     setDailyStudyState,
-  } = useDailyLearningState(isDemoRoute ? null : user, setDataError, isCurrentAccount);
+  } = useDailyLearningState(isDemoRoute ? null : user, isCurrentAccount, learningDay);
   const {
     cancelImportJob,
     importJob,
@@ -300,19 +306,22 @@ function Workspace({ isDemoRoute, auth }) {
     };
   }, [items, tags.length, weakItems.length]);
 
-  const visibleDailyProgress = isDemoRoute ? demoDailyProgress : dailyProgress;
+  const visibleDailyProgress = isDemoRoute
+    ? (demoDailyProgress.date === learningDay ? demoDailyProgress : createDailyProgress(learningDay))
+    : dailyProgress;
 
-  function completeTask(task) {
+  function completeTask(task, sessionDay) {
+    const today = getTodayKey();
+    if (sessionDay && sessionDay !== today) return;
     if (isDemoRoute) {
       setDemoDailyProgress((current) => ({
-        ...current,
-        date: createDailyProgress().date,
+        ...(current.date === today ? current : createDailyProgress(today)),
         [task]: true,
       }));
       return;
     }
 
-    completeDailyTask(task);
+    completeDailyTask(task, sessionDay);
   }
 
   function openNewItem(category = "vocabulary") {
@@ -455,6 +464,7 @@ function Workspace({ isDemoRoute, auth }) {
       : t(categories[activeSection].labelKey, categories[activeSection].label);
 
   const viewProps = {
+    learningDay,
     isDemo: isDemoRoute,
     isCurrentAccount,
     activeSection,
@@ -470,16 +480,18 @@ function Workspace({ isDemoRoute, auth }) {
     onToggleSelected: notes.toggleSelected,
     openEditItem,
     openNewItem,
-    onQuizAnswer: notes.recordQuizCorrect,
+    onQuizAnswer: (...args) => {
+      if (learningDay === getTodayKey()) return notes.recordQuizCorrect(...args);
+    },
     importJob,
     onCancelImport: cancelImportJob,
     onStartImport: startImportJob,
     onUpdateImportJob: updateImportJob,
-    onQuizComplete: () => completeTask("quiz"),
+    onQuizComplete: () => completeTask("quiz", learningDay),
     onQuizStateChange: isDemoRoute || dailyStateLoaded ? setDailyQuizState : undefined,
     onStartStudy: () => setActiveSection("review"),
     onStartQuiz: () => setActiveSection("quiz"),
-    onStudyComplete: () => completeTask("study"),
+    onStudyComplete: () => completeTask("study", learningDay),
     onStudyConfidenceChange: notes.setStudyConfidence,
     onStudyStateChange: setDailyStudyState,
     onLearningSettingsUpdated: setLearningSettings,
@@ -553,6 +565,23 @@ function Workspace({ isDemoRoute, auth }) {
               </button>
             </div>
           ))}
+          {dailySaveError && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-frenchRed/25 bg-blush p-3 text-sm text-frenchRed" role="alert">
+              <p>{t("dailySaveFailed", "Some learning progress is not saved.")} {dailySaveConflict
+                ? t("dailySaveConflict", "This session changed in another tab or device.")
+                : dailySaveError}</p>
+              <button className="secondary-action h-9" onClick={retryDailySaves} type="button">
+                {t("retryDailySave", "Retry saving")}
+              </button>
+              {dailySaveConflict && (
+                <button className="secondary-action h-9" type="button" onClick={() => {
+                  if (window.confirm(t("reloadProgressConfirm", "Reload saved progress? Unsaved changes in this tab will be discarded."))) reloadSavedDailyProgress();
+                }}>
+                  {t("reloadSavedProgress", "Reload saved progress")}
+                </button>
+              )}
+            </div>
+          )}
           {notes.isLoading && items.length === 0 && !isLearningStateLoading && (
             <div className="app-card p-3 text-sm font-medium text-inkSecondary">
               {t("loadingNotes", "Loading notes...")}
@@ -565,7 +594,7 @@ function Workspace({ isDemoRoute, auth }) {
                 : t("loadingLearningState", "Loading your saved learning session...")}
             </div>
           ) : (
-            <ActiveView {...viewProps} />
+            <ActiveView key={["quiz", "review"].includes(activeSection) ? `${activeSection}:${learningDay}` : activeSection} {...viewProps} />
           )}
         </section>
       </main>
