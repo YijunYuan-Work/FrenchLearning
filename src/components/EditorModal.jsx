@@ -20,6 +20,8 @@ const labelClass = "grid gap-1 text-sm font-bold";
 export function EditorModal({
   error,
   isDemo = false,
+  isCurrentAccount,
+  userId,
   form,
   onChange,
   onClose,
@@ -46,6 +48,7 @@ export function EditorModal({
   const onCloseRef = useRef(onClose);
   const previousFocusRef = useRef(null);
   const frenchInputRef = useRef(null);
+  const autoFillAbortRef = useRef(null);
   const [autoFillState, setAutoFillState] = useState({
     status: "idle",
     message: "",
@@ -54,6 +57,8 @@ export function EditorModal({
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
+
+  useEffect(() => () => autoFillAbortRef.current?.abort(), []);
 
   useEffect(() => {
     const modal = modalRef.current;
@@ -149,14 +154,20 @@ export function EditorModal({
   }
 
   async function handleAutoFill() {
-    if (isDemo) return;
+    if (isDemo || !isCurrentAccount()) return;
+    const controller = new AbortController();
+    autoFillAbortRef.current?.abort();
+    autoFillAbortRef.current = controller;
     setAutoFillState({
       status: "loading",
       message: t("autoFillLoading", "Asking AI to build the vocabulary note..."),
     });
 
     try {
-      const result = await autoFillFrenchVocabulary(form.french, language);
+      const result = await autoFillFrenchVocabulary(form.french, language, {
+        userId, isCurrentAccount, signal: controller.signal,
+      });
+      if (!isCurrentAccount() || controller.signal.aborted) return;
       setForm((current) => ({
         ...current,
         category: result.category,
@@ -179,6 +190,7 @@ export function EditorModal({
         ),
       });
     } catch (error) {
+      if (!isCurrentAccount() || controller.signal.aborted) return;
       setAutoFillState({
         status: "error",
         message: error.message,

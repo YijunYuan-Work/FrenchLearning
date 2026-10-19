@@ -1,14 +1,20 @@
 import { supabase } from "../lib/supabase";
 import { assertAccountAccess } from "../utils/demoMode";
 
-export async function autoFillFrenchVocabulary(word, language = "en") {
+export async function autoFillFrenchVocabulary(word, language = "en", { userId, isCurrentAccount, signal } = {}) {
   assertAccountAccess();
+  if (isCurrentAccount && !isCurrentAccount()) {
+    throw new Error("The account changed. Reopen the editor before using AI auto-fill.");
+  }
   const normalizedWord = word.trim();
   if (!normalizedWord) {
     throw new Error("Enter a French word first.");
   }
 
   const { data } = await supabase.auth.getSession();
+  if ((isCurrentAccount && !isCurrentAccount()) || (userId && data.session?.user?.id !== userId)) {
+    throw new Error("The account changed. Reopen the editor before using AI auto-fill.");
+  }
   const token = data.session?.access_token;
 
   if (!token) {
@@ -17,6 +23,7 @@ export async function autoFillFrenchVocabulary(word, language = "en") {
 
   assertAccountAccess();
   const response = await fetch("/api/autofill-vocabulary", {
+    signal,
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

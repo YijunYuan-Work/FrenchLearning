@@ -95,3 +95,23 @@ export const supabase = hasSupabaseConfig
       },
     })
   : null;
+
+// Auth mutations must use the initiating account's token, not a later ambient session.
+export function createAccountAuthClient(isCurrentAccount) {
+  assertAccountAccess();
+  return createClient(supabaseUrl, supabasePublishableKey, {
+    global: {
+      fetch(...args) {
+        assertAccountAccess();
+        if (!isCurrentAccount()) throw new Error("The account changed. Reopen Settings before saving.");
+        return fetch(...args);
+      },
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: `french-desk-account-operation-${crypto.randomUUID()}`,
+    },
+  });
+}

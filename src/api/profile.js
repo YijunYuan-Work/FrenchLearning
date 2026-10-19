@@ -1,6 +1,8 @@
-import { supabase } from "../lib/supabase";
+import { createAccountAuthClient, supabase } from "../lib/supabase";
+import { assertAccountAccess } from "../utils/demoMode";
 import {
   createUpdatedProfileMetadata,
+  assertAuthenticatedUser,
   getDisplayName,
   getLoginUsername,
   getProfileRecoveryEmail,
@@ -31,64 +33,46 @@ export function getAutofillLimit(subscriptionTier) {
     : freeAutofillDailyLimit;
 }
 
-export async function updateUserProfile({ displayName, recoveryEmail }) {
-  const {
-    data: { user },
-    error: currentUserError,
-  } = await supabase.auth.getUser();
-
-  if (currentUserError) {
-    throw currentUserError;
+async function withAccountAuth(userId, isCurrentAccount, operation) {
+  assertAccountAccess();
+  if (!userId || !isCurrentAccount?.()) throw new Error("The account changed. Reopen Settings before saving.");
+  const { data, error } = await supabase.auth.getSession();
+  assertAuthenticatedUser({ data: { user: data.session?.user }, error }, userId);
+  const client = createAccountAuthClient(isCurrentAccount);
+  try {
+    const result = await client.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    });
+    return await operation(client, assertAuthenticatedUser(result, userId));
+  } finally {
+    await client.auth.dispose();
   }
-
-  const { data, error } = await supabase.auth.updateUser({
-    data: createUpdatedProfileMetadata(user, { displayName, recoveryEmail }),
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  return data.user;
 }
 
-export async function changeUserPassword({ newPassword, oldPassword }) {
-  const {
-    data: { user },
-    error: currentUserError,
-  } = await supabase.auth.getUser();
+export async function updateUserProfile({ displayName, recoveryEmail, userId, isCurrentAccount }) {
+  return withAccountAuth(userId, isCurrentAccount, async (client, user) => {
+    const { data, error } = await client.auth.updateUser({
+      data: createUpdatedProfileMetadata(user, { displayName, recoveryEmail }),
+    });
+    if (error) throw error;
+    return data.user;
+  });
+}
 
-  if (currentUserError) {
-    throw currentUserError;
-  }
-
-  if (!user?.email) {
-    throw new Error("Could not validate this account.");
-  }
-
-  const { data: signInData, error: signInError } =
-    await supabase.auth.signInWithPassword({
+export async function changeUserPassword({ newPassword, oldPassword, userId, isCurrentAccount }) {
+  return withAccountAuth(userId, isCurrentAccount, async (client, user) => {
+    if (!user?.email) throw new Error("Could not validate this account.");
+    const { data: signInData, error: signInError } = await client.auth.signInWithPassword({
       email: user.email,
       password: oldPassword,
     });
-
-  if (signInError) {
-    throw new Error("Current password is incorrect.");
-  }
-
-  if (signInData.user?.id !== user.id) {
-    throw new Error("Could not validate this account.");
-  }
-
-  const { data, error } = await supabase.auth.updateUser({
-    password: newPassword,
+    if (signInError) throw new Error("Current password is incorrect.");
+    if (signInData.user?.id !== user.id) throw new Error("Could not validate this account.");
+    const { data, error } = await client.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    return data.user;
   });
-
-  if (error) {
-    throw error;
-  }
-
-  return data.user;
 }
 
 export async function getAutofillUsageStatus(userId) {
