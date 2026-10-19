@@ -1,9 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  getLearningPreferences,
-  getLanguagePreference,
-  updateLanguagePreference,
-} from "./api/preferences";
+import { useEffect, useMemo, useState } from "react";
+import { getLearningPreferences } from "./api/preferences";
 import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
 import { Sidebar } from "./components/Sidebar";
@@ -93,7 +89,7 @@ export default function App() {
 function AccountSession({ isDemoRoute }) {
   const auth = useAuthSession({ isDemo: isDemoRoute, demoUser });
   return (
-    <LanguageProvider isDemo={isDemoRoute} key={auth.generation}>
+    <LanguageProvider isDemo={isDemoRoute} userId={auth.user?.id} isCurrentAccount={auth.isCurrentAccount} key={auth.generation}>
       <Workspace isDemoRoute={isDemoRoute} auth={auth} />
     </LanguageProvider>
   );
@@ -101,13 +97,10 @@ function AccountSession({ isDemoRoute }) {
 
 function Workspace({ isDemoRoute, auth }) {
   const learningDay = useLocalLearningDay();
-  const { language, setLanguage, t } = useLanguage();
+  const { t, languagePreferenceStatus, retryLanguagePreference } = useLanguage();
   const { user, loading: authLoading, error: authError, isCurrentAccount, updateUser: setUser,
     handleAuthSubmit, handleSignOut } = auth;
   const [dataError, setDataError] = useState("");
-  const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(
-    isDemoRoute
-  );
   const [learningSettings, setLearningSettings] = useState(defaultLearningSettings);
   const [settingsLoad, setSettingsLoad] = useState({ userId: null, status: "idle", error: "" });
   const [settingsLoadAttempt, setSettingsLoadAttempt] = useState(0);
@@ -123,7 +116,6 @@ function Workspace({ isDemoRoute, auth }) {
   const [editingItem, setEditingItem] = useState(null);
   const [editorError, setEditorError] = useState("");
   const [form, setForm] = useState(emptyForm);
-  const savedLanguageRef = useRef(language);
   const notes = useNotes({
     demoItems: demoNotes,
     isDemo: isDemoRoute,
@@ -164,44 +156,6 @@ function Workspace({ isDemoRoute, auth }) {
 
   useEffect(() => {
     if (isDemoRoute) {
-      setLanguagePreferenceLoaded(true);
-      savedLanguageRef.current = language;
-      return undefined;
-    }
-
-    if (!user) {
-      setLanguagePreferenceLoaded(false);
-      return undefined;
-    }
-
-    let isMounted = true;
-    setLanguagePreferenceLoaded(false);
-
-    getLanguagePreference(user.id)
-      .then((savedLanguage) => {
-        if (!isMounted || !isCurrentAccount()) return;
-        if (savedLanguage) {
-          savedLanguageRef.current = savedLanguage;
-          setLanguage(savedLanguage);
-        } else {
-          savedLanguageRef.current = language;
-        }
-        setLanguagePreferenceLoaded(true);
-      })
-      .catch((error) => {
-        if (!isMounted || !isCurrentAccount()) return;
-        console.warn("Language preference could not be loaded.", error);
-        savedLanguageRef.current = language;
-        setLanguagePreferenceLoaded(true);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isCurrentAccount, isDemoRoute, language, setLanguage, user]);
-
-  useEffect(() => {
-    if (isDemoRoute) {
       return undefined;
     }
 
@@ -229,21 +183,6 @@ function Workspace({ isDemoRoute, auth }) {
       isMounted = false;
     };
   }, [isCurrentAccount, isDemoRoute, settingsLoadAttempt, userId]);
-
-  useEffect(() => {
-    if (isDemoRoute) return;
-    if (!isCurrentAccount()) return;
-    if (!user || !languagePreferenceLoaded) return;
-    if (language === savedLanguageRef.current) return;
-
-    updateLanguagePreference(user.id, language)
-      .then((savedLanguage) => {
-        if (isCurrentAccount()) savedLanguageRef.current = savedLanguage;
-      })
-      .catch((error) => {
-        if (isCurrentAccount()) console.warn("Language preference could not be saved.", error);
-      });
-  }, [isCurrentAccount, isDemoRoute, language, languagePreferenceLoaded, user]);
 
   const tags = useMemo(() => {
     const tagSourceItems = noteSections.has(activeSection)
@@ -552,6 +491,16 @@ function Workspace({ isDemoRoute, auth }) {
         />
 
         <section className="grid gap-4 px-3 pb-6 pt-2 sm:px-4 sm:pb-8 md:px-7 lg:gap-5">
+          {languagePreferenceStatus.error && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-frenchRed/25 bg-blush p-3 text-sm text-frenchRed" role="alert">
+              <p>{languagePreferenceStatus.error === "load"
+                ? t("languagePreferenceLoadFailed", "Your saved language could not be loaded. Your current choice is not synced.")
+                : t("languagePreferenceSaveFailed", "Your language choice could not be saved. Retry to sync it.")}</p>
+              <button className="secondary-action h-9" onClick={retryLanguagePreference} type="button">
+                {t("retryLanguagePreference", "Retry language preference")}
+              </button>
+            </div>
+          )}
           {(dataError || authError) && (
             <div className="rounded-xl border border-frenchRed/25 bg-blush p-3 text-sm font-medium text-frenchRed">
               {dataError || authError}

@@ -4,8 +4,10 @@ import {
   normalizeLearningSettings,
 } from "../utils/learningSettings";
 import { assertAuthenticatedUser } from "../utils/accountIdentity";
+import { assertAccountAccess } from "../utils/demoMode";
 
 const allowedLanguages = new Set(["en", "zh"]);
+const pendingLanguageWrites = new Map();
 
 function isMissingLearningSettingsColumns(error) {
   const message = error?.message?.toLowerCase?.() ?? "";
@@ -19,7 +21,13 @@ function isMissingLearningSettingsColumns(error) {
   );
 }
 
-export async function getLanguagePreference(userId) {
+export async function getLanguagePreference(userId, { isCurrent = () => true } = {}) {
+  assertAccountAccess();
+  // A newly mounted A workspace must not hydrate ahead of an old A write
+  // still finishing after an A -> B -> A switch.
+  await pendingLanguageWrites.get(userId)?.catch(() => {});
+  assertAccountAccess();
+  if (!isCurrent()) throw new Error("Account changed before loading language.");
   const { data, error } = await supabase
     .from("user_preferences")
     .select("language")
@@ -33,10 +41,24 @@ export async function getLanguagePreference(userId) {
   return allowedLanguages.has(data?.language) ? data.language : null;
 }
 
-export async function updateLanguagePreference(userId, language) {
+export function updateLanguagePreference(userId, language, options = {}) {
+  assertAccountAccess();
+  const previous = pendingLanguageWrites.get(userId) ?? Promise.resolve();
+  const write = previous.catch(() => {}).then(() => saveLanguagePreference(userId, language, options));
+  pendingLanguageWrites.set(userId, write);
+  return write.finally(() => {
+    if (pendingLanguageWrites.get(userId) === write) pendingLanguageWrites.delete(userId);
+  });
+}
+
+async function saveLanguagePreference(userId, language, { isCurrent = () => true } = {}) {
+  assertAccountAccess();
+  if (!isCurrent()) throw new Error("Account changed before saving language.");
   const nextLanguage = allowedLanguages.has(language) ? language : "en";
 
   const authResult = await supabase.auth.getUser();
+  assertAccountAccess();
+  if (!isCurrent()) throw new Error("Account changed before saving language.");
   assertAuthenticatedUser(authResult, userId);
 
   const { data, error } = await supabase
@@ -55,6 +77,7 @@ export async function updateLanguagePreference(userId, language) {
     throw error;
   }
 
+  if (data?.language !== nextLanguage) throw new Error("Language preference was not saved.");
   return data.language;
 }
 

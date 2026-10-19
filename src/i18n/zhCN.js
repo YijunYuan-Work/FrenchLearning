@@ -1,4 +1,7 @@
 export const zhCN = {
+  languagePreferenceLoadFailed: "无法加载已保存的语言。当前选择尚未同步。",
+  languagePreferenceSaveFailed: "无法保存语言选择，请重试同步。",
+  retryLanguagePreference: "重试语言同步",
   dailySaveFailed: "部分学习进度尚未保存。",
   dailySaveConflict: "此学习记录已在其他标签页或设备中更改。",
   retryDailySave: "重试保存",
