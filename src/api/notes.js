@@ -87,12 +87,16 @@ export async function createNote(note, userId) {
 }
 
 export function updateNote(noteId, note, userId, { isCurrent = () => true } = {}) {
+  return queueNoteWrite(noteId, userId, isCurrent, () => patchNote(noteId, note, userId));
+}
+
+function queueNoteWrite(noteId, userId, isCurrent, operation) {
   assertAccountAccess();
   const key = `${userId}:${noteId}`;
   const previous = pendingNoteWrites.get(key) ?? Promise.resolve();
   const write = previous.catch(() => {}).then(() => {
     if (!isCurrent()) throw new Error("The account changed before saving the note.");
-    return patchNote(noteId, note, userId);
+    return operation();
   });
   pendingNoteWrites.set(key, write);
   return write.finally(() => { if (pendingNoteWrites.get(key) === write) pendingNoteWrites.delete(key); });
@@ -124,14 +128,14 @@ async function patchNote(noteId, note, userId) {
   return toNote(data);
 }
 
-export async function deleteNote(noteId, userId) {
-  const { error } = await supabase
-    .from("notes")
-    .delete()
-    .eq("id", noteId)
-    .eq("user_id", userId);
-
-  if (error) {
-    throw error;
-  }
+export function deleteNote(noteId, userId, { isCurrent = () => true } = {}) {
+  return queueNoteWrite(noteId, userId, isCurrent, async () => {
+    assertAccountAccess();
+    const { error } = await supabase
+      .from("notes")
+      .delete()
+      .eq("id", noteId)
+      .eq("user_id", userId);
+    if (error) throw error;
+  });
 }

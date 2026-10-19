@@ -14,6 +14,7 @@ const DEFAULT_ITEMS_PER_PAGE = 10;
 export function NotesView({
   activeSection,
   allowConfidenceActions = true,
+  isDeleting,
   filteredItems,
   itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
   items,
@@ -105,6 +106,7 @@ export function NotesView({
           totalPages={totalPages}
         />
         <SelectionToolbar
+          isDeleting={isDeleting}
           onClearSelection={onClearSelection}
           onDeleteSelected={onDeleteSelected}
           onSelectItems={onSelectItems}
@@ -114,6 +116,7 @@ export function NotesView({
 
         {visibleItems.map((item) => (
           <LearningCard
+            isDeleting={isDeleting}
             isSelected={selectedIds.includes(item.id)}
             item={item}
             key={item.id}

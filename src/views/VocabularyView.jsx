@@ -191,6 +191,7 @@ export function VocabularyView(props) {
           totalPages={totalPages}
         />
         <SelectionToolbar
+          isDeleting={props.isDeleting}
           onClearSelection={props.onClearSelection}
           onDeleteSelected={props.onDeleteSelected}
           onSelectItems={props.onSelectItems}
@@ -200,6 +201,7 @@ export function VocabularyView(props) {
 
         {visibleItems.map((item) => (
           <LearningCard
+            isDeleting={props.isDeleting}
             isSelected={props.selectedIds.includes(item.id)}
             item={item}
             key={item.id}

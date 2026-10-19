@@ -13,6 +13,7 @@ function confidenceLabel(value, t) {
 
 export function LearningCard({
   allowConfidenceActions = true,
+  isDeleting = false,
   isSelected,
   item,
   markReviewed,
@@ -50,7 +51,8 @@ export function LearningCard({
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <button
               aria-label={`${isSelected ? "Unselect" : "Select"} ${item.french}`}
-              className="focus-ring inline-flex size-7 items-center justify-center rounded-lg border border-line bg-white text-frenchBlue"
+              disabled={isDeleting}
+              className="focus-ring inline-flex size-7 items-center justify-center rounded-lg border border-line bg-white text-frenchBlue disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => onToggleSelected(item.id)}
               type="button"
             >
@@ -82,7 +84,8 @@ export function LearningCard({
           </button>
           <button
             aria-label={`Delete ${item.french}`}
-            className="focus-ring inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-frenchRed/25 bg-white text-frenchRed hover:bg-blush"
+            disabled={isDeleting}
+            className="focus-ring inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-frenchRed/25 bg-white text-frenchRed hover:bg-blush disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => onDeleteItem(item)}
             type="button"
           >

@@ -54,6 +54,8 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
   const failures = new Set();
   const lostNoteResponses = new Set();
   const failNoteOnce = new Set();
+  const failedDeletes = new Set();
+  const lostDeleteResponses = new Set();
   const transport = { failCompletedQuiz: false };
 
   await page.route("**/src/lib/supabase.js", async (route) => {
@@ -118,6 +120,13 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
     if (url.pathname === "/auth/v1/token") return route.fulfill({ json: sessionFor(account.user) });
     if (resource === "notes") {
       if (request.method() === "GET") return route.fulfill({ json: account.notes });
+      if (request.method() === "DELETE") {
+        expect(url.searchParams.get("user_id")).toBe(`eq.${id}`);
+        if (failedDeletes.has(`${id}:${noteId}`)) return route.fulfill({ status: 400, json: { message: "Delete failed" } });
+        account.notes = account.notes.filter((note) => note.id !== noteId);
+        if (lostDeleteResponses.delete(`${id}:${noteId}`)) return route.abort("connectionfailed");
+        return route.fulfill({ status: 204 });
+      }
       if (request.method() === "PATCH") {
         if (failNoteOnce.delete(`${id}:${noteId}`)) return route.fulfill({ status: 400, json: { message: "Confidence save failed" } });
         expect(url.searchParams.get("user_id")).toBe(`eq.${id}`);
@@ -180,7 +189,7 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
     await expect(page.getByRole("heading", { name: new RegExp(`Bonjour, Account ${name}\\.`) })).toBeVisible();
   };
   const writes = (id) => ledger.filter((entry) => entry.id === id && entry.method !== "GET" && entry.resource !== "token");
-  return { accounts, ledger, hold, waitFor, failures, lostNoteResponses, failNoteOnce, transport, switchTo, writes, date };
+  return { accounts, ledger, hold, waitFor, failures, lostNoteResponses, failNoteOnce, failedDeletes, lostDeleteResponses, transport, switchTo, writes, date };
 }
 
 async function addNote(page, french) {
@@ -898,4 +907,238 @@ test("a correct demo Quiz answer changes only disposable demo confidence", async
   expect(backend.accounts).toEqual(original);
   expect(backend.ledger).toEqual([]);
   expect(await page.evaluate(() => ({ ...localStorage }))).toEqual(storage);
+});
+
+const noteDeletes = (backend, owner = ids.A) => backend.writes(owner).filter((entry) => entry.resource === "notes" && entry.method === "DELETE");
+
+async function deleteSelection(page) {
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Delete selected", exact: true }).click();
+}
+
+for (const fails of [false, true]) {
+  test(`bulk deletion ${fails ? "keeps every failed note selected" : "removes every successful note and survives refresh"}`, async ({ page, context, baseURL }) => {
+    const backend = await setupAccounts({ page, context, baseURL });
+    if (fails) for (const note of backend.accounts[ids.A].notes) backend.failedDeletes.add(`${ids.A}:${note.id}`);
+    const original = structuredClone(backend.accounts[ids.A].notes);
+    await page.goto("/");
+    await go(page, "Vocabulary");
+    await go(page, "Select page");
+    await deleteSelection(page);
+    await expect(page.getByRole("status").locator("p")).toHaveText(`Deleted: ${fails ? 0 : 3}. Failed: ${fails ? 3 : 0}.${fails ? " Failed notes remain selected. Check your connection and retry." : ""}`);
+    expect(noteDeletes(backend)).toHaveLength(3);
+    expect(backend.accounts[ids.A].notes).toEqual(fails ? original : []);
+    if (fails) {
+      await expect(page.getByText("3 selected", { exact: true })).toBeVisible();
+      for (let index = 1; index <= 3; index += 1) await expect(page.getByRole("button", { name: `Unselect A-word-${index}`, exact: true })).toBeVisible();
+    } else {
+      await expect(page.getByRole("article")).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Retry failed deletions", exact: true })).toHaveCount(0);
+    }
+    await page.reload();
+    await go(page, "Vocabulary");
+    await expect(page.getByRole("article")).toHaveCount(fails ? 3 : 0);
+  });
+}
+
+test("partial deletion reconciles successes before the last response and retries only failures", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.failedDeletes.add(`${ids.A}:A-2`);
+  const gate = backend.hold(`${ids.A}:notes:DELETE:A-3`);
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  await go(page, "Select page");
+  await deleteSelection(page);
+  await expect(page.getByRole("heading", { name: "A-word-1", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "A-word-2", exact: true })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText("Deleting notes...");
+  gate.resolve();
+  await expect(page.getByRole("status")).toContainText("Deleted: 2. Failed: 1.");
+  await expect(page.getByText("1 selected", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Unselect A-word-2", exact: true })).toBeVisible();
+  expect(backend.accounts[ids.A].notes.map((note) => note.id)).toEqual(["A-2"]);
+  backend.failedDeletes.clear();
+  page.once("dialog", (dialog) => dialog.accept());
+  await go(page, "Retry failed deletions");
+  await expect(page.getByRole("status")).toHaveText("Deleted: 1. Failed: 0.");
+  await expect(page.getByRole("article")).toHaveCount(0);
+  expect(backend.accounts[ids.A].notes).toEqual([]);
+  expect(noteDeletes(backend).map((entry) => entry.noteId).sort()).toEqual(["A-1", "A-2", "A-2", "A-3"]);
+});
+
+test("rapid repeated delete actions issue one job and stay locked across navigation", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const gate = backend.hold(`${ids.A}:notes:DELETE`);
+  let confirmations = 0;
+  page.on("dialog", async (dialog) => { confirmations += 1; await dialog.accept(); });
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  await go(page, "Select page");
+  await page.getByRole("button", { name: "Delete selected", exact: true }).evaluate((button) => { button.click(); button.click(); });
+  await expect.poll(() => noteDeletes(backend).length).toBe(3);
+  expect(confirmations).toBe(1);
+  for (const name of ["Delete selected", "Clear selection", "Unselect page", "Delete A-word-1", "Unselect A-word-1"]) {
+    await expect(page.getByRole("button", { name, exact: true })).toBeDisabled();
+  }
+  await go(page, "Phrases");
+  await go(page, "Vocabulary");
+  await expect(page.getByRole("status")).toHaveText("Deleting notes...");
+  await expect(page.getByRole("button", { name: "Delete selected", exact: true })).toBeDisabled();
+  gate.resolve();
+  await expect(page.getByRole("status")).toHaveText("Deleted: 3. Failed: 0.");
+  expect(noteDeletes(backend)).toHaveLength(3);
+  expect(backend.accounts[ids.A].notes).toEqual([]);
+});
+
+test("late deletes never affect another account and rehydration waits for the original account's deletes", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const originalB = structuredClone(backend.accounts[ids.B]);
+  const gate = backend.hold(`${ids.A}:notes:DELETE:A-2`);
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  await go(page, "Select A-word-2");
+  await deleteSelection(page);
+  await backend.waitFor(`${ids.A}:notes:DELETE:A-2`);
+  await backend.switchTo("B");
+  await go(page, "Vocabulary");
+  await go(page, "Select B-word-1");
+  await expect(page.getByText("1 selected", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveCount(0);
+  expect(backend.accounts[ids.B]).toEqual(originalB);
+  await backend.switchTo("A");
+  await go(page, "Quiz");
+  await expect(page.getByText("Loading your saved learning session...", { exact: true })).toBeVisible();
+  gate.resolve();
+  await expect(page.getByText("A-word-3", { exact: true })).toBeVisible();
+  await go(page, "Vocabulary");
+  await expect(page.getByRole("heading", { name: "A-word-2", exact: true })).toHaveCount(0);
+  await expect(page.getByText("0 selected", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveCount(0);
+  expect(backend.accounts[ids.A].notes.map((note) => note.id)).toEqual(["A-1", "A-3"]);
+  expect(backend.accounts[ids.B]).toEqual(originalB);
+  expect(backend.writes(ids.B)).toEqual([]);
+});
+
+test("bulk deletes wait for pending Quiz updates and removed notes stay out of Quiz and Study after refresh", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
+  await page.goto("/");
+  await go(page, "Quiz");
+  await answerQuiz(page, "A-meaning-2");
+  await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+  await go(page, "Vocabulary");
+  await go(page, "Select A-word-2");
+  await go(page, "Select A-word-3");
+  await deleteSelection(page);
+  await expect(page.getByRole("heading", { name: "A-word-3", exact: true })).toHaveCount(0);
+  expect(noteDeletes(backend).map((entry) => entry.noteId)).toEqual(["A-3"]);
+  const card = page.getByRole("article").filter({ has: page.getByRole("heading", { name: "A-word-2", exact: true }) });
+  await card.getByRole("button", { name: "I know this", exact: true }).click();
+  await expect(page.getByText("This note is being deleted. Wait before editing it.", { exact: true })).toBeVisible();
+  gate.resolve();
+  await expect(page.getByRole("status")).toHaveText("Deleted: 2. Failed: 0.");
+  expect(notePatches(backend, "A-2")).toHaveLength(1);
+  expect(backend.accounts[ids.A].notes.map((note) => note.id)).toEqual(["A-1"]);
+  await go(page, "Quiz");
+  await expect(page.getByRole("heading", { name: "Today's quiz is complete.", exact: true })).toBeVisible();
+  await expect.poll(() => backend.accounts[ids.A].daily.quiz_state.queueIds).toEqual(["A-1"]);
+  expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("pending");
+  await go(page, "Study");
+  await expect(page.getByText("Card 1 of 1", { exact: true })).toBeVisible();
+  await expect.poll(() => backend.accounts[ids.A].daily.study_state.cycleIds).toEqual(["A-1"]);
+  await page.reload();
+  await go(page, "Study");
+  await expect(page.getByText("Card 1 of 1", { exact: true })).toBeVisible();
+  await go(page, "Vocabulary");
+  await expect(page.getByRole("article")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "A-word-1", exact: true })).toBeVisible();
+  expect(notePatches(backend, "A-2")).toHaveLength(1);
+});
+
+test("a delete queued behind an update is cancelled if the account changes before it starts", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
+  const originalB = structuredClone(backend.accounts[ids.B]);
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  const card = page.getByRole("article").filter({ has: page.getByRole("heading", { name: "A-word-2", exact: true }) });
+  await card.getByRole("button", { name: "I know this", exact: true }).click();
+  await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+  await go(page, "Select A-word-2");
+  await deleteSelection(page);
+  await backend.switchTo("B");
+  await go(page, "Vocabulary");
+  await go(page, "Select B-word-1");
+  gate.resolve();
+  await expect.poll(() => storedNote(backend, "A-2").confidence).toBe(2);
+  await expect(page.getByRole("button", { name: "Unselect B-word-1", exact: true })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveCount(0);
+  await backend.switchTo("A");
+  await go(page, "Vocabulary");
+  await expect(page.getByRole("heading", { name: "A-word-2", exact: true })).toBeVisible();
+  expect(noteDeletes(backend)).toEqual([]);
+  expect(backend.accounts[ids.B]).toEqual(originalB);
+  expect(backend.writes(ids.B)).toEqual([]);
+});
+
+test("a pending editor response cannot restore a note deleted in the same bulk job", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  await go(page, "Edit A-word-2");
+  await page.getByRole("dialog").getByLabel("English", { exact: true }).fill("edited before deleting");
+  await page.getByRole("dialog").getByRole("button", { name: "Save note", exact: true }).click();
+  await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+  await page.getByRole("dialog").getByRole("button", { name: "Close editor", exact: true }).click();
+  await go(page, "Select A-word-2");
+  await go(page, "Select A-word-3");
+  await deleteSelection(page);
+  await expect(page.getByRole("heading", { name: "A-word-3", exact: true })).toHaveCount(0);
+  expect(noteDeletes(backend).map((entry) => entry.noteId)).toEqual(["A-3"]);
+  gate.resolve();
+  await expect(page.getByRole("status")).toHaveText("Deleted: 2. Failed: 0.");
+  await expect(page.getByRole("heading", { name: "A-word-2", exact: true })).toHaveCount(0);
+  expect(notePatches(backend, "A-2").map((entry) => entry.body)).toEqual([{ english: "edited before deleting" }]);
+  expect(backend.accounts[ids.A].notes.map((note) => note.id)).toEqual(["A-1"]);
+  await page.reload();
+  await go(page, "Vocabulary");
+  await expect(page.getByRole("article")).toHaveCount(1);
+});
+
+test("a lost delete response is reported as a failure and can be retried idempotently", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.lostDeleteResponses.add(`${ids.A}:A-2`);
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  await go(page, "Select A-word-2");
+  await deleteSelection(page);
+  await expect(page.getByRole("status")).toContainText("Deleted: 0. Failed: 1.");
+  await expect(page.getByRole("button", { name: "Unselect A-word-2", exact: true })).toBeVisible();
+  expect(backend.accounts[ids.A].notes.map((note) => note.id)).toEqual(["A-1", "A-3"]);
+  page.once("dialog", (dialog) => dialog.accept());
+  await go(page, "Retry failed deletions");
+  await expect(page.getByRole("status")).toHaveText("Deleted: 1. Failed: 0.");
+  await expect(page.getByRole("heading", { name: "A-word-2", exact: true })).toHaveCount(0);
+  expect(noteDeletes(backend)).toHaveLength(2);
+});
+
+test("demo bulk deletion changes only temporary notes, not the ambient account or storage", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const original = structuredClone(backend.accounts);
+  await page.goto("/#/demo");
+  const storage = await page.evaluate(() => ({ ...localStorage }));
+  await go(page, "Phrases");
+  const count = await page.getByRole("article").count();
+  expect(count).toBeGreaterThan(0);
+  await go(page, "Select page");
+  await deleteSelection(page);
+  await expect(page.getByRole("status")).toHaveText(`Deleted: ${count}. Failed: 0.`);
+  await expect(page.getByRole("article")).toHaveCount(0);
+  expect(backend.accounts).toEqual(original);
+  expect(backend.ledger).toEqual([]);
+  expect(await page.evaluate(() => ({ ...localStorage }))).toEqual(storage);
+  await page.reload();
+  await go(page, "Phrases");
+  await expect(page.getByRole("article")).toHaveCount(count);
 });

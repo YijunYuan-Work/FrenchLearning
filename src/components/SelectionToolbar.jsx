@@ -2,6 +2,7 @@ import { CheckSquare, Square, Trash2, X } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
 
 export function SelectionToolbar({
+  isDeleting = false,
   onClearSelection,
   onDeleteSelected,
   onSelectItems,
@@ -19,6 +20,7 @@ export function SelectionToolbar({
       <div className="flex flex-wrap items-center gap-2">
         <button
           className="secondary-action h-9 px-3 text-frenchBlue"
+          disabled={isDeleting}
           onClick={() => onSelectItems(visibleIds, !allVisibleSelected)}
           type="button"
         >
@@ -34,7 +36,7 @@ export function SelectionToolbar({
       <div className="flex flex-wrap gap-2">
         <button
           className="secondary-action h-9 px-3"
-          disabled={selectedIds.length === 0}
+          disabled={isDeleting || selectedIds.length === 0}
           onClick={onClearSelection}
           type="button"
         >
@@ -43,7 +45,7 @@ export function SelectionToolbar({
         </button>
         <button
           className="focus-ring inline-flex h-9 items-center gap-2 rounded-lg bg-frenchRed px-3 text-sm font-bold text-white hover:bg-frenchRed/90 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={selectedIds.length === 0}
+          disabled={isDeleting || selectedIds.length === 0}
           onClick={onDeleteSelected}
           type="button"
         >

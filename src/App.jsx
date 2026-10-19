@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getLearningPreferences } from "./api/preferences";
 import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
@@ -101,6 +101,7 @@ function Workspace({ isDemoRoute, auth }) {
   const { user, loading: authLoading, error: authError, isCurrentAccount, updateUser: setUser,
     handleAuthSubmit, handleSignOut } = auth;
   const [dataError, setDataError] = useState("");
+  const confirmingDeletion = useRef(false);
   const [learningSettings, setLearningSettings] = useState(defaultLearningSettings);
   const [settingsLoad, setSettingsLoad] = useState({ userId: null, status: "idle", error: "" });
   const [settingsLoadAttempt, setSettingsLoadAttempt] = useState(0);
@@ -350,22 +351,25 @@ function Workspace({ isDemoRoute, auth }) {
   }
 
   async function deleteItem(item) {
-    if (!user) return;
-
-    const shouldDelete = window.confirm(`Delete "${item.french}"?`);
-    if (!shouldDelete) return;
-
-    await notes.deleteOne(item.id);
+    await confirmDeletion(`Delete "${item.french}"?`, () => notes.deleteOne(item.id));
   }
 
   async function deleteSelected() {
     if (selectedIds.length === 0 || !user) return;
-    const shouldDelete = window.confirm(
-      `Delete ${selectedIds.length} selected note${selectedIds.length === 1 ? "" : "s"}?`
+    await confirmDeletion(
+      `Delete ${selectedIds.length} selected note${selectedIds.length === 1 ? "" : "s"}?`,
+      notes.deleteSelected,
     );
-    if (!shouldDelete) return;
+  }
 
-    await notes.deleteSelected();
+  async function confirmDeletion(message, remove) {
+    if (!user || !isCurrentAccount() || confirmingDeletion.current || notes.isDeleting) return;
+    confirmingDeletion.current = true;
+    try {
+      if (window.confirm(message)) await remove();
+    } finally {
+      confirmingDeletion.current = false;
+    }
   }
 
   const ActiveView = viewBySection[activeSection] ?? TodayView;
@@ -413,6 +417,7 @@ function Workspace({ isDemoRoute, auth }) {
     dailyProgressReady: isDemoRoute || dailyStateLoaded,
     filteredItems,
     items,
+    isDeleting: notes.isDeleting,
     markReviewed: notes.markReviewed,
     onClearSelection: notes.clearSelection,
     onDeleteItem: deleteItem,
@@ -508,6 +513,25 @@ function Workspace({ isDemoRoute, auth }) {
           {(dataError || authError) && (
             <div className="rounded-xl border border-frenchRed/25 bg-blush p-3 text-sm font-medium text-frenchRed">
               {dataError || authError}
+            </div>
+          )}
+          {(notes.isDeleting || notes.deletionResult) && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-paper p-3 text-sm" role="status" aria-live="polite">
+              <p>{notes.isDeleting
+                ? t("deletingNotes", "Deleting notes...")
+                : t("deleteNotesResult", "Deleted: {deleted}. Failed: {failed}.", notes.deletionResult)}
+                {!notes.isDeleting && notes.deletionResult?.failed > 0 && (
+                  <> {t("deleteNotesRetryCopy", "Failed notes remain selected. Check your connection and retry.")}</>
+                )}
+              </p>
+              {!notes.isDeleting && notes.deletionResult?.failed > 0 && (
+                <button className="secondary-action h-9" type="button" onClick={() => confirmDeletion(
+                  t("retryDeleteConfirm", "Retry deleting {count} failed notes?", { count: notes.deletionResult.failed }),
+                  notes.retryFailedDeletions,
+                )}>
+                  {t("retryFailedDeletions", "Retry failed deletions")}
+                </button>
+              )}
             </div>
           )}
           {loadFailures.map(({ key, message, retry }) => (
