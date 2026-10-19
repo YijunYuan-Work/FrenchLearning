@@ -2,6 +2,7 @@ import { supabase } from "../lib/supabase";
 import { createDailyProgress } from "../utils/dailyProgress";
 import { normalizeQuizState } from "../utils/quiz";
 import { normalizeStudyState } from "../utils/studyState";
+import { assertAccountAccess } from "../utils/demoMode";
 
 const dailyLearningStorageKey = "french-learning-daily-learning-state-v1";
 const dailyLearningSyncEnabled =
@@ -54,6 +55,7 @@ function saveLocalDailyLearningState(userId, date, nextState) {
 }
 
 export async function getDailyLearningState(userId, date) {
+  assertAccountAccess();
   if (!dailyLearningSyncEnabled || !dailyLearningTableAvailable) {
     return loadLocalDailyLearningState(userId, date);
   }
@@ -77,6 +79,7 @@ export async function getDailyLearningState(userId, date) {
 }
 
 export async function updateDailyProgress(userId, progress) {
+  assertAccountAccess();
   if (!dailyLearningSyncEnabled || !dailyLearningTableAvailable) {
     const current = loadLocalDailyLearningState(userId, progress.date);
     saveLocalDailyLearningState(userId, progress.date, {
@@ -116,6 +119,7 @@ export async function updateDailyProgress(userId, progress) {
 }
 
 export async function updateDailyQuizState(userId, quizState) {
+  assertAccountAccess();
   if (!dailyLearningSyncEnabled || !dailyLearningTableAvailable) {
     const current = loadLocalDailyLearningState(userId, quizState.date);
     saveLocalDailyLearningState(userId, quizState.date, {
@@ -153,6 +157,7 @@ export async function updateDailyQuizState(userId, quizState) {
 }
 
 export async function updateDailyStudyState(userId, studyState) {
+  assertAccountAccess();
   if (!dailyLearningSyncEnabled || !dailyLearningTableAvailable) {
     const current = loadLocalDailyLearningState(userId, studyState.date);
     saveLocalDailyLearningState(userId, studyState.date, {
