@@ -15,6 +15,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 
 export function QuizView({
   items,
+  learningDay = getTodayKey(),
   onQuizAnswer,
   onQuizComplete,
   onQuizStateChange,
@@ -25,7 +26,7 @@ export function QuizView({
   const { t } = useLanguage();
   const quizLimit = learningSettings?.quizVocabularyLimit ?? DAILY_QUIZ_LIMIT;
   const [quizState, setQuizState] = useState(() =>
-    savedQuizState ?? createDailyQuizState(items, getTodayKey(), [], quizLimit)
+    savedQuizState ?? createDailyQuizState(items, learningDay, [], quizLimit)
   );
   const [answer, setAnswer] = useState("");
   const [genderAnswer, setGenderAnswer] = useState("");
@@ -37,7 +38,7 @@ export function QuizView({
 
   useEffect(() => {
     setQuizState((current) => {
-      const today = getTodayKey();
+      const today = learningDay;
       if (current.date !== today) {
         return createDailyQuizState(items, today, [], quizLimit);
       }
@@ -82,7 +83,7 @@ export function QuizView({
 
       return current;
     });
-  }, [items, quizLimit]);
+  }, [items, learningDay, quizLimit]);
 
   useEffect(() => {
     onQuizStateChange?.(quizState);
@@ -260,7 +261,7 @@ export function QuizView({
     setGenderAnswer("");
     setLastResult(null);
     setQuizState((current) => {
-      const today = getTodayKey();
+      const today = learningDay;
       const excludedIds =
         current.date === today
           ? current.seenIds ?? [

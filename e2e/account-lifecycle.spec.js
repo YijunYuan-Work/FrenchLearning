@@ -196,6 +196,7 @@ test("pending A progress, Quiz, and Study writes remain owned by A", async ({ pa
   const backend = await setupAccounts({ page, context, baseURL });
   const originalB = structuredClone(backend.accounts[ids.B].daily);
   const writeGate = backend.hold(`${ids.A}:daily_learning_state:POST`);
+  const sessionGate = backend.hold(`${ids.A}:daily_learning_state:PATCH`);
   await page.goto("/");
   await go(page, "Quiz");
   await page.getByRole("button", { name: "Show correct answer", exact: true }).click();
@@ -206,11 +207,33 @@ test("pending A progress, Quiz, and Study writes remain owned by A", async ({ pa
   await expect.poll(() => backend.writes(ids.A).filter((entry) => entry.resource === "daily_learning_state").length).toBe(3);
   await backend.switchTo("B");
   writeGate.resolve();
+  sessionGate.resolve();
   await go(page, "Study");
   await expect(page.getByRole("heading", { name: "B-word-2", exact: true })).toBeVisible();
   await expect.poll(() => backend.accounts[ids.A].daily.add_note).toBe(true);
   expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].revealedAnswer).toBe(true);
   expect(backend.accounts[ids.A].daily.study_state.isFlipped).toBe(false);
+  expect(backend.accounts[ids.B].daily).toEqual(originalB);
+  expect(backend.writes(ids.B)).toEqual([]);
+});
+
+test("queued A Study changes are not sent after an account switch", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const originalB = structuredClone(backend.accounts[ids.B].daily);
+  const gate = backend.hold(`${ids.A}:daily_learning_state:PATCH`);
+  await page.goto("/");
+  await go(page, "Study");
+  await page.getByRole("button", { name: "Show front", exact: true }).click();
+  await backend.waitFor(`${ids.A}:daily_learning_state:PATCH`);
+  await page.getByRole("button", { name: "Previous", exact: true }).click();
+  await expect(page.getByText("Card 1 of 3", { exact: true })).toBeVisible();
+  await backend.switchTo("B");
+  gate.resolve();
+  await go(page, "Study");
+  await expect(page.getByRole("heading", { name: "B-word-2", exact: true })).toBeVisible();
+  await expect.poll(() => backend.accounts[ids.A].daily.study_state.isFlipped).toBe(false);
+  expect(backend.accounts[ids.A].daily.study_state.cardIndex).toBe(1);
+  expect(backend.writes(ids.A).filter((entry) => entry.resource === "daily_learning_state")).toHaveLength(1);
   expect(backend.accounts[ids.B].daily).toEqual(originalB);
   expect(backend.writes(ids.B)).toEqual([]);
 });

@@ -1,4 +1,9 @@
 export const zhCN = {
+  dailySaveFailed: "部分学习进度尚未保存。",
+  dailySaveConflict: "此学习记录已在其他标签页或设备中更改。",
+  retryDailySave: "重试保存",
+  reloadSavedProgress: "重新加载已保存的进度",
+  reloadProgressConfirm: "重新加载已保存的进度？此标签页中尚未保存的更改将被放弃。",
   dailyProgressPending: "进度尚未加载",
   dailyStateLoadFailed: "无法加载已保存的学习进度，进度并未重置。",
   notesLoadFailed: "无法加载笔记，已保存的学习记录保持不变。",

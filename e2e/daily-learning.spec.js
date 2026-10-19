@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { isDeepStrictEqual } from "node:util";
 
 const backendOrigin = "https://daily-learning.supabase.test";
 const user = {
@@ -42,6 +43,7 @@ async function setupLearning({ page, context, baseURL }, { sync = true, failLoca
     saved, writes: [], noteWrites: [], notes, failDaily: false, failNotes: false, failSettings: false,
     missingDailyTable: false, notesGate: null, settingsGate: null,
     dailyRead: deferred(), notesRead: deferred(), settingsRead: deferred(),
+    days: {}, saveGate: null, failWrites: false, loseSaveResponse: false,
   };
 
   // Keep the real hooks, API normalization, and Supabase client; only replace configuration/HTTP.
@@ -85,6 +87,8 @@ async function setupLearning({ page, context, baseURL }, { sync = true, failLoca
       }
     }
     if (url.pathname === "/rest/v1/daily_learning_state") {
+      const requestDate = request.method() === "GET" ? url.searchParams.get("date")?.slice(3) : request.postDataJSON().date;
+      const current = requestDate === date ? backend.saved : backend.days[requestDate];
       if (request.method() === "GET") {
         backend.dailyRead.resolve();
         if (backend.missingDailyTable) return route.fulfill({ status: 404, json: { code: "PGRST205" } });
@@ -95,18 +99,38 @@ async function setupLearning({ page, context, baseURL }, { sync = true, failLoca
             json: { message: "daily_learning_state temporarily unavailable" },
           });
         }
-        body = [backend.saved];
+        body = current ? [current] : [];
       } else {
         const patch = request.postDataJSON();
         backend.writes.push(patch);
-        backend.saved = { ...backend.saved, ...patch };
-        body = backend.saved;
+        await backend.saveGate?.promise;
+        if (backend.failWrites) return route.fulfill({ status: 400, json: { message: "Daily save unavailable" } });
+        // Model PostgREST's field-level JSONB comparison and unique constraint.
+        const latest = requestDate === date ? backend.saved : backend.days[requestDate];
+        if (request.method() === "PATCH") {
+          for (const field of ["quiz_state", "study_state"]) {
+            const filter = url.searchParams.get(field);
+            if (filter && !isDeepStrictEqual(latest?.[field], JSON.parse(filter.slice(3)))) {
+              return route.fulfill({ json: [] });
+            }
+          }
+        } else if (!request.headers().prefer?.includes("resolution=merge-duplicates") && latest) {
+          return route.fulfill({ status: 409, json: { code: "23505" } });
+        }
+        const next = { add_note: false, study: false, quiz: false, quiz_state: {}, study_state: {}, ...latest, ...patch };
+        if (requestDate === date) backend.saved = next;
+        else backend.days[requestDate] = next;
+        if (backend.loseSaveResponse) {
+          backend.loseSaveResponse = false;
+          return route.fulfill({ status: 400, json: { message: "Response lost after commit" } });
+        }
+        body = request.method() === "PATCH" ? [next] : next;
       }
     }
     await route.fulfill({ json: body });
   });
 
-  const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+  const expiresAt = Math.floor(Date.now() / 1000) + 7 * 86400;
   const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
   const session = {
     access_token: `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: user.id, exp: expiresAt, role: "authenticated" })}.test`,
@@ -130,6 +154,7 @@ async function setupLearning({ page, context, baseURL }, { sync = true, failLoca
       return getItem.call(this, name);
     };
     Storage.prototype.setItem = function (name, value) {
+      if (name.startsWith("french-learning-daily-learning-state-v1:") && globalThis.failDailyStorageWrite) throw new Error("Storage write unavailable");
       if (name === key) globalThis.dailyStorageWrites.push(JSON.parse(value));
       return setItem.call(this, name, value);
     };
@@ -296,7 +321,208 @@ test("an Add Note goal earned during a failed read merges with saved progress af
   backend.failDaily = false;
   await error.getByRole("button", { name: "Retry", exact: true }).click();
   await expect.poll(() => backend.writes.length).toBe(1);
-  expect(backend.writes[0]).toMatchObject({ add_note: true, study: true, quiz: false });
+  expect(backend.writes[0]).toMatchObject({ add_note: true, study: true });
+  expect(backend.writes[0]).not.toHaveProperty("quiz");
   expect(backend.saved.quiz_state.answered.one.correct).toBe(true);
   expect(backend.saved.study_state.cardIndex).toBe(1);
+});
+
+test("local midnight resets Today, Quiz and Study without rewriting yesterday", async ({ page, context, baseURL }) => {
+  const beforeMidnight = new Date();
+  beforeMidnight.setHours(23, 59, 0, 0);
+  await page.clock.install({ time: beforeMidnight });
+  const backend = await setupLearning({ page, context, baseURL }, { sync: false });
+  const yesterday = structuredClone(backend.saved);
+  await page.goto("/");
+  await openSession(page, "Study");
+  await expect(page.getByText("Card 2 of 3", { exact: true })).toBeVisible();
+  await page.clock.fastForward(61_000);
+  await expect(page.getByText("Card 1 of 4", { exact: true })).toBeVisible();
+  await openSession(page, "Quiz");
+  await expect(page.getByText("0/4", { exact: true })).toBeVisible();
+  await openSession(page, "Today");
+  await expect(page.getByText("0/3", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => JSON.parse(globalThis.readSavedDaily()))).toEqual(yesterday);
+  const today = await page.evaluate(async (id) => {
+    const { getTodayKey } = await import("/src/utils/quiz.js");
+    return JSON.parse(localStorage.getItem(`french-learning-daily-learning-state-v1:${id}:${getTodayKey()}`));
+  }, user.id);
+  expect(today.quiz_state.answered).toEqual({});
+  expect(today.study_state.cardIndex).toBe(0);
+  expect(today.study_state.date).not.toBe(yesterday.study_state.date);
+  expect(backend.writes).toEqual([]);
+});
+
+for (const event of ["visibilitychange", "pageshow"]) {
+  test(`overnight resume via ${event} hydrates the new day and preserves a pending old-day save`, async ({ page, context, baseURL }) => {
+    await page.clock.install();
+    const backend = await setupLearning({ page, context, baseURL });
+    backend.saveGate = deferred();
+    await page.goto("/");
+    await openSession(page, "Study");
+    await page.getByRole("button", { name: "Show front", exact: true }).click();
+    await expect.poll(() => backend.writes.length).toBe(1);
+    const tomorrow = await page.evaluate(() => { const date = new Date(); date.setDate(date.getDate() + 1); return date.getTime(); });
+    await page.clock.setSystemTime(tomorrow);
+    await page.evaluate((event) => (event === "visibilitychange" ? globalThis.document : globalThis).dispatchEvent(new Event(event)), event);
+    await expect(page.getByText("Card 1 of 4", { exact: true })).toBeVisible();
+    backend.saveGate.resolve();
+    await expect.poll(() => backend.saved.study_state.isFlipped).toBe(false);
+    expect(backend.saved.study_state.cardIndex).toBe(1);
+    expect(backend.saved.study_state.date).toBe(backend.writes[0].date);
+    await expect.poll(() => Object.values(backend.days).length).toBe(1);
+    const [today] = Object.values(backend.days);
+    expect(today.study_state.cardIndex).toBe(0);
+    expect(today.study_state.date).not.toBe(backend.saved.study_state.date);
+    await openSession(page, "Today");
+    await expect(page.getByText("0/3", { exact: true })).toBeVisible();
+  });
+}
+
+for (const name of ["Quiz", "Study"]) {
+  test(`${name} coalesces newer state behind a delayed save instead of racing it`, async ({ page, context, baseURL }) => {
+    const backend = await setupLearning({ page, context, baseURL });
+    backend.saveGate = deferred();
+    await page.goto("/");
+    await openSession(page, name);
+    if (name === "Study") {
+      await page.getByRole("button", { name: "Show front", exact: true }).click();
+      await expect.poll(() => backend.writes.length).toBe(1);
+      await page.getByRole("button", { name: "Next", exact: true }).click();
+      await expect(page.getByText("Card 3 of 3", { exact: true })).toBeVisible();
+    } else {
+      await page.getByRole("button", { name: "Show correct answer", exact: true }).click();
+      await expect.poll(() => backend.writes.length).toBe(1);
+      await page.getByRole("button", { name: "Next word", exact: true }).click();
+      await page.getByRole("button", { name: "Show correct answer", exact: true }).click();
+      await expect(page.getByText("3/3", { exact: true })).toBeVisible();
+    }
+    expect(backend.writes).toHaveLength(1);
+    backend.saveGate.resolve();
+    await expect.poll(() => backend.writes.length).toBe(2);
+    await expect.poll(() => name === "Study" ? backend.saved.study_state.cardIndex : Object.keys(backend.saved.quiz_state.answered).length).toBe(name === "Study" ? 2 : 3);
+    await expect(page.getByRole("alert")).toHaveCount(0);
+  });
+}
+
+for (const failure of ["read", "write"]) {
+  test(`local storage ${failure} failure during saving is observable and retries the latest state`, async ({ page, context, baseURL }) => {
+    const backend = await setupLearning({ page, context, baseURL }, { sync: false });
+    await page.goto("/");
+    await openSession(page, "Study");
+    await expect(page.getByText("Card 2 of 3", { exact: true })).toBeVisible();
+    await page.evaluate((failure) => { globalThis[failure === "read" ? "failDailyStorageRead" : "failDailyStorageWrite"] = true; }, failure);
+    await page.getByRole("button", { name: "Show front", exact: true }).click();
+    const error = page.getByRole("alert").filter({ hasText: "Some learning progress is not saved." });
+    await expect(error).toBeVisible();
+    expect(await page.evaluate(() => JSON.parse(globalThis.readSavedDaily()))).toEqual(backend.saved);
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.evaluate(() => { globalThis.failDailyStorageRead = false; globalThis.failDailyStorageWrite = false; });
+    await error.getByRole("button", { name: "Retry saving", exact: true }).click();
+    await expect(error).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => JSON.parse(globalThis.readSavedDaily()).study_state.cardIndex)).toBe(2);
+  });
+}
+
+test("cloud save failure retains pending changes and recovers explicitly", async ({ page, context, baseURL }) => {
+  const backend = await setupLearning({ page, context, baseURL });
+  backend.failWrites = true;
+  await page.goto("/");
+  await openSession(page, "Study");
+  await page.getByRole("button", { name: "Show front", exact: true }).click();
+  const error = page.getByRole("alert").filter({ hasText: "Some learning progress is not saved." });
+  await expect(error).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  expect(backend.writes).toHaveLength(1);
+  backend.failWrites = false;
+  await error.getByRole("button", { name: "Retry saving", exact: true }).click();
+  await expect(error).toHaveCount(0);
+  await expect.poll(() => backend.saved.study_state.cardIndex).toBe(2);
+});
+
+test("rapid independent task completions merge in cloud storage", async ({ page, context, baseURL }) => {
+  const backend = await setupLearning({ page, context, baseURL });
+  backend.saved.add_note = false;
+  backend.saved.study = false;
+  await page.goto("/");
+  await expect(page.getByText("0/3", { exact: true })).toBeVisible();
+  await page.evaluate(async ({ id, date }) => {
+    const { updateDailyProgress } = await import("/src/api/dailyLearning.js");
+    await Promise.all(["addNote", "study", "quiz"].map((task) => updateDailyProgress(id, { date, [task]: true })));
+  }, { id: user.id, date: backend.saved.quiz_state.date });
+  expect(backend.saved).toMatchObject({ add_note: true, study: true, quiz: true });
+  expect(backend.writes.every((patch) => !Object.values(patch).includes(false))).toBe(true);
+});
+
+test("two local tabs preserve independent goals and reject a stale session overwrite", async ({ page, context, baseURL }) => {
+  await setupLearning({ page, context, baseURL }, { sync: false });
+  const other = await context.newPage();
+  await setupLearning({ page: other, context, baseURL }, { sync: false });
+  await page.goto("/");
+  await other.goto("/");
+  await openSession(page, "Study");
+  await openSession(other, "Study");
+  await expect(other.getByText("Card 2 of 3", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => JSON.parse(globalThis.readSavedDaily()).study_state.cardIndex)).toBe(2);
+  await other.getByRole("button", { name: "Show front", exact: true }).click();
+  const error = other.getByRole("alert").filter({ hasText: "This session changed in another tab or device." });
+  await expect(error).toBeVisible();
+  expect(await other.evaluate(() => JSON.parse(globalThis.readSavedDaily()).study_state.cardIndex)).toBe(2);
+  await Promise.all([page, other].map((tab, index) => tab.evaluate(async ({ id, task }) => {
+    const { getTodayKey } = await import("/src/utils/quiz.js");
+    const { updateDailyProgress } = await import("/src/api/dailyLearning.js");
+    await updateDailyProgress(id, { date: getTodayKey(), [task]: true });
+  }, { id: user.id, task: index ? "quiz" : "addNote" })));
+  expect(await page.evaluate(() => JSON.parse(globalThis.readSavedDaily()))).toMatchObject({ add_note: true, quiz: true });
+  other.on("dialog", (dialog) => dialog.accept());
+  await error.getByRole("button", { name: "Reload saved progress", exact: true }).click();
+  await openSession(other, "Study");
+  await expect(other.getByText("Card 3 of 3", { exact: true })).toBeVisible();
+  await expect(other.getByRole("alert")).toHaveCount(0);
+});
+
+test("cloud compare-and-set refuses a different device's changed session", async ({ page, context, baseURL }) => {
+  const backend = await setupLearning({ page, context, baseURL });
+  await page.goto("/");
+  await openSession(page, "Study");
+  await expect(page.getByText("Card 2 of 3", { exact: true })).toBeVisible();
+  backend.saved.study_state = { ...backend.saved.study_state, cardIndex: 2, isFlipped: false };
+  const remote = structuredClone(backend.saved.study_state);
+  await page.getByRole("button", { name: "Show front", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "This session changed in another tab or device." })).toBeVisible();
+  expect(backend.saved.study_state).toEqual(remote);
+});
+
+test("a lost cloud response is acknowledged before retrying newer Study changes", async ({ page, context, baseURL }) => {
+  const backend = await setupLearning({ page, context, baseURL });
+  backend.loseSaveResponse = true;
+  await page.goto("/");
+  await openSession(page, "Study");
+  await page.getByRole("button", { name: "Show front", exact: true }).click();
+  const error = page.getByRole("alert").filter({ hasText: "Some learning progress is not saved." });
+  await expect(error).toBeVisible();
+  expect(backend.saved.study_state.isFlipped).toBe(false);
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await error.getByRole("button", { name: "Retry saving", exact: true }).click();
+  await expect(error).toHaveCount(0);
+  await expect.poll(() => backend.saved.study_state.cardIndex).toBe(2);
+});
+
+test("concurrent creation of a cloud day preserves goals and both session fields", async ({ page, context, baseURL }) => {
+  const backend = await setupLearning({ page, context, baseURL });
+  const initial = structuredClone(backend.saved);
+  backend.saved = null;
+  await page.goto("/");
+  await expect(page.getByText("0/3", { exact: true })).toBeVisible();
+  await page.evaluate(async ({ id, initial }) => {
+    const { updateDailyProgress, updateDailyQuizState, updateDailyStudyState } = await import("/src/api/dailyLearning.js");
+    const options = { expected: {}, exists: false };
+    await Promise.all([
+      updateDailyQuizState(id, initial.quiz_state, options),
+      updateDailyStudyState(id, initial.study_state, options),
+      updateDailyProgress(id, { date: initial.quiz_state.date, addNote: true }),
+    ]);
+  }, { id: user.id, initial });
+  expect(backend.saved).toMatchObject({ add_note: true, quiz_state: initial.quiz_state, study_state: initial.study_state });
 });
