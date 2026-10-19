@@ -6,7 +6,7 @@ import {
   updateNote,
 } from "../api/notes";
 
-export function useNotes({ demoItems, isDemo, setError, user }) {
+export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }) {
   const [items, setItems] = useState(() => (isDemo ? demoItems : []));
   const [loadState, setLoadState] = useState({ userId: null, status: "idle", error: "" });
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -31,25 +31,26 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
 
     listNotes(userId)
       .then((savedNotes) => {
-        if (!isMounted) return;
+        if (!isMounted || !isCurrentAccount()) return;
         setItems(savedNotes);
         setSelectedIds([]);
         setLoadState({ userId, status: "ready", error: "" });
       })
       .catch((error) => {
-        if (isMounted) setLoadState({ userId, status: "error", error: error.message || "Could not load notes." });
+        if (isMounted && isCurrentAccount()) setLoadState({ userId, status: "error", error: error.message || "Could not load notes." });
       });
 
     return () => {
       isMounted = false;
     };
-  }, [isDemo, loadAttempt, setError, userId]);
+  }, [isCurrentAccount, isDemo, loadAttempt, setError, userId]);
 
   const retryLoad = useCallback(() => setLoadAttempt((current) => current + 1), []);
   const isLoaded = isDemo || (loadState.userId === userId && loadState.status === "ready");
   const loadError = !isDemo && loadState.userId === userId ? loadState.error : "";
 
   async function save(nextItem, editingId) {
+    if (!isCurrentAccount()) throw new Error("The account changed. Reopen the note before saving.");
     if (!userId) throw new Error("Sign in before saving notes.");
 
     const savedItem = isDemo
@@ -58,6 +59,7 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
         ? await updateNote(editingId, nextItem, userId)
         : await createNote(nextItem, userId);
 
+    if (!isCurrentAccount()) throw new Error("The account changed before the note finished saving.");
     setItems((current) =>
       editingId
         ? current.map((item) => (item.id === editingId ? savedItem : item))
@@ -71,17 +73,20 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
   }
 
   async function createImportedNote(nextItem) {
+    if (!isCurrentAccount()) throw new Error("The account changed. Start a new import.");
     if (!userId) throw new Error("Sign in before importing notes.");
 
     const savedItem = isDemo
       ? { ...nextItem, id: crypto.randomUUID() }
       : await createNote(nextItem, userId);
+    if (!isCurrentAccount()) throw new Error("The account changed before the import finished saving.");
     setItems((current) => [savedItem, ...current]);
     setError("");
     return savedItem;
   }
 
   async function persistOptimisticUpdate(currentItem, nextItem) {
+    if (!isCurrentAccount()) return;
     setItems((current) =>
       current.map((item) => (item.id === currentItem.id ? nextItem : item))
     );
@@ -93,6 +98,7 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
 
     try {
       const savedItem = await updateNote(currentItem.id, nextItem, userId);
+      if (!isCurrentAccount()) return;
       setItems((current) =>
         current.map((item) =>
           item.id === currentItem.id ? savedItem : item
@@ -100,6 +106,7 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
       );
       setError("");
     } catch (error) {
+      if (!isCurrentAccount()) return;
       setError(error.message);
       setItems((current) =>
         current.map((item) =>
@@ -171,20 +178,21 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
   }
 
   async function deleteOne(itemId) {
-    if (!userId) return;
+    if (!userId || !isCurrentAccount()) return;
 
     try {
       if (!isDemo) await deleteStoredNote(itemId, userId);
+      if (!isCurrentAccount()) return;
       setItems((current) => current.filter((item) => item.id !== itemId));
       setSelectedIds((current) => current.filter((id) => id !== itemId));
       setError("");
     } catch (error) {
-      setError(error.message);
+      if (isCurrentAccount()) setError(error.message);
     }
   }
 
   async function deleteSelected() {
-    if (!userId || selectedIds.length === 0) return;
+    if (!userId || selectedIds.length === 0 || !isCurrentAccount()) return;
 
     try {
       if (!isDemo) {
@@ -192,13 +200,14 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
           selectedIds.map((id) => deleteStoredNote(id, userId))
         );
       }
+      if (!isCurrentAccount()) return;
       setItems((current) =>
         current.filter((item) => !selectedIds.includes(item.id))
       );
       setSelectedIds([]);
       setError("");
     } catch (error) {
-      setError(error.message);
+      if (isCurrentAccount()) setError(error.message);
     }
   }
 

@@ -27,7 +27,7 @@ const stateWriters = {
   studyState: updateDailyStudyState,
 };
 
-export function useDailyLearningState(user, setDataError) {
+export function useDailyLearningState(user, setDataError, isCurrentAccount) {
   const userId = user?.id ?? null;
   const [state, setState] = useState(createInitialState);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -51,7 +51,7 @@ export function useDailyLearningState(user, setDataError) {
 
     getDailyLearningState(userId, today)
       .then(({ progress, quizState, studyState }) => {
-        if (!isMounted) return;
+        if (!isMounted || !isCurrentAccount()) return;
         // Hydration is the baseline, not a change to write back to storage.
         submittedSnapshotsRef.current = {
           progress: JSON.stringify(progress),
@@ -74,7 +74,7 @@ export function useDailyLearningState(user, setDataError) {
         });
       })
       .catch((error) => {
-        if (!isMounted) return;
+        if (!isMounted || !isCurrentAccount()) return;
         setState((current) => current.userId === userId
           ? { ...current, status: "error", error: error.message || "Could not load daily progress." }
           : current);
@@ -83,24 +83,26 @@ export function useDailyLearningState(user, setDataError) {
     return () => {
       isMounted = false;
     };
-  }, [loadAttempt, userId]);
+  }, [isCurrentAccount, loadAttempt, userId]);
 
   useEffect(() => {
-    if (!userId || !dailyStateLoaded) return;
+    if (!userId || !dailyStateLoaded || !isCurrentAccount()) return;
 
     for (const [key, writeState] of Object.entries(stateWriters)) {
       const value = state[key];
       const snapshot = JSON.stringify(value);
       if (!value || submittedSnapshotsRef.current[key] === snapshot) continue;
       submittedSnapshotsRef.current[key] = snapshot;
-      writeState(userId, value).catch((error) => setDataError(error.message));
+      writeState(userId, value).catch((error) => {
+        if (isCurrentAccount()) setDataError(error.message);
+      });
     }
-  }, [dailyStateLoaded, setDataError, state, userId]);
+  }, [dailyStateLoaded, isCurrentAccount, setDataError, state, userId]);
 
   function completeDailyTask(task) {
     const today = getTodayKey();
     setState((current) => {
-      if (!userId || current.userId !== userId) return current;
+      if (!userId || current.userId !== userId || !isCurrentAccount()) return current;
       if (current.status !== "ready") {
         return { ...current, pendingTasks: Array.from(new Set([...current.pendingTasks, task])) };
       }
@@ -114,23 +116,23 @@ export function useDailyLearningState(user, setDataError) {
 
   const setDailyQuizState = useCallback((value) => {
     setState((current) => {
-      if (current.userId !== userId || (userId && current.status !== "ready")) return current;
+      if (!isCurrentAccount() || current.userId !== userId || (userId && current.status !== "ready")) return current;
       const quizState = normalizeQuizState(value, value?.date);
       return JSON.stringify(current.quizState) === JSON.stringify(quizState)
         ? current
         : { ...current, quizState };
     });
-  }, [userId]);
+  }, [isCurrentAccount, userId]);
 
   const setDailyStudyState = useCallback((value) => {
     setState((current) => {
-      if (current.userId !== userId || (userId && current.status !== "ready")) return current;
+      if (!isCurrentAccount() || current.userId !== userId || (userId && current.status !== "ready")) return current;
       const studyState = normalizeStudyState(value, value?.date);
       return JSON.stringify(current.studyState) === JSON.stringify(studyState)
         ? current
         : { ...current, studyState };
     });
-  }, [userId]);
+  }, [isCurrentAccount, userId]);
 
   const retryDailyLearningState = useCallback(() => setLoadAttempt((current) => current + 1), []);
   const resetDailyLearningState = useCallback(() => {

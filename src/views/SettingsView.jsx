@@ -41,6 +41,7 @@ function getFriendlyProfileError(error) {
 
 export function SettingsView({
   isDemo = false,
+  isCurrentAccount,
   learningSettings,
   onLearningSettingsUpdated,
   onUserUpdated,
@@ -73,20 +74,21 @@ export function SettingsView({
   });
 
   const loadQuotaStatus = useCallback(async () => {
-    if (isDemo || !user?.id) return;
+    if (isDemo || !user?.id || !isCurrentAccount()) return;
 
     setIsLoadingQuota(true);
     setQuotaError("");
 
     try {
       const status = await getAutofillUsageStatus(user.id);
+      if (!isCurrentAccount()) return;
       setQuotaStatus(status);
     } catch (error) {
-      setQuotaError(error.message);
+      if (isCurrentAccount()) setQuotaError(error.message);
     } finally {
-      setIsLoadingQuota(false);
+      if (isCurrentAccount()) setIsLoadingQuota(false);
     }
-  }, [isDemo, user?.id]);
+  }, [isCurrentAccount, isDemo, user?.id]);
 
   useEffect(() => {
     setDisplayName(getDisplayName(user));
@@ -103,6 +105,7 @@ export function SettingsView({
 
   async function handleProfileSubmit(event) {
     event.preventDefault();
+    if (!isCurrentAccount()) return;
     setProfileError("");
     setProfileMessage("");
 
@@ -128,7 +131,8 @@ export function SettingsView({
             ...user,
             user_metadata: createUpdatedProfileMetadata(user, { displayName, recoveryEmail }),
           }
-        : await updateUserProfile({ displayName, recoveryEmail });
+        : await updateUserProfile({ displayName, recoveryEmail, userId: user.id, isCurrentAccount });
+      if (!isCurrentAccount()) return;
       onUserUpdated(updatedUser);
       setProfileMessage(t("profileSaved", "Profile updated."));
     } catch (error) {
@@ -140,7 +144,7 @@ export function SettingsView({
 
   async function handlePasswordSubmit(event) {
     event.preventDefault();
-    if (isDemo) return;
+    if (isDemo || !isCurrentAccount()) return;
     setPasswordError("");
     setPasswordMessage("");
 
@@ -171,7 +175,10 @@ export function SettingsView({
       const updatedUser = await changeUserPassword({
         newPassword: passwordForm.newPassword,
         oldPassword: passwordForm.currentPassword,
+        userId: user.id,
+        isCurrentAccount,
       });
+      if (!isCurrentAccount()) return;
       onUserUpdated(updatedUser);
       setPasswordForm({
         currentPassword: "",
@@ -195,6 +202,7 @@ export function SettingsView({
 
   async function handleLearningSettingsSubmit(event) {
     event.preventDefault();
+    if (!isCurrentAccount()) return;
     setSettingsError("");
     setSettingsMessage("");
     setIsSavingSettings(true);
@@ -203,6 +211,7 @@ export function SettingsView({
       const savedSettings = isDemo
         ? normalizeLearningSettings(settingsForm)
         : await updateLearningPreferences(user.id, settingsForm);
+      if (!isCurrentAccount()) return;
       onLearningSettingsUpdated(savedSettings);
       setSettingsMessage(t("settingsSaved", "Learning settings updated."));
     } catch (error) {

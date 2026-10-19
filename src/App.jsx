@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  signInWithEmail,
-  signOut as signOutUser,
-  signUpWithEmail,
-} from "./api/auth";
-import {
   getLearningPreferences,
   getLanguagePreference,
   updateLanguagePreference,
@@ -14,10 +9,11 @@ import { EditorModal } from "./components/EditorModal";
 import { Sidebar } from "./components/Sidebar";
 import { categories } from "./data/categories";
 import { demoNotes, demoUser } from "./data/demoData";
-import { hasSupabaseConfig, supabase } from "./lib/supabase";
+import { hasSupabaseConfig } from "./lib/supabase";
 import { useDailyLearningState } from "./hooks/useDailyLearningState";
 import { useImportJob } from "./hooks/useImportJob";
 import { useNotes } from "./hooks/useNotes";
+import { useAuthSession } from "./hooks/useAuthSession";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
 import { isPublicDemoRoute } from "./utils/demoMode";
 import { SetupPage } from "./pages/SetupPage";
@@ -89,19 +85,23 @@ export default function App() {
   }, []);
 
   return (
-    <LanguageProvider isDemo={isDemoRoute} key={isDemoRoute ? "demo" : "account"}>
-      <Workspace isDemoRoute={isDemoRoute} />
+    <AccountSession isDemoRoute={isDemoRoute} key={isDemoRoute ? "demo" : "account"} />
+  );
+}
+
+function AccountSession({ isDemoRoute }) {
+  const auth = useAuthSession({ isDemo: isDemoRoute, demoUser });
+  return (
+    <LanguageProvider isDemo={isDemoRoute} key={auth.generation}>
+      <Workspace isDemoRoute={isDemoRoute} auth={auth} />
     </LanguageProvider>
   );
 }
 
-function Workspace({ isDemoRoute }) {
+function Workspace({ isDemoRoute, auth }) {
   const { language, setLanguage, t } = useLanguage();
-  const [user, setUser] = useState(() => (isDemoRoute ? demoUser : null));
-  const [authLoading, setAuthLoading] = useState(
-    isDemoRoute ? false : hasSupabaseConfig
-  );
-  const [authError, setAuthError] = useState("");
+  const { user, loading: authLoading, error: authError, isCurrentAccount, updateUser: setUser,
+    handleAuthSubmit, handleSignOut } = auth;
   const [dataError, setDataError] = useState("");
   const [languagePreferenceLoaded, setLanguagePreferenceLoaded] = useState(
     isDemoRoute
@@ -125,6 +125,7 @@ function Workspace({ isDemoRoute }) {
   const notes = useNotes({
     demoItems: demoNotes,
     isDemo: isDemoRoute,
+    isCurrentAccount,
     setError: setDataError,
     user,
   });
@@ -136,11 +137,10 @@ function Workspace({ isDemoRoute }) {
     dailyStudyState,
     dailyStateLoaded,
     dailyStateError,
-    resetDailyLearningState,
     retryDailyLearningState,
     setDailyQuizState,
     setDailyStudyState,
-  } = useDailyLearningState(isDemoRoute ? null : user, setDataError);
+  } = useDailyLearningState(isDemoRoute ? null : user, setDataError, isCurrentAccount);
   const {
     cancelImportJob,
     importJob,
@@ -149,43 +149,12 @@ function Workspace({ isDemoRoute }) {
   } = useImportJob({
     createImportedNote: notes.createImportedNote,
     isDemo: isDemoRoute,
+    isCurrentAccount,
     items,
     onNotesAdded: () => completeTask("addNote"),
     t,
     user,
   });
-
-  useEffect(() => {
-    if (isDemoRoute) return undefined;
-    if (!hasSupabaseConfig) return undefined;
-
-    let isMounted = true;
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (!isMounted) return;
-      setUser(data.session?.user ?? null);
-      setAuthLoading(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      setAuthError("");
-      if (!session?.user) {
-        setActiveSection("today");
-        resetDailyLearningState();
-        setLanguagePreferenceLoaded(false);
-        setLearningSettings(defaultLearningSettings);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [isDemoRoute, resetDailyLearningState]);
 
   useEffect(() => {
     if (isDemoRoute) {
@@ -204,7 +173,7 @@ function Workspace({ isDemoRoute }) {
 
     getLanguagePreference(user.id)
       .then((savedLanguage) => {
-        if (!isMounted) return;
+        if (!isMounted || !isCurrentAccount()) return;
         if (savedLanguage) {
           savedLanguageRef.current = savedLanguage;
           setLanguage(savedLanguage);
@@ -214,7 +183,7 @@ function Workspace({ isDemoRoute }) {
         setLanguagePreferenceLoaded(true);
       })
       .catch((error) => {
-        if (!isMounted) return;
+        if (!isMounted || !isCurrentAccount()) return;
         console.warn("Language preference could not be loaded.", error);
         savedLanguageRef.current = language;
         setLanguagePreferenceLoaded(true);
@@ -223,7 +192,7 @@ function Workspace({ isDemoRoute }) {
     return () => {
       isMounted = false;
     };
-  }, [isDemoRoute, language, setLanguage, user]);
+  }, [isCurrentAccount, isDemoRoute, language, setLanguage, user]);
 
   useEffect(() => {
     if (isDemoRoute) {
@@ -241,33 +210,34 @@ function Workspace({ isDemoRoute }) {
 
     getLearningPreferences(userId)
       .then((savedSettings) => {
-        if (!isMounted) return;
+        if (!isMounted || !isCurrentAccount()) return;
         setLearningSettings(savedSettings);
         setSettingsLoad({ userId, status: "ready", error: "" });
       })
       .catch((error) => {
-        if (!isMounted) return;
+        if (!isMounted || !isCurrentAccount()) return;
         setSettingsLoad({ userId, status: "error", error: error.message || "Could not load learning settings." });
       });
 
     return () => {
       isMounted = false;
     };
-  }, [isDemoRoute, settingsLoadAttempt, userId]);
+  }, [isCurrentAccount, isDemoRoute, settingsLoadAttempt, userId]);
 
   useEffect(() => {
     if (isDemoRoute) return;
+    if (!isCurrentAccount()) return;
     if (!user || !languagePreferenceLoaded) return;
     if (language === savedLanguageRef.current) return;
 
     updateLanguagePreference(user.id, language)
       .then((savedLanguage) => {
-        savedLanguageRef.current = savedLanguage;
+        if (isCurrentAccount()) savedLanguageRef.current = savedLanguage;
       })
       .catch((error) => {
-        console.warn("Language preference could not be saved.", error);
+        if (isCurrentAccount()) console.warn("Language preference could not be saved.", error);
       });
-  }, [isDemoRoute, language, languagePreferenceLoaded, user]);
+  }, [isCurrentAccount, isDemoRoute, language, languagePreferenceLoaded, user]);
 
   const tags = useMemo(() => {
     const tagSourceItems = noteSections.has(activeSection)
@@ -363,48 +333,9 @@ function Workspace({ isDemoRoute }) {
     setIsEditorOpen(true);
   }
 
-  async function handleAuthSubmit({ email, mode, password, username }) {
-    setAuthLoading(true);
-    setAuthError("");
-
-    try {
-      if (mode === "sign-up") {
-        await signUpWithEmail(username, email, password);
-      } else {
-        await signInWithEmail(username, password);
-      }
-    } catch (error) {
-      setAuthError(getFriendlyAuthError(error));
-    } finally {
-      setAuthLoading(false);
-    }
-  }
-
-  async function handleSignOut() {
-    if (isDemoRoute) {
-      window.location.href = "/";
-      return;
-    }
-
-    setAuthLoading(true);
-    setDataError("");
-
-    try {
-      await signOutUser();
-      setUser(null);
-      resetDailyLearningState();
-      setLanguagePreferenceLoaded(false);
-      setLearningSettings(defaultLearningSettings);
-    } catch (error) {
-      setDataError(error.message);
-    } finally {
-      setAuthLoading(false);
-    }
-  }
-
   async function saveItem(event) {
     event.preventDefault();
-    if (!user) return;
+    if (!user || !isCurrentAccount()) return;
 
     const trimmedFrench = form.french.trim();
     const normalizedFrench = trimmedFrench.toLocaleLowerCase("fr");
@@ -457,13 +388,14 @@ function Workspace({ isDemoRoute }) {
 
     try {
       await notes.save(nextItem, editingItem?.id);
+      if (!isCurrentAccount()) return;
       if (!editingItem) {
         completeTask("addNote");
       }
       setEditorError("");
       setIsEditorOpen(false);
     } catch (error) {
-      setEditorError(error.message);
+      if (isCurrentAccount()) setEditorError(error.message);
     }
   }
 
@@ -524,6 +456,7 @@ function Workspace({ isDemoRoute }) {
 
   const viewProps = {
     isDemo: isDemoRoute,
+    isCurrentAccount,
     activeSection,
     dailyProgress: visibleDailyProgress,
     dailyProgressReady: isDemoRoute || dailyStateLoaded,
@@ -582,7 +515,7 @@ function Workspace({ isDemoRoute }) {
   if (!user) {
     return (
       <SignInPage
-        error={authError}
+        error={authError ? getFriendlyAuthError({ message: authError }) : ""}
         isLoading={authLoading}
         onAuthSubmit={handleAuthSubmit}
       />
@@ -607,9 +540,9 @@ function Workspace({ isDemoRoute }) {
         />
 
         <section className="grid gap-4 px-3 pb-6 pt-2 sm:px-4 sm:pb-8 md:px-7 lg:gap-5">
-          {dataError && (
+          {(dataError || authError) && (
             <div className="rounded-xl border border-frenchRed/25 bg-blush p-3 text-sm font-medium text-frenchRed">
-              {dataError}
+              {dataError || authError}
             </div>
           )}
           {loadFailures.map(({ key, message, retry }) => (
@@ -640,6 +573,8 @@ function Workspace({ isDemoRoute }) {
       {isEditorOpen && (
         <EditorModal
           isDemo={isDemoRoute}
+          isCurrentAccount={isCurrentAccount}
+          userId={user.id}
           error={editorError}
           form={form}
           onChange={() => setEditorError("")}

@@ -15,20 +15,25 @@ const emptyImportJob = {
 export function useImportJob({
   createImportedNote,
   isDemo,
+  isCurrentAccount,
   items,
   onNotesAdded,
   t,
   user,
 }) {
   const [importJob, setImportJob] = useState(emptyImportJob);
-  const cancelImportRef = useRef(false);
+  const activeJobRef = useRef(null);
 
   useEffect(() => {
-    cancelImportRef.current = true;
     setImportJob(emptyImportJob);
+    return () => {
+      if (activeJobRef.current) activeJobRef.current.cancelled = true;
+      activeJobRef.current = null;
+    };
   }, [isDemo, user?.id]);
 
   function updateImportJob(patch) {
+    if (!isCurrentAccount()) return;
     setImportJob((current) => ({ ...current, ...patch }));
   }
 
@@ -162,7 +167,7 @@ export function useImportJob({
   }
 
   async function startImportJob(nextItems = importJob.importItems) {
-    if (!user || importJob.isImporting || nextItems.length === 0) return;
+    if (!user || !isCurrentAccount() || importJob.isImporting || nextItems.length === 0) return;
 
     if (isDemo) {
       updateImportJob({
@@ -172,7 +177,9 @@ export function useImportJob({
     }
 
     const mode = importJob.importMode;
-    cancelImportRef.current = false;
+    const job = { cancelled: false };
+    activeJobRef.current = job;
+    const ownsJob = () => isCurrentAccount() && activeJobRef.current === job;
     updateImportJob({
       error: "",
       importItems: nextItems,
@@ -187,24 +194,25 @@ export function useImportJob({
       const results = await importHandler(
         nextItems,
         (current, total) => {
-          updateImportJob({ progress: { current, total } });
+          if (ownsJob()) updateImportJob({ progress: { current, total } });
         },
-        () => cancelImportRef.current
+        () => job.cancelled || !ownsJob()
       );
 
+      if (!ownsJob()) return;
       if (results.some((result) => result.status === "added")) {
         onNotesAdded();
       }
       updateImportJob({ results });
     } catch (error) {
-      updateImportJob({ error: error.message });
+      if (ownsJob()) updateImportJob({ error: error.message });
     } finally {
-      updateImportJob({ isImporting: false });
+      if (ownsJob()) updateImportJob({ isImporting: false });
     }
   }
 
   function cancelImportJob() {
-    cancelImportRef.current = true;
+    if (activeJobRef.current) activeJobRef.current.cancelled = true;
   }
 
   return {
