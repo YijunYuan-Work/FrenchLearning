@@ -1,6 +1,8 @@
 import { supabase } from "../lib/supabase";
+import { assertAccountAccess } from "../utils/demoMode";
 
 export async function autoFillFrenchVocabulary(word, language = "en") {
+  assertAccountAccess();
   const normalizedWord = word.trim();
   if (!normalizedWord) {
     throw new Error("Enter a French word first.");
@@ -13,6 +15,7 @@ export async function autoFillFrenchVocabulary(word, language = "en") {
     throw new Error("Sign in before using AI auto-fill.");
   }
 
+  assertAccountAccess();
   const response = await fetch("/api/autofill-vocabulary", {
     method: "POST",
     headers: {

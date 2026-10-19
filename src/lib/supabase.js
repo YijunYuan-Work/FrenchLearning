@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { assertAccountAccess, isPublicDemoRoute } from "../utils/demoMode";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey =
@@ -36,6 +37,7 @@ function removeCookie(name) {
 
 const browserSessionCookieStorage = {
   getItem(key) {
+    if (isPublicDemoRoute()) return null;
     const cookies = getCookies();
     const chunkCount = Number(cookies.get(`${key}.chunks`) || 0);
 
@@ -51,6 +53,7 @@ const browserSessionCookieStorage = {
   },
 
   removeItem(key) {
+    if (isPublicDemoRoute()) return;
     const cookies = getCookies();
     const chunkCount = Number(cookies.get(`${key}.chunks`) || 0);
 
@@ -62,6 +65,7 @@ const browserSessionCookieStorage = {
   },
 
   setItem(key, value) {
+    if (isPublicDemoRoute()) return;
     browserSessionCookieStorage.removeItem(key);
 
     const encodedValue = encodeURIComponent(value);
@@ -78,6 +82,13 @@ const browserSessionCookieStorage = {
 
 export const supabase = hasSupabaseConfig
   ? createClient(supabaseUrl, supabasePublishableKey, {
+      global: {
+        fetch(...args) {
+          // Recheck the route when sending, including work started before entering demo.
+          assertAccountAccess();
+          return fetch(...args);
+        },
+      },
       auth: {
         persistSession: true,
         storage: browserSessionCookieStorage,

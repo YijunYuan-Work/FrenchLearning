@@ -18,7 +18,8 @@ import { hasSupabaseConfig, supabase } from "./lib/supabase";
 import { useDailyLearningState } from "./hooks/useDailyLearningState";
 import { useImportJob } from "./hooks/useImportJob";
 import { useNotes } from "./hooks/useNotes";
-import { useLanguage } from "./i18n/LanguageContext";
+import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
+import { isPublicDemoRoute } from "./utils/demoMode";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
 import { normalizeTags } from "./utils/tags";
@@ -78,12 +79,23 @@ function getFriendlyAuthError(error) {
   return message;
 }
 
-function isPublicDemoRoute() {
-  return window.location.hash.replace(/^#/, "").replace(/\/$/, "") === "/demo";
+export default function App() {
+  const [isDemoRoute, setIsDemoRoute] = useState(isPublicDemoRoute);
+
+  useEffect(() => {
+    const onHashChange = () => setIsDemoRoute(isPublicDemoRoute());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  return (
+    <LanguageProvider isDemo={isDemoRoute} key={isDemoRoute ? "demo" : "account"}>
+      <Workspace isDemoRoute={isDemoRoute} />
+    </LanguageProvider>
+  );
 }
 
-export default function App() {
-  const isDemoRoute = isPublicDemoRoute();
+function Workspace({ isDemoRoute }) {
   const { language, setLanguage, t } = useLanguage();
   const [user, setUser] = useState(() => (isDemoRoute ? demoUser : null));
   const [authLoading, setAuthLoading] = useState(
@@ -210,7 +222,6 @@ export default function App() {
 
   useEffect(() => {
     if (isDemoRoute) {
-      setLearningSettings(defaultLearningSettings);
       return undefined;
     }
 
@@ -485,6 +496,7 @@ export default function App() {
       : t(categories[activeSection].labelKey, categories[activeSection].label);
 
   const viewProps = {
+    isDemo: isDemoRoute,
     activeSection,
     dailyProgress: visibleDailyProgress,
     filteredItems,
@@ -503,7 +515,7 @@ export default function App() {
     onStartImport: startImportJob,
     onUpdateImportJob: updateImportJob,
     onQuizComplete: () => completeTask("quiz"),
-    onQuizStateChange: dailyStateLoaded ? setDailyQuizState : undefined,
+    onQuizStateChange: isDemoRoute || dailyStateLoaded ? setDailyQuizState : undefined,
     onStartStudy: () => setActiveSection("review"),
     onStartQuiz: () => setActiveSection("quiz"),
     onStudyComplete: () => completeTask("study"),
@@ -589,6 +601,7 @@ export default function App() {
 
       {isEditorOpen && (
         <EditorModal
+          isDemo={isDemoRoute}
           error={editorError}
           form={form}
           onChange={() => setEditorError("")}

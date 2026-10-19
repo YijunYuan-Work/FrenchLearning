@@ -17,6 +17,7 @@ import {
   updateUserProfile,
 } from "../api/profile";
 import { updateLearningPreferences } from "../api/preferences";
+import { createUpdatedProfileMetadata } from "../utils/accountIdentity";
 import { useLanguage } from "../i18n/LanguageContext";
 import {
   getLearningSettingLimits,
@@ -39,6 +40,7 @@ function getFriendlyProfileError(error) {
 }
 
 export function SettingsView({
+  isDemo = false,
   learningSettings,
   onLearningSettingsUpdated,
   onUserUpdated,
@@ -71,7 +73,7 @@ export function SettingsView({
   });
 
   const loadQuotaStatus = useCallback(async () => {
-    if (!user?.id) return;
+    if (isDemo || !user?.id) return;
 
     setIsLoadingQuota(true);
     setQuotaError("");
@@ -84,7 +86,7 @@ export function SettingsView({
     } finally {
       setIsLoadingQuota(false);
     }
-  }, [user?.id]);
+  }, [isDemo, user?.id]);
 
   useEffect(() => {
     setDisplayName(getDisplayName(user));
@@ -121,10 +123,12 @@ export function SettingsView({
     setIsSavingProfile(true);
 
     try {
-      const updatedUser = await updateUserProfile({
-        displayName,
-        recoveryEmail,
-      });
+      const updatedUser = isDemo
+        ? {
+            ...user,
+            user_metadata: createUpdatedProfileMetadata(user, { displayName, recoveryEmail }),
+          }
+        : await updateUserProfile({ displayName, recoveryEmail });
       onUserUpdated(updatedUser);
       setProfileMessage(t("profileSaved", "Profile updated."));
     } catch (error) {
@@ -136,6 +140,7 @@ export function SettingsView({
 
   async function handlePasswordSubmit(event) {
     event.preventDefault();
+    if (isDemo) return;
     setPasswordError("");
     setPasswordMessage("");
 
@@ -195,7 +200,9 @@ export function SettingsView({
     setIsSavingSettings(true);
 
     try {
-      const savedSettings = await updateLearningPreferences(user.id, settingsForm);
+      const savedSettings = isDemo
+        ? normalizeLearningSettings(settingsForm)
+        : await updateLearningPreferences(user.id, settingsForm);
       onLearningSettingsUpdated(savedSettings);
       setSettingsMessage(t("settingsSaved", "Learning settings updated."));
     } catch (error) {
@@ -220,6 +227,11 @@ export function SettingsView({
 
   return (
     <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      {isDemo && (
+        <p className="rounded-xl bg-sky p-3 text-sm text-slate-700 xl:col-span-2" role="status">
+          {t("demoTemporaryChanges", "Demo changes are temporary and reset when you reload.")}
+        </p>
+      )}
       <section className="app-card p-5">
         <div className="mb-5 flex items-start gap-3">
           <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-frenchBlue text-white">
@@ -313,7 +325,9 @@ export function SettingsView({
                   {t("profileSubscription", "Subscription")}
                 </p>
                 <h3 className="text-xl font-black">
-                  {!quotaStatus
+                  {isDemo
+                    ? t("demoMode", "Demo")
+                    : !quotaStatus
                     ? t("profileQuotaLoading", "Loading...")
                     : isSubscriber
                       ? t("profileSubscriber", "Subscriber")
@@ -323,7 +337,7 @@ export function SettingsView({
             </div>
             <button
               className="focus-ring grid size-10 shrink-0 place-items-center rounded-lg border border-line bg-white text-slate-600 shadow-sm hover:text-frenchBlue"
-              disabled={isLoadingQuota}
+              disabled={isDemo || isLoadingQuota}
               onClick={loadQuotaStatus}
               title={t("profileRefreshQuota", "Refresh quota")}
               type="button"
@@ -332,7 +346,11 @@ export function SettingsView({
             </button>
           </div>
 
-          {quotaError ? (
+          {isDemo ? (
+            <p className="text-sm text-slate-600">
+              {t("demoAiUnavailable", "AI auto-fill is unavailable in the public demo.")}
+            </p>
+          ) : quotaError ? (
             <p className="rounded-xl bg-blush p-3 text-sm font-bold text-frenchRed">
               {quotaError}
             </p>
@@ -485,11 +503,17 @@ export function SettingsView({
           </div>
         </div>
 
+        {isDemo && (
+          <p className="mb-4 text-sm text-slate-600">
+            {t("demoPasswordUnavailable", "Password changes are unavailable in the public demo.")}
+          </p>
+        )}
         <form className="grid gap-4 md:grid-cols-3" onSubmit={handlePasswordSubmit}>
           <label className="grid gap-1 text-sm font-bold">
             {t("profileCurrentPassword", "Current password")}
             <input
               className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
+              disabled={isDemo}
               onChange={(event) =>
                 setPasswordForm((current) => ({
                   ...current,
@@ -505,6 +529,7 @@ export function SettingsView({
             {t("profileNewPassword", "New password")}
             <input
               className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
+              disabled={isDemo}
               onChange={(event) =>
                 setPasswordForm((current) => ({
                   ...current,
@@ -520,6 +545,7 @@ export function SettingsView({
             {t("profileConfirmPassword", "Confirm new password")}
             <input
               className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
+              disabled={isDemo}
               onChange={(event) =>
                 setPasswordForm((current) => ({
                   ...current,
@@ -545,7 +571,7 @@ export function SettingsView({
 
           <button
             className="primary-action h-11 justify-center md:col-span-3 md:w-fit"
-            disabled={isChangingPassword}
+            disabled={isDemo || isChangingPassword}
             type="submit"
           >
             <KeyRound size={17} />

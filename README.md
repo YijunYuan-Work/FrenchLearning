@@ -31,7 +31,7 @@ Default sessions contain up to 50 vocabulary quiz questions and up to 50 vocabul
 
 ## Public Demo
 
-The app includes a read-only-style public demo populated with sample learning notes. It allows the latest interface to be viewed without creating an account or connecting to a personal Supabase workspace.
+The public demo uses disposable sample notes. Note edits, profile details, language, learning settings, and practice progress stay in memory and reset when the page reloads. It works without an account and stays separate from any existing login. Password changes, AI auto-fill, and file imports are unavailable in the demo.
 
 After starting the app, open:
 

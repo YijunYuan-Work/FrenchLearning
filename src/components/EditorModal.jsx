@@ -19,6 +19,7 @@ const labelClass = "grid gap-1 text-sm font-bold";
 
 export function EditorModal({
   error,
+  isDemo = false,
   form,
   onChange,
   onClose,
@@ -148,6 +149,7 @@ export function EditorModal({
   }
 
   async function handleAutoFill() {
+    if (isDemo) return;
     setAutoFillState({
       status: "loading",
       message: t("autoFillLoading", "Asking AI to build the vocabulary note..."),
@@ -249,7 +251,7 @@ export function EditorModal({
                 <button
                   className="focus-ring inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-frenchBlue/25 bg-white px-3 text-xs font-bold text-frenchBlue hover:bg-sky/60 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={
-                    autoFillState.status === "loading" || !form.french.trim()
+                    isDemo || autoFillState.status === "loading" || !form.french.trim()
                   }
                   onClick={handleAutoFill}
                   type="button"
@@ -273,6 +275,11 @@ export function EditorModal({
               value={form.french}
             />
           </div>
+          {isDemo && form.category === "vocabulary" && (
+            <p className="text-sm text-slate-600 md:col-span-2">
+              {t("demoAiUnavailable", "AI auto-fill is unavailable in the public demo.")}
+            </p>
+          )}
           {!usesSimpleFullWidthForm && (
             <>
               <label className={labelClass}>

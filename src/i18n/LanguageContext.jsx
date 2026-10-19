@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { zhCN } from "./zhCN";
+import { isPublicDemoRoute } from "../utils/demoMode";
 
 const dictionaries = {
   en: {},
@@ -8,8 +9,9 @@ const dictionaries = {
 
 const LanguageContext = createContext(null);
 
-export function LanguageProvider({ children }) {
+export function LanguageProvider({ children, isDemo = false }) {
   const [language, setLanguage] = useState(() => {
+    if (isDemo) return "en";
     try {
       return localStorage.getItem("french-learning-language") || "en";
     } catch {
@@ -19,12 +21,13 @@ export function LanguageProvider({ children }) {
 
   const changeLanguage = useCallback((nextLanguage) => {
     setLanguage(nextLanguage);
+    if (isDemo || isPublicDemoRoute()) return;
     try {
       localStorage.setItem("french-learning-language", nextLanguage);
     } catch {
       // Ignore storage failures; the in-memory toggle still works.
     }
-  }, []);
+  }, [isDemo]);
 
   const value = useMemo(
     () => ({

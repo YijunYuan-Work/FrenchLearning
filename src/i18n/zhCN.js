@@ -1,4 +1,8 @@
 export const zhCN = {
+  demoMode: "演示模式",
+  demoTemporaryChanges: "演示中的修改仅临时保留，刷新后会重置。",
+  demoAiUnavailable: "公开演示中无法使用 AI 自动填充。",
+  demoPasswordUnavailable: "公开演示中无法修改密码。",
   addFirstNote: "添加第一条笔记",
   addNewNote: "添加新笔记",
   addNote: "添加笔记",
