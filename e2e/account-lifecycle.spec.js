@@ -52,6 +52,9 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
     return gate;
   };
   const failures = new Set();
+  const lostNoteResponses = new Set();
+  const failNoteOnce = new Set();
+  const transport = { failCompletedQuiz: false };
 
   await page.route("**/src/lib/supabase.js", async (route) => {
     const response = await route.fetch();
@@ -89,12 +92,19 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
     const resource = url.pathname === "/api/autofill-vocabulary" ? "ai" : url.pathname.split("/").at(-1);
     const column = url.searchParams.get("select");
     const key = `${id}:${resource}:${request.method()}${resource === "user_preferences" ? `:${column}` : ""}`;
-    ledger.push({ id, resource, method: request.method(), body, column, filter: url.searchParams.get("user_id") });
+    const noteId = resource === "notes" ? url.searchParams.get("id")?.slice(3) : null;
+    ledger.push({ id, resource, method: request.method(), body, column, noteId, filter: url.searchParams.get("user_id") });
     if (!hits.has(key)) hits.set(key, deferred());
     hits.get(key).resolve();
+    if (noteId) {
+      const scoped = `${key}:${noteId}`;
+      if (!hits.has(scoped)) hits.set(scoped, deferred());
+      hits.get(scoped).resolve();
+      await gates.get(scoped)?.promise;
+    }
     await gates.get(key)?.promise;
     if (failures.has(key)) return route.fulfill({
-      status: resource === "user_preferences" && column === "language" ? 400 : 500,
+      status: (resource === "user_preferences" && column === "language") || (resource === "notes" && request.method() === "PATCH") ? 400 : 500,
       json: { message: "Late account A failure" },
     });
     if (!account) return route.fulfill({ status: 401, json: { message: "No synthetic account" } });
@@ -108,6 +118,17 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
     if (url.pathname === "/auth/v1/token") return route.fulfill({ json: sessionFor(account.user) });
     if (resource === "notes") {
       if (request.method() === "GET") return route.fulfill({ json: account.notes });
+      if (request.method() === "PATCH") {
+        if (failNoteOnce.delete(`${id}:${noteId}`)) return route.fulfill({ status: 400, json: { message: "Confidence save failed" } });
+        expect(url.searchParams.get("user_id")).toBe(`eq.${id}`);
+        const index = account.notes.findIndex((note) => note.id === noteId);
+        if (index < 0) return route.fulfill({ status: 404, json: { message: "Note missing" } });
+        account.notes[index] = { ...account.notes[index], ...body };
+        if (lostNoteResponses.delete(`${id}:${noteId}`)) {
+          return route.fulfill({ status: 400, json: { message: "Response lost after note commit" } });
+        }
+        return route.fulfill({ json: account.notes[index] });
+      }
       expect(body.user_id).toBe(id);
       const note = { ...body, id: `saved-${body.french}` };
       account.notes.push(note);
@@ -115,6 +136,9 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
     }
     if (resource === "daily_learning_state") {
       if (request.method() === "GET") return route.fulfill({ json: [account.daily] });
+      if (transport.failCompletedQuiz && Object.values(body.quiz_state?.answered ?? {}).some((result) => result.status === "complete")) {
+        return route.fulfill({ status: 400, json: { message: "Quiz result save failed" } });
+      }
       expect(body.user_id).toBe(id);
       account.daily = { ...account.daily, ...body };
       return route.fulfill({ json: account.daily });
@@ -156,7 +180,7 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
     await expect(page.getByRole("heading", { name: new RegExp(`Bonjour, Account ${name}\\.`) })).toBeVisible();
   };
   const writes = (id) => ledger.filter((entry) => entry.id === id && entry.method !== "GET" && entry.resource !== "token");
-  return { accounts, ledger, hold, waitFor, failures, switchTo, writes, date };
+  return { accounts, ledger, hold, waitFor, failures, lostNoteResponses, failNoteOnce, transport, switchTo, writes, date };
 }
 
 async function addNote(page, french) {
@@ -612,4 +636,266 @@ test("returning to A waits for its old in-flight language write before hydrating
   await expect(page.getByRole("button", { name: "简体中文", exact: true })).toBeVisible();
   expect(backend.accounts[ids.B].preferences.language).toBe("en");
   expect(languageRequests(backend, ids.B, "POST")).toEqual([]);
+});
+
+const notePatches = (backend, noteId) => backend.ledger.filter((entry) => entry.resource === "notes" && entry.method === "PATCH" && entry.noteId === noteId);
+const storedNote = (backend, noteId) => backend.accounts[ids.A].notes.find((note) => note.id === noteId);
+async function answerQuiz(page, answer) {
+  await page.getByLabel("Your answer", { exact: true }).fill(answer);
+  await page.getByRole("button", { name: "Check answer", exact: true }).click();
+}
+
+for (const manual of [false, true]) {
+  test(`${manual ? "manual correction" : "correct answer"} waits for confidence persistence and retries without double advancement`, async ({ page, context, baseURL }) => {
+    const backend = await setupAccounts({ page, context, baseURL });
+    backend.failures.add(`${ids.A}:notes:PATCH`);
+    await page.goto("/");
+    await go(page, "Quiz");
+    await answerQuiz(page, manual ? "not the meaning" : "A-meaning-2");
+    if (manual) await page.getByRole("button", { name: "Mark as correct", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Retry saving answer", exact: true })).toBeVisible();
+    expect(storedNote(backend, "A-2").confidence).toBe(1);
+    expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"]).toMatchObject({ status: "pending", correct: false, targetConfidence: 2 });
+    expect(backend.accounts[ids.A].daily.quiz_state.answered["A-1"].correct).toBe(true);
+    expect(backend.accounts[ids.A].daily.quiz).toBe(false);
+    await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Next word", exact: true })).toHaveCount(0);
+    expect(notePatches(backend, "A-2")[0].body).toEqual({ confidence: 2, last_reviewed: "Today" });
+    backend.failures.delete(`${ids.A}:notes:PATCH`);
+    await page.getByRole("button", { name: "Retry saving answer", exact: true }).click();
+    await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toBeVisible();
+    expect(storedNote(backend, "A-2").confidence).toBe(2);
+    expect(notePatches(backend, "A-2").map((entry) => entry.body.confidence)).toEqual([2, 2]);
+    expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"]).toMatchObject({ correct: true, status: "complete", confidence: 2 });
+    if (manual) expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].manuallyMarkedCorrect).toBe(true);
+    await page.reload();
+    await go(page, "Quiz");
+    await expect(page.getByText("A-word-3", { exact: true })).toBeVisible();
+    await expect(page.getByText("2/3", { exact: true })).toBeVisible();
+    expect(storedNote(backend, "A-2").confidence).toBe(2);
+    expect(notePatches(backend, "A-2")).toHaveLength(2);
+  });
+}
+
+for (const initialConfidence of [1, 3]) {
+test(`a committed confidence update with a lost response resumes target ${initialConfidence + 1} after refresh`, async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const target = initialConfidence + 1;
+  storedNote(backend, "A-2").confidence = initialConfidence;
+  if (target === 4) {
+    storedNote(backend, "A-1").confidence = 4;
+    storedNote(backend, "A-3").confidence = 4;
+  }
+  backend.lostNoteResponses.add(`${ids.A}:A-2`);
+  await page.goto("/");
+  await go(page, "Quiz");
+  await answerQuiz(page, "A-meaning-2");
+  await expect(page.getByRole("button", { name: "Retry saving answer", exact: true })).toBeVisible();
+  expect(storedNote(backend, "A-2").confidence).toBe(target);
+  expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("pending");
+  await page.reload();
+  await go(page, "Quiz");
+  await expect(page.getByLabel("Your answer", { exact: true })).toHaveValue("A-meaning-2");
+  await page.getByRole("button", { name: "Retry saving answer", exact: true }).click();
+  await expect(page.getByText(`Confidence advanced to ${target}.`, { exact: true })).toBeVisible();
+  expect(storedNote(backend, "A-2").confidence).toBe(target);
+  expect(notePatches(backend, "A-2").map((entry) => entry.body.confidence)).toEqual([target, target]);
+});
+}
+
+test("rapid submissions and consecutive Quiz answers advance each note only once", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
+  await page.goto("/");
+  await go(page, "Quiz");
+  await answerQuiz(page, "A-meaning-2");
+  await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+  await page.getByLabel("Your answer", { exact: true }).evaluate((input) => { input.form.requestSubmit(); input.form.requestSubmit(); });
+  expect(notePatches(backend, "A-2")).toHaveLength(1);
+  await expect(page.getByRole("button", { name: "Next word", exact: true })).toHaveCount(0);
+  gate.resolve();
+  await page.getByRole("button", { name: "Next word", exact: true }).click();
+  await answerQuiz(page, "A-meaning-3");
+  await page.getByRole("button", { name: "Next word", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Today's quiz is complete.", exact: true })).toBeVisible();
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  expect(storedNote(backend, "A-3").confidence).toBe(2);
+  expect(notePatches(backend, "A-2")).toHaveLength(1);
+  expect(notePatches(backend, "A-3")).toHaveLength(1);
+  await expect.poll(() => backend.accounts[ids.A].daily.quiz).toBe(true);
+});
+
+for (const confidenceFirst of [true, false]) {
+  test(`${confidenceFirst ? "confidence then edit" : "edit then confidence"} saves do not replace newer fields`, async ({ page, context, baseURL }) => {
+    const backend = await setupAccounts({ page, context, baseURL });
+    const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
+    await page.goto("/");
+    if (confidenceFirst) {
+      await go(page, "Quiz");
+      await answerQuiz(page, "A-meaning-2");
+      await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+    }
+    await go(page, "Vocabulary");
+    await page.getByRole("button", { name: "Edit A-word-2", exact: true }).click();
+    const editor = page.getByRole("dialog");
+    await editor.getByLabel("English", { exact: true }).fill("newer edited meaning");
+    await editor.getByRole("button", { name: "Save note", exact: true }).click();
+    if (!confidenceFirst) {
+      await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+      await editor.getByRole("button", { name: "Close editor", exact: true }).click();
+      await page.getByRole("article").filter({ has: page.getByRole("heading", { name: "A-word-2", exact: true }) })
+        .getByRole("button", { name: "I know this", exact: true }).click();
+    }
+    expect(notePatches(backend, "A-2")).toHaveLength(1);
+    gate.resolve();
+    await expect.poll(() => storedNote(backend, "A-2").confidence).toBe(2);
+    await expect.poll(() => storedNote(backend, "A-2").english).toBe("newer edited meaning");
+    await expect(editor).toHaveCount(0);
+    const patches = notePatches(backend, "A-2");
+    expect(patches).toHaveLength(2);
+    expect(patches.find((entry) => entry.body.english)?.body).toEqual({ english: "newer edited meaning" });
+    expect(patches.find((entry) => entry.body.confidence)?.body).toEqual({ confidence: 2, last_reviewed: "Today" });
+    await page.getByRole("button", { name: "Edit A-word-2", exact: true }).click();
+    await expect(page.getByRole("dialog").getByRole("combobox", { name: "Confidence", exact: true })).toHaveValue("2");
+    await expect(page.getByRole("dialog").getByLabel("English", { exact: true })).toHaveValue("newer edited meaning");
+    await page.getByRole("button", { name: "Close editor", exact: true }).click();
+    if (confidenceFirst) {
+      await go(page, "Quiz");
+      await page.getByRole("button", { name: "Retry saving answer", exact: true }).click();
+      await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toBeVisible();
+      expect(storedNote(backend, "A-2").confidence).toBe(2);
+      expect(storedNote(backend, "A-2").english).toBe("newer edited meaning");
+    }
+  });
+}
+
+test("different note confidence responses can finish out of order without losing edits", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const gate = backend.hold(`${ids.A}:notes:PATCH:A-1`);
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  const card = (word) => page.getByRole("article").filter({ has: page.getByRole("heading", { name: word, exact: true }) });
+  await card("A-word-1").getByRole("button", { name: "I know this", exact: true }).click();
+  await backend.waitFor(`${ids.A}:notes:PATCH:A-1`);
+  await card("A-word-2").getByRole("button", { name: "I know this", exact: true }).click();
+  await expect.poll(() => storedNote(backend, "A-2").confidence).toBe(2);
+  expect(storedNote(backend, "A-1").confidence).toBe(1);
+  gate.resolve();
+  await expect.poll(() => storedNote(backend, "A-1").confidence).toBe(2);
+  await expect(card("A-word-1").getByText("Learning", { exact: true })).toBeVisible();
+  await expect(card("A-word-2").getByText("Learning", { exact: true })).toBeVisible();
+});
+
+test("a failed confidence operation cannot roll back the edit queued behind it", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
+  backend.failNoteOnce.add(`${ids.A}:A-2`);
+  await page.goto("/");
+  await go(page, "Quiz");
+  await answerQuiz(page, "A-meaning-2");
+  await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+  await go(page, "Vocabulary");
+  await page.getByRole("button", { name: "Edit A-word-2", exact: true }).click();
+  await page.getByRole("dialog").getByLabel("English", { exact: true }).fill("edit survives failed confidence");
+  await page.getByRole("dialog").getByRole("button", { name: "Save note", exact: true }).click();
+  gate.resolve();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByText("edit survives failed confidence", { exact: true })).toBeVisible();
+  expect(storedNote(backend, "A-2").confidence).toBe(1);
+  expect(storedNote(backend, "A-2").english).toBe("edit survives failed confidence");
+  await go(page, "Quiz");
+  await page.getByRole("button", { name: "Retry saving answer", exact: true }).click();
+  await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toBeVisible();
+  expect(storedNote(backend, "A-2").english).toBe("edit survives failed confidence");
+});
+
+test("switching accounts cancels a queued note edit and preserves the old account's pending Quiz target", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const originalB = structuredClone(backend.accounts[ids.B]);
+  const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
+  await page.goto("/");
+  await go(page, "Quiz");
+  await answerQuiz(page, "A-meaning-2");
+  await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+  await go(page, "Vocabulary");
+  await page.getByRole("button", { name: "Edit A-word-2", exact: true }).click();
+  await page.getByRole("dialog").getByLabel("English", { exact: true }).fill("cancel this queued edit");
+  await page.getByRole("dialog").getByRole("button", { name: "Save note", exact: true }).click();
+  await backend.switchTo("B");
+  await go(page, "Vocabulary");
+  await expect(page.getByRole("heading", { name: "B-word-2", exact: true })).toBeVisible();
+  expect(backend.accounts[ids.B]).toEqual(originalB);
+  await backend.switchTo("A");
+  await go(page, "Quiz");
+  await expect(page.getByText("Loading your saved learning session...", { exact: true })).toBeVisible();
+  gate.resolve();
+  await expect.poll(() => storedNote(backend, "A-2").confidence).toBe(2);
+  expect(notePatches(backend, "A-2")).toHaveLength(1);
+  expect(storedNote(backend, "A-2").english).toBe("A-meaning-2");
+  expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("pending");
+  await page.getByRole("button", { name: "Retry saving answer", exact: true }).click();
+  await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toBeVisible();
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  expect(backend.accounts[ids.B]).toEqual(originalB);
+});
+
+test("a failed final Quiz write recovers after refresh without increasing confirmed confidence again", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.transport.failCompletedQuiz = true;
+  await page.goto("/");
+  await go(page, "Quiz");
+  await answerQuiz(page, "A-meaning-2");
+  await expect(page.getByRole("button", { name: "Retry saving answer", exact: true })).toBeVisible();
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("pending");
+  expect(backend.accounts[ids.A].daily.quiz).toBe(false);
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.reload();
+  backend.transport.failCompletedQuiz = false;
+  await go(page, "Quiz");
+  await page.getByRole("button", { name: "Retry saving answer", exact: true }).click();
+  await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toBeVisible();
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("complete");
+});
+
+test("a pending intent in local daily storage survives a committed note response failure", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL }, { sync: false });
+  backend.lostNoteResponses.add(`${ids.A}:A-2`);
+  await page.goto("/");
+  await go(page, "Quiz");
+  await answerQuiz(page, "A-meaning-2");
+  await expect(page.getByRole("button", { name: "Retry saving answer", exact: true })).toBeVisible();
+  const pending = await page.evaluate(({ id, date }) => JSON.parse(localStorage.getItem(`french-learning-daily-learning-state-v1:${id}:${date}`)), { id: ids.A, date: backend.date });
+  expect(pending.quiz_state.answered["A-2"]).toMatchObject({ status: "pending", targetConfidence: 2 });
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  await page.reload();
+  await go(page, "Quiz");
+  await page.getByRole("button", { name: "Retry saving answer", exact: true }).click();
+  await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toBeVisible();
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  expect(backend.writes(ids.A).filter((entry) => entry.resource === "daily_learning_state")).toEqual([]);
+});
+
+test("a correct demo Quiz answer changes only disposable demo confidence", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const original = structuredClone(backend.accounts);
+  await page.goto("/#/demo");
+  const storage = await page.evaluate(() => ({ ...localStorage }));
+  await go(page, "Quiz");
+  const question = page.locator("form p.text-3xl");
+  const french = await question.textContent();
+  const note = await page.evaluate(async (french) => {
+    const { demoNotes } = await import("/src/data/demoData.js");
+    const { getAcceptedMeanings } = await import("/src/utils/quiz.js");
+    const note = demoNotes.find((note) => note.french === french);
+    return { ...note, acceptedAnswer: getAcceptedMeanings(note.english)[0] };
+  }, french);
+  await page.getByLabel("Your answer", { exact: true }).fill(note.acceptedAnswer);
+  if (note.partOfSpeech === "noun" && note.gender) await page.getByRole("combobox", { name: "Gender", exact: true }).selectOption(note.gender);
+  await page.getByRole("button", { name: "Check answer", exact: true }).click();
+  await expect(page.getByText(`Confidence advanced to ${Math.min(4, note.confidence + 1)}.`, { exact: true })).toBeVisible();
+  expect(backend.accounts).toEqual(original);
+  expect(backend.ledger).toEqual([]);
+  expect(await page.evaluate(() => ({ ...localStorage }))).toEqual(storage);
 });

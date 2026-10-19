@@ -1,8 +1,11 @@
 import { supabase } from "../lib/supabase";
+import { assertAccountAccess } from "../utils/demoMode";
 import {
   collectPaginatedRows,
   NOTES_PAGE_SIZE,
 } from "../utils/notePagination";
+
+const pendingNoteWrites = new Map();
 
 function toNote(row) {
   return {
@@ -43,7 +46,13 @@ function toNoteRow(note, userId) {
   };
 }
 
-export async function listNotes(userId) {
+export async function listNotes(userId, { isCurrent = () => true } = {}) {
+  // On A -> B -> A, hydrate A after its already-started writes have settled.
+  await Promise.all([...pendingNoteWrites.entries()]
+    .filter(([key]) => key.startsWith(`${userId}:`))
+    .map(([, promise]) => promise.catch(() => {})));
+  assertAccountAccess();
+  if (!isCurrent()) throw new Error("The account changed before loading notes.");
   const rows = await collectPaginatedRows(async (from, to) => {
     const { data, error } = await supabase
       .from("notes")
@@ -77,10 +86,32 @@ export async function createNote(note, userId) {
   return toNote(data);
 }
 
-export async function updateNote(noteId, note, userId) {
+export function updateNote(noteId, note, userId, { isCurrent = () => true } = {}) {
+  assertAccountAccess();
+  const key = `${userId}:${noteId}`;
+  const previous = pendingNoteWrites.get(key) ?? Promise.resolve();
+  const write = previous.catch(() => {}).then(() => {
+    if (!isCurrent()) throw new Error("The account changed before saving the note.");
+    return patchNote(noteId, note, userId);
+  });
+  pendingNoteWrites.set(key, write);
+  return write.finally(() => { if (pendingNoteWrites.get(key) === write) pendingNoteWrites.delete(key); });
+}
+
+async function patchNote(noteId, note, userId) {
+  assertAccountAccess();
+  const columns = {
+    category: "category", french: "french", english: "english", example: "example",
+    notes: "notes", tags: "tags", confidence: "confidence", partOfSpeech: "part_of_speech",
+    ipa: "ipa", gender: "gender", conjugation: "conjugation", adjectiveForms: "adjective_forms",
+    lastReviewed: "last_reviewed",
+  };
+  const patch = Object.fromEntries(Object.entries(columns)
+    .filter(([key]) => Object.hasOwn(note, key))
+    .map(([key, column]) => [column, key === "french" ? String(note[key]).trim() : note[key]]));
   const { data, error } = await supabase
     .from("notes")
-    .update(toNoteRow(note, userId))
+    .update(patch)
     .eq("id", noteId)
     .eq("user_id", userId)
     .select()

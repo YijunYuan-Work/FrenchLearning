@@ -16,7 +16,9 @@ import { useLanguage } from "../i18n/LanguageContext";
 export function QuizView({
   items,
   learningDay = getTodayKey(),
+  isCurrentAccount,
   onQuizAnswer,
+  onPersistQuizState,
   onQuizComplete,
   onQuizStateChange,
   openNewItem,
@@ -28,9 +30,20 @@ export function QuizView({
   const [quizState, setQuizState] = useState(() =>
     savedQuizState ?? createDailyQuizState(items, learningDay, [], quizLimit)
   );
-  const [answer, setAnswer] = useState("");
-  const [genderAnswer, setGenderAnswer] = useState("");
+  const restoredAnswer = Object.values(savedQuizState?.answered ?? {}).find((result) => result?.status === "pending");
+  const [answer, setAnswer] = useState(restoredAnswer?.answer ?? "");
+  const [genderAnswer, setGenderAnswer] = useState(restoredAnswer?.genderAnswer ?? "");
   const [lastResult, setLastResult] = useState(null);
+  const [attemptItem, setAttemptItem] = useState(null);
+  const [isSavingAnswer, setIsSavingAnswer] = useState(false);
+  const [answerSaveError, setAnswerSaveError] = useState(false);
+  const attemptRef = useRef(null);
+  const savingRef = useRef(false);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
   const appliedSavedQuizKeyRef = useRef("");
   const reportedCompletionRef = useRef(false);
 
@@ -127,20 +140,22 @@ export function QuizView({
 
   const answeredResults = quizItems
     .map((item) => quizState.answered[item.id])
-    .filter(Boolean);
+    .filter((result) => result && result.status !== "pending");
   const answeredCount = answeredResults.length;
   const currentItem =
+    attemptItem ??
     lastResult?.item ??
     quizItems.find(
       (item) =>
-        !quizState.answered[item.id] &&
-        Number(item.confidence) < MAX_CONFIDENCE
+        quizState.answered[item.id]?.status === "pending" ||
+        (!quizState.answered[item.id] && Number(item.confidence) < MAX_CONFIDENCE)
     ) ??
     null;
   const correctCount = answeredResults.filter((result) => result.correct).length;
   const remainingCount = Math.max(quizItems.length - answeredCount, 0);
   const isQuizComplete =
-    quizItems.length > 0 && answeredCount >= quizItems.length && !lastResult;
+    quizItems.length > 0 && answeredCount >= quizItems.length && !lastResult && !attemptItem && !isSavingAnswer;
+  const pendingAnswer = quizState.answered[currentItem?.id]?.status === "pending";
   const currentItemNeedsGender =
     currentItem?.partOfSpeech === "noun" && Boolean(currentItem.gender);
   const quizQueueKey = quizState.queueIds.join("|");
@@ -157,7 +172,7 @@ export function QuizView({
 
   function submitAnswer(event) {
     event.preventDefault();
-    if (!currentItem || lastResult) return;
+    if (!currentItem || lastResult || savingRef.current || pendingAnswer) return;
 
     const meaningCorrect = isMeaningCorrect(answer, currentItem.english);
     const needsGender =
@@ -166,6 +181,12 @@ export function QuizView({
       ? isGenderCorrect(genderAnswer, currentItem.gender)
       : true;
     const correct = meaningCorrect && genderCorrect;
+    if (correct) {
+      void saveCorrectAnswer(currentItem, {
+        answer, genderAnswer, targetConfidence: Math.min(Number(currentItem.confidence) + 1, MAX_CONFIDENCE),
+      });
+      return;
+    }
     setQuizState((current) => ({
       ...current,
       answered: {
@@ -177,10 +198,6 @@ export function QuizView({
         },
       },
     }));
-
-    if (correct) {
-      onQuizAnswer(currentItem.id, true);
-    }
 
     setLastResult({
       answer,
@@ -194,13 +211,14 @@ export function QuizView({
   }
 
   function continueQuiz() {
+    if (savingRef.current || answerSaveError || pendingAnswer) return;
     setAnswer("");
     setGenderAnswer("");
     setLastResult(null);
   }
 
   function showCorrectAnswer() {
-    if (!currentItem || lastResult) return;
+    if (!currentItem || lastResult || savingRef.current || pendingAnswer) return;
 
     setQuizState((current) => ({
       ...current,
@@ -228,32 +246,51 @@ export function QuizView({
   }
 
   function markLastResultCorrect() {
-    if (!lastResult || lastResult.correct) return;
+    if (!lastResult || lastResult.correct || savingRef.current) return;
+    void saveCorrectAnswer(lastResult.item, {
+      answer: lastResult.answer, genderAnswer: lastResult.genderAnswer, manuallyMarkedCorrect: true,
+      targetConfidence: Math.min(Number(lastResult.item.confidence) + 1, MAX_CONFIDENCE),
+    });
+  }
 
-    const itemId = lastResult.item.id;
-    setQuizState((current) => ({
-      ...current,
-      answered: {
-        ...current.answered,
-        [itemId]: {
-          ...(current.answered[itemId] ?? {}),
-          answer: lastResult.answer,
-          correct: true,
-          genderAnswer: lastResult.genderAnswer,
-          manuallyMarkedCorrect: true,
-        },
-      },
-    }));
-    onQuizAnswer(itemId, true);
-    setLastResult((current) =>
-      current
-        ? {
-            ...current,
-            correct: true,
-            manuallyMarkedCorrect: true,
-          }
-        : current
-    );
+  async function saveCorrectAnswer(item, result) {
+    const active = () => mountedRef.current && isCurrentAccount() && learningDay === getTodayKey();
+    if (savingRef.current || !active()) return;
+    savingRef.current = true;
+    attemptRef.current = { item, result };
+    setAttemptItem(item);
+    setLastResult(null);
+    setIsSavingAnswer(true);
+    setAnswerSaveError(false);
+    const pending = { ...result, correct: false, status: "pending" };
+    const next = { ...quizState, answered: { ...quizState.answered, [item.id]: pending } };
+    setQuizState(next);
+    try {
+      // The durable fixed target makes a note commit followed by a lost response
+      // or a refresh safe to retry, without calculating another increment.
+      await onPersistQuizState(next);
+      if (!active()) return;
+      const saved = await onQuizAnswer(item.id, result.targetConfidence);
+      if (!active()) return;
+      const completed = { ...result, correct: true, status: "complete", confidence: saved.confidence };
+      const finalState = { ...next, answered: { ...next.answered, [item.id]: completed } };
+      setQuizState(finalState);
+      await onPersistQuizState(finalState);
+      if (!active()) return;
+      setLastResult({ ...completed, item });
+      setAttemptItem(null);
+      attemptRef.current = null;
+    } catch {
+      if (active()) setAnswerSaveError(true);
+    } finally {
+      savingRef.current = false;
+      if (mountedRef.current) setIsSavingAnswer(false);
+    }
+  }
+
+  function retryAnswerSave() {
+    const attempt = attemptRef.current ?? { item: currentItem, result: quizState.answered[currentItem?.id] };
+    if (attempt.item && attempt.result) void saveCorrectAnswer(attempt.item, attempt.result);
   }
 
   function startNewQuiz() {
@@ -340,7 +377,7 @@ export function QuizView({
               {t("startNewQuiz", "Start a new quiz")}
             </button>
           </div>
-        ) : eligibleItems.length === 0 ? (
+        ) : eligibleItems.length === 0 && quizItems.length === 0 ? (
           <div className="rounded-xl border border-dashed border-frenchBlue/30 bg-sky/40 p-8 text-center">
             <p className="font-black">{t("noVocabularyDueTitle", "No vocabulary is due today.")}</p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
@@ -401,7 +438,7 @@ export function QuizView({
               {t("yourAnswer", "Your answer")}
               <input
                 className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-                disabled={Boolean(lastResult)}
+                disabled={Boolean(lastResult) || isSavingAnswer || pendingAnswer || answerSaveError}
                 onChange={(event) => setAnswer(event.target.value)}
                 placeholder={t("typeEnglishMeaning", "Type the English meaning")}
                 value={answer}
@@ -413,7 +450,7 @@ export function QuizView({
                 {t("genderAnswer", "Gender")}
                 <select
                   className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-                  disabled={Boolean(lastResult)}
+                  disabled={Boolean(lastResult) || isSavingAnswer || pendingAnswer || answerSaveError}
                   onChange={(event) => setGenderAnswer(event.target.value)}
                   value={genderAnswer}
                 >
@@ -426,7 +463,19 @@ export function QuizView({
               </label>
             )}
 
-            {lastResult && (
+            {(isSavingAnswer || pendingAnswer || answerSaveError) && (
+              <div className="rounded-lg border border-line bg-sky/40 p-3 text-sm" role={isSavingAnswer ? "status" : "alert"}>
+                <p>{isSavingAnswer
+                  ? t("quizAnswerSaving", "Saving your answer...")
+                  : t("quizAnswerSaveFailed", "Your answer is not fully saved. Retry to finish without increasing confidence twice.")}</p>
+                {!isSavingAnswer && (
+                  <button className="secondary-action mt-3 h-9" onClick={retryAnswerSave} type="button">
+                    {t("retryQuizAnswer", "Retry saving answer")}
+                  </button>
+                )}
+              </div>
+            )}
+            {lastResult && !isSavingAnswer && !answerSaveError && (
               <div
                 className={`rounded-xl p-4 ${
                   lastResult.correct
@@ -493,14 +542,14 @@ export function QuizView({
                 {lastResult.correct && (
                   <p className="mt-1 text-sm">
                     {t("confidenceAdvanced", "Confidence advanced to {value}.", {
-                      value: Math.min(Number(currentItem.confidence) + 1, MAX_CONFIDENCE),
+                      value: lastResult.confidence,
                     })}
                   </p>
                 )}
               </div>
             )}
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            {!isSavingAnswer && !pendingAnswer && !answerSaveError && <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               {lastResult ? (
                 <button
                   className="primary-action h-10"
@@ -530,7 +579,7 @@ export function QuizView({
                   </button>
                 </>
               )}
-            </div>
+            </div>}
           </form>
         )}
       </section>

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "node --test src/utils/quiz.test.js src/utils/richText.test.js src/utils/importParsers.test.js src/utils/vocabularyImport.test.js src/utils/notePagination.test.js src/utils/accountIdentity.test.js src/utils/studyState.test.js src/utils/dailyPersistence.test.js src/utils/languagePreference.test.js api/autofill-vocabulary.test.js",
+    "test": "node --test src/utils/quiz.test.js src/utils/richText.test.js src/utils/importParsers.test.js src/utils/vocabularyImport.test.js src/utils/notePagination.test.js src/utils/accountIdentity.test.js src/utils/studyState.test.js src/utils/dailyPersistence.test.js src/utils/languagePreference.test.js src/utils/noteMutations.test.js api/autofill-vocabulary.test.js",
     "test:e2e": "playwright test",
     "check": "npm run lint && npm run test && npm run build",
     "preview": "vite preview"
