@@ -1,4 +1,7 @@
 export const zhCN = {
+  quizAnswerSaving: "正在保存答案……",
+  quizAnswerSaveFailed: "答案尚未完全保存，请重试。重试不会重复增加掌握度。",
+  retryQuizAnswer: "重试保存答案",
   languagePreferenceLoadFailed: "无法加载已保存的语言。当前选择尚未同步。",
   languagePreferenceSaveFailed: "无法保存语言选择，请重试同步。",
   retryLanguagePreference: "重试语言同步",

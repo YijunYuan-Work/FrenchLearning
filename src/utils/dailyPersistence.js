@@ -17,7 +17,17 @@ export function createDailySaver({ initial, expected, write, isCurrent, onChange
   let failedValue = null;
   let retryValue = null;
   let stopped = false;
+  const waiters = new Set();
   const dirty = () => !sameSnapshot(acknowledged, desired);
+  function settle() {
+    const error = failure || ((stopped || !isCurrent()) ? new Error("The workspace changed before saving progress.") : null);
+    if (!error && (running || dirty())) return;
+    for (const waiter of waiters) {
+      if (error) waiter.reject(error);
+      else waiter.resolve();
+    }
+    waiters.clear();
+  }
   const notify = () => {
     if (!stopped && isCurrent()) onChange({ dirty: Boolean(running || failure || dirty()), error: failure });
   };
@@ -31,16 +41,26 @@ export function createDailySaver({ initial, expected, write, isCurrent, onChange
       acknowledged = value;
     }).catch((error) => { failure = error; failedValue = { value }; }).finally(() => {
       running = null;
-      if (stopped || !isCurrent()) return;
+      if (stopped || !isCurrent()) { settle(); return; }
       notify();
       pump();
+      settle();
     });
   }
-  return {
+  const saver = {
     submit(value) { desired = value; pump(); notify(); },
     // Retry the uncertain write first, then the latest snapshot. The server can
     // acknowledge an identical committed write whose response was lost.
     retry() { retryValue = failedValue; failedValue = null; failure = null; pump(); notify(); },
-    stop() { stopped = true; },
+    save(value) {
+      const result = new Promise((resolve, reject) => waiters.add({ resolve, reject }));
+      desired = value;
+      if (failure) saver.retry();
+      else { pump(); notify(); }
+      settle();
+      return result;
+    },
+    stop() { stopped = true; settle(); },
   };
+  return saver;
 }

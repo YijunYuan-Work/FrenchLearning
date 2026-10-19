@@ -116,3 +116,36 @@ test("a lost response retries the uncertain write before newer pending changes",
   assert.deepEqual(writes, [1, 1, 2]);
   assert.equal(persisted, 2);
 });
+
+test("explicit durable saves await acknowledgement and can retry a rejected write", async () => {
+  const gate = deferred();
+  let fail = true;
+  let settled = false;
+  const saver = createDailySaver({
+    initial: 0, expected: 0, isCurrent: () => true, onChange: () => {},
+    write: async (value) => { await gate.promise; if (fail) throw new Error("Offline"); return value; },
+  });
+  const pending = saver.save(1).finally(() => { settled = true; });
+  const rejected = assert.rejects(pending, /Offline/);
+  await tick();
+  assert.equal(settled, false);
+  gate.resolve();
+  await rejected;
+  fail = false;
+  await saver.save(1);
+});
+
+test("stopping a workspace rejects durable waiters without waiting for its old request", async () => {
+  const gate = deferred();
+  const saver = createDailySaver({
+    initial: 0, expected: 0, isCurrent: () => true, onChange: () => {},
+    write: async (value) => { await gate.promise; return value; },
+  });
+  const pending = saver.save(1);
+  const rejected = assert.rejects(pending, /workspace changed/);
+  await tick();
+  saver.stop();
+  await rejected;
+  gate.resolve();
+  await tick();
+});

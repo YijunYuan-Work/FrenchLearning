@@ -57,6 +57,17 @@ test("daily learning normalization safely loads legacy and answered quiz states"
   });
 });
 
+test("pending Quiz answer targets survive a persisted JSON round trip without becoming completed answers", () => {
+  const pending = { answer: "hello", genderAnswer: "", correct: false, status: "pending", targetConfidence: 2 };
+  const state = normalizeQuizState(JSON.parse(JSON.stringify({
+    date: "2026-10-19", limit: 23, queueIds: ["previous", "word"], seenIds: ["previous", "word"],
+    answered: { previous: { correct: true }, word: pending },
+  })), "2026-10-19");
+  assert.deepEqual(state.answered.word, pending);
+  assert.equal(state.answered.previous.correct, true);
+  assert.deepEqual(state.queueIds, ["previous", "word"]);
+});
+
 test("meaning answers accept complete English and Chinese choices", () => {
   for (const meanings of [
     "school, college",

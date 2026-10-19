@@ -137,6 +137,7 @@ function Workspace({ isDemoRoute, auth }) {
     reloadSavedDailyProgress,
     retryDailyLearningState,
     setDailyQuizState,
+    persistDailyQuizState,
     setDailyStudyState,
   } = useDailyLearningState(isDemoRoute ? null : user, isCurrentAccount, learningDay);
   const {
@@ -335,7 +336,8 @@ function Workspace({ isDemoRoute, auth }) {
     }
 
     try {
-      await notes.save(nextItem, editingItem?.id);
+      await notes.save(nextItem, editingItem?.id, editingItem
+        ? { ...editingItem, ...normalizeWordDetails(editingItem) } : undefined);
       if (!isCurrentAccount()) return;
       if (!editingItem) {
         completeTask("addNote");
@@ -421,7 +423,9 @@ function Workspace({ isDemoRoute, auth }) {
     openNewItem,
     onQuizAnswer: (...args) => {
       if (learningDay === getTodayKey()) return notes.recordQuizCorrect(...args);
+      return Promise.reject(new Error("The learning day changed. Reopen the quiz."));
     },
+    onPersistQuizState: persistDailyQuizState,
     importJob,
     onCancelImport: cancelImportJob,
     onStartImport: startImportJob,

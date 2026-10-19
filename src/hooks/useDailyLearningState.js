@@ -118,6 +118,17 @@ export function useDailyLearningState(user, isCurrentAccount, day) {
   }, [day, isCurrentAccount, userId]);
   const setDailyQuizState = useCallback((value) => setSession("quizState", normalizeQuizState, value), [setSession]);
   const setDailyStudyState = useCallback((value) => setSession("studyState", normalizeStudyState, value), [setSession]);
+  const persistDailyQuizState = useCallback(async (value) => {
+    if (!isCurrentAccount() || value?.date !== day || day !== getTodayKey()) {
+      throw new Error("The account or learning day changed. Reopen the quiz.");
+    }
+    const next = normalizeQuizState(value, day);
+    if (!next) throw new Error("The quiz state is invalid.");
+    const saver = savers.current.get(day)?.quizState;
+    if (userId && !saver) throw new Error("Daily progress has not loaded yet.");
+    setSession("quizState", normalizeQuizState, next);
+    if (saver) await saver.save(next);
+  }, [day, isCurrentAccount, setSession, userId]);
   const retryDailyLearningState = useCallback(() => setLoadAttempt((current) => current + 1), []);
   function retryDailySaves() {
     for (const group of savers.current.values()) for (const saver of Object.values(group)) saver.retry();
@@ -140,5 +151,6 @@ export function useDailyLearningState(user, isCurrentAccount, day) {
     dailySaveError: saveFailure ? `${saveFailure[0].slice(0, 10)}: ${saveFailure[1].error.message}` : "",
     dailySaveConflict: saveFailure?.[1].error.code === "DAILY_SESSION_CONFLICT",
     retryDailyLearningState, retryDailySaves, reloadSavedDailyProgress, setDailyQuizState, setDailyStudyState,
+    persistDailyQuizState,
   };
 }
