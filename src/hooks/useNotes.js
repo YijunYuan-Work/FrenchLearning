@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   createNote,
   deleteNote as deleteStoredNote,
@@ -8,7 +8,8 @@ import {
 
 export function useNotes({ demoItems, isDemo, setError, user }) {
   const [items, setItems] = useState(() => (isDemo ? demoItems : []));
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadState, setLoadState] = useState({ userId: null, status: "idle", error: "" });
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [selectedIds, setSelectedIds] = useState([]);
   const userId = user?.id;
 
@@ -18,14 +19,14 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
     if (!userId) {
       setItems([]);
       setSelectedIds([]);
-      setIsLoading(false);
+      setLoadState({ userId: null, status: "idle", error: "" });
       return undefined;
     }
 
     let isMounted = true;
     setItems([]);
     setSelectedIds([]);
-    setIsLoading(true);
+    setLoadState({ userId, status: "loading", error: "" });
     setError("");
 
     listNotes(userId)
@@ -33,18 +34,20 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
         if (!isMounted) return;
         setItems(savedNotes);
         setSelectedIds([]);
+        setLoadState({ userId, status: "ready", error: "" });
       })
       .catch((error) => {
-        if (isMounted) setError(error.message);
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) setLoadState({ userId, status: "error", error: error.message || "Could not load notes." });
       });
 
     return () => {
       isMounted = false;
     };
-  }, [isDemo, setError, userId]);
+  }, [isDemo, loadAttempt, setError, userId]);
+
+  const retryLoad = useCallback(() => setLoadAttempt((current) => current + 1), []);
+  const isLoaded = isDemo || (loadState.userId === userId && loadState.status === "ready");
+  const loadError = !isDemo && loadState.userId === userId ? loadState.error : "";
 
   async function save(nextItem, editingId) {
     if (!userId) throw new Error("Sign in before saving notes.");
@@ -204,7 +207,10 @@ export function useNotes({ demoItems, isDemo, setError, user }) {
     createImportedNote,
     deleteOne,
     deleteSelected,
-    isLoading,
+    isLoading: !isDemo && Boolean(userId) && !isLoaded && !loadError,
+    isLoaded,
+    loadError,
+    retryLoad,
     items,
     markReviewed,
     recordQuizCorrect,

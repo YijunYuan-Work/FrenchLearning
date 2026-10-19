@@ -1,4 +1,10 @@
 export const zhCN = {
+  dailyProgressPending: "进度尚未加载",
+  dailyStateLoadFailed: "无法加载已保存的学习进度，进度并未重置。",
+  notesLoadFailed: "无法加载笔记，已保存的学习记录保持不变。",
+  learningSettingsLoadFailed: "无法加载学习设置，请重试后再开始学习。",
+  learningSessionWaiting: "请重试加载数据，以继续已保存的学习。",
+  retryLoad: "重试",
   demoMode: "演示模式",
   demoTemporaryChanges: "演示中的修改仅临时保留，刷新后会重置。",
   demoAiUnavailable: "公开演示中无法使用 AI 自动填充。",

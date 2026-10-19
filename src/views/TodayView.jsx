@@ -15,6 +15,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 
 export function TodayView({
   dailyProgress,
+  dailyProgressReady = true,
   items,
   learningSettings,
   onStartQuiz,
@@ -107,10 +108,12 @@ export function TodayView({
             </div>
             <div className="min-w-28 rounded-xl bg-white p-4 text-center shadow-lift">
               <p className="numeric text-3xl font-medium text-frenchBlue">
-                {completedTasks}/3
+                {dailyProgressReady ? `${completedTasks}/3` : "--/3"}
               </p>
               <p className="mt-1 text-xs font-medium text-inkMute">
-                {t("dailyPlanDoneShort", "tasks done")}
+                {dailyProgressReady
+                  ? t("dailyPlanDoneShort", "tasks done")
+                  : t("dailyProgressPending", "Progress not loaded")}
               </p>
             </div>
           </div>

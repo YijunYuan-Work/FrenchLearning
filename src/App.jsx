@@ -26,7 +26,7 @@ import { normalizeTags } from "./utils/tags";
 import { getDisplayName } from "./utils/accountIdentity";
 import { MAX_CONFIDENCE } from "./utils/quiz";
 import { isRichTextEmpty, sanitizeRichTextHtml } from "./utils/richText";
-import { shouldDelayStudyMount } from "./utils/studyState";
+import { shouldDelayLearningMount } from "./utils/studyState";
 import { GrammarView } from "./views/GrammarView";
 import { ImportView } from "./views/ImportView";
 import { PhrasesView } from "./views/PhrasesView";
@@ -107,6 +107,9 @@ function Workspace({ isDemoRoute }) {
     isDemoRoute
   );
   const [learningSettings, setLearningSettings] = useState(defaultLearningSettings);
+  const [settingsLoad, setSettingsLoad] = useState({ userId: null, status: "idle", error: "" });
+  const [settingsLoadAttempt, setSettingsLoadAttempt] = useState(0);
+  const userId = user?.id;
   const [demoDailyProgress, setDemoDailyProgress] = useState(() => ({
     ...createDailyProgress(),
     addNote: true,
@@ -132,7 +135,9 @@ function Workspace({ isDemoRoute }) {
     dailyQuizState,
     dailyStudyState,
     dailyStateLoaded,
+    dailyStateError,
     resetDailyLearningState,
+    retryDailyLearningState,
     setDailyQuizState,
     setDailyStudyState,
   } = useDailyLearningState(isDemoRoute ? null : user, setDataError);
@@ -225,28 +230,30 @@ function Workspace({ isDemoRoute }) {
       return undefined;
     }
 
-    if (!user) {
+    if (!userId) {
       setLearningSettings(defaultLearningSettings);
+      setSettingsLoad({ userId: null, status: "idle", error: "" });
       return undefined;
     }
 
     let isMounted = true;
+    setSettingsLoad({ userId, status: "loading", error: "" });
 
-    getLearningPreferences(user.id)
+    getLearningPreferences(userId)
       .then((savedSettings) => {
         if (!isMounted) return;
         setLearningSettings(savedSettings);
+        setSettingsLoad({ userId, status: "ready", error: "" });
       })
       .catch((error) => {
         if (!isMounted) return;
-        console.warn("Learning settings could not be loaded.", error);
-        setLearningSettings(defaultLearningSettings);
+        setSettingsLoad({ userId, status: "error", error: error.message || "Could not load learning settings." });
       });
 
     return () => {
       isMounted = false;
     };
-  }, [isDemoRoute, user]);
+  }, [isDemoRoute, settingsLoadAttempt, userId]);
 
   useEffect(() => {
     if (isDemoRoute) return;
@@ -481,13 +488,33 @@ function Workspace({ isDemoRoute }) {
 
   const ActiveView = viewBySection[activeSection] ?? TodayView;
   const displayName = getDisplayName(user);
-  const isStudyStateLoading = shouldDelayStudyMount({
+  const isLearningStateLoading = shouldDelayLearningMount({
     activeSection,
     dailyStateLoaded,
+    notesLoaded: notes.isLoaded,
+    learningSettingsLoaded: settingsLoad.userId === userId && settingsLoad.status === "ready",
     isDemo: isDemoRoute,
   });
-  const isQuizStateLoading =
-    !isDemoRoute && activeSection === "quiz" && !dailyStateLoaded;
+  const loadFailures = isDemoRoute ? [] : [
+    {
+      key: "daily",
+      error: dailyStateError,
+      message: t("dailyStateLoadFailed", "Your saved learning progress could not be loaded. It has not been reset."),
+      retry: retryDailyLearningState,
+    },
+    {
+      key: "notes",
+      error: notes.loadError,
+      message: t("notesLoadFailed", "Your notes could not be loaded. Your saved learning session is unchanged."),
+      retry: notes.retryLoad,
+    },
+    {
+      key: "settings",
+      error: settingsLoad.userId === userId ? settingsLoad.error : "",
+      message: t("learningSettingsLoadFailed", "Your learning settings could not be loaded. Retry before starting a session."),
+      retry: () => setSettingsLoadAttempt((current) => current + 1),
+    },
+  ].filter((failure) => failure.error);
   const pageTitle =
     activeSection === "today"
       ? t("todayTitle", "Bonjour, {username}. Ready for 12 minutes of French?", {
@@ -499,6 +526,7 @@ function Workspace({ isDemoRoute }) {
     isDemo: isDemoRoute,
     activeSection,
     dailyProgress: visibleDailyProgress,
+    dailyProgressReady: isDemoRoute || dailyStateLoaded,
     filteredItems,
     items,
     markReviewed: notes.markReviewed,
@@ -584,14 +612,24 @@ function Workspace({ isDemoRoute }) {
               {dataError}
             </div>
           )}
-          {notes.isLoading && items.length === 0 && (
+          {loadFailures.map(({ key, message, retry }) => (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-frenchRed/25 bg-blush p-3 text-sm text-frenchRed" key={key} role="alert">
+              <p>{message}</p>
+              <button className="secondary-action h-9" onClick={retry} type="button">
+                {t("retryLoad", "Retry")}
+              </button>
+            </div>
+          ))}
+          {notes.isLoading && items.length === 0 && !isLearningStateLoading && (
             <div className="app-card p-3 text-sm font-medium text-inkSecondary">
               {t("loadingNotes", "Loading notes...")}
             </div>
           )}
-          {isStudyStateLoading || isQuizStateLoading ? (
-            <div className="app-card p-5 text-sm font-medium text-inkSecondary">
-              {t("loadingLearningState", "Loading your saved learning session...")}
+          {isLearningStateLoading ? (
+            <div className="app-card p-5 text-sm font-medium text-inkSecondary" role="status">
+              {loadFailures.length > 0
+                ? t("learningSessionWaiting", "Retry loading your data to resume your saved session.")
+                : t("loadingLearningState", "Loading your saved learning session...")}
             </div>
           ) : (
             <ActiveView {...viewProps} />
