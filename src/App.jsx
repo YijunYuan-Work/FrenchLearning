@@ -113,7 +113,9 @@ function Workspace({ isDemoRoute, auth }) {
   const [activeSection, setActiveSection] = useState("today");
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editorSession, setEditorSession] = useState(null);
+  const editorSessionRef = useRef(null);
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [editorError, setEditorError] = useState("");
   const [form, setForm] = useState(emptyForm);
@@ -266,13 +268,14 @@ function Workspace({ isDemoRoute, auth }) {
   }
 
   function openNewItem(category = "vocabulary") {
+    beginEditor();
     setEditingItem(null);
     setEditorError("");
     setForm({ ...emptyForm, category });
-    setIsEditorOpen(true);
   }
 
   function openEditItem(item) {
+    beginEditor();
     setEditingItem(item);
     setEditorError("");
     setForm({
@@ -280,12 +283,31 @@ function Workspace({ isDemoRoute, auth }) {
       ...normalizeWordDetails(item),
       tags: (item.tags ?? []).join(", "),
     });
-    setIsEditorOpen(true);
   }
 
-  async function saveItem(event) {
+  function beginEditor() {
+    const session = { id: crypto.randomUUID(), saving: false };
+    editorSessionRef.current = session;
+    setEditorSession(session);
+    setIsSavingNote(false);
+  }
+
+  function closeEditor(session) {
+    if (editorSessionRef.current !== session) return;
+    editorSessionRef.current = null;
+    setEditorSession(null);
+    setIsSavingNote(false);
+  }
+
+  function updateEditorForm(session, update) {
+    if (editorSessionRef.current !== session || session.saving || !isCurrentAccount()) return;
+    setForm((current) => editorSessionRef.current === session && !session.saving && isCurrentAccount()
+      ? update(current) : current);
+  }
+
+  async function saveItem(event, session) {
     event.preventDefault();
-    if (!user || !isCurrentAccount()) return;
+    if (!user || !isCurrentAccount() || editorSessionRef.current !== session || session.saving) return;
 
     const trimmedFrench = form.french.trim();
     const normalizedFrench = trimmedFrench.toLocaleLowerCase("fr");
@@ -336,6 +358,9 @@ function Workspace({ isDemoRoute, auth }) {
       });
     }
 
+    session.saving = true;
+    setIsSavingNote(true);
+    setEditorError("");
     try {
       await notes.save(nextItem, editingItem?.id, editingItem
         ? { ...editingItem, ...normalizeWordDetails(editingItem) } : undefined);
@@ -343,10 +368,15 @@ function Workspace({ isDemoRoute, auth }) {
       if (!editingItem) {
         completeTask("addNote");
       }
-      setEditorError("");
-      setIsEditorOpen(false);
+      if (editorSessionRef.current === session) {
+        setEditorError("");
+        closeEditor(session);
+      }
     } catch (error) {
-      if (isCurrentAccount()) setEditorError(error.message);
+      if (isCurrentAccount() && editorSessionRef.current === session) setEditorError(error.message);
+    } finally {
+      session.saving = false;
+      if (isCurrentAccount() && editorSessionRef.current === session) setIsSavingNote(false);
     }
   }
 
@@ -576,17 +606,19 @@ function Workspace({ isDemoRoute, auth }) {
         </section>
       </main>
 
-      {isEditorOpen && (
+      {editorSession && (
         <EditorModal
+          key={editorSession.id}
           isDemo={isDemoRoute}
           isCurrentAccount={isCurrentAccount}
+          isSaving={isSavingNote}
           userId={user.id}
           error={editorError}
           form={form}
           onChange={() => setEditorError("")}
-          setForm={setForm}
-          onClose={() => setIsEditorOpen(false)}
-          onSave={saveItem}
+          setForm={(update) => updateEditorForm(editorSession, update)}
+          onClose={() => closeEditor(editorSession)}
+          onSave={(event) => saveItem(event, editorSession)}
           title={
             editingItem
               ? t("editLearningNote", "Edit learning note")

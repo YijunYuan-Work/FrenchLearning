@@ -18,7 +18,7 @@ function sessionFor(user) {
   };
 }
 
-async function setupAccounts({ page, context, baseURL }, { sync = true, delayInitialSession = false } = {}) {
+async function setupAccounts({ page, context, baseURL }, { sync = true, delayInitialSession = false, ignoreAiCancellation = false } = {}) {
   const date = await page.evaluate(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -56,7 +56,19 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
   const failNoteOnce = new Set();
   const failedDeletes = new Set();
   const lostDeleteResponses = new Set();
-  const transport = { failCompletedQuiz: false };
+  const transport = { failCompletedQuiz: false, aiError: null, failNextCreate: false };
+
+  if (ignoreAiCancellation) {
+    // Keep real Auth, request and response handling, but simulate a transport
+    // that cannot cancel. The editor must still discard obsolete completions.
+    await page.route("**/src/components/EditorModal.jsx", async (route) => {
+      const response = await route.fetch();
+      const body = (await response.text())
+        .replace("import { autoFillFrenchVocabulary }", "import { autoFillFrenchVocabulary as requestAutoFill }")
+        .replace("const inputClass =", "const autoFillFrenchVocabulary = (word, language, options) => requestAutoFill(word, language, { ...options, signal: undefined });\nconst inputClass =");
+      await route.fulfill({ response, body });
+    });
+  }
 
   await page.route("**/src/lib/supabase.js", async (route) => {
     const response = await route.fetch();
@@ -139,6 +151,10 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
         return route.fulfill({ json: account.notes[index] });
       }
       expect(body.user_id).toBe(id);
+      if (transport.failNextCreate) {
+        transport.failNextCreate = false;
+        return route.fulfill({ status: 400, json: { message: "Note save failed" } });
+      }
       const note = { ...body, id: `saved-${body.french}` };
       account.notes.push(note);
       return route.fulfill({ json: note });
@@ -159,9 +175,14 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
       }
       return route.fulfill({ json: request.method() === "GET" ? [account.preferences] : account.preferences });
     }
-    if (resource === "ai") return route.fulfill({ json: {
-      category: "vocabulary", word: "A-auto-result", english: "A meaning", partOfSpeech: "interjection", tags: [],
-    } });
+    if (resource === "ai") {
+      if (transport.aiError) return route.fulfill({ status: 429, json: transport.aiError });
+      return route.fulfill({ json: {
+        category: "vocabulary", word: body.word, english: body.language === "zh" ? "中文释义" : "AI meaning",
+        partOfSpeech: "verb", tags: ["AI topic"], notes: body.language === "zh" ? "中文笔记" : "AI notes",
+        ipa: "/test/", example: "AI example", conjugation: { je: "AI form" },
+      } });
+    }
     return route.fulfill({ json: [] });
   };
   await page.route(`${origin}/**`, handle);
@@ -1141,4 +1162,293 @@ test("demo bulk deletion changes only temporary notes, not the ambient account o
   await page.reload();
   await go(page, "Phrases");
   await expect(page.getByRole("article")).toHaveCount(count);
+});
+
+async function openDraft(page, french = "bonjour") {
+  await go(page, "Add note");
+  const editor = page.getByRole("dialog");
+  await editor.getByLabel("French", { exact: true }).fill(french);
+  return editor;
+}
+
+const aiRequests = (backend) => backend.ledger.filter((entry) => entry.resource === "ai");
+
+test("an obsolete word's uncancellable response cannot replace a new request or its loading state", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
+  const first = backend.hold(`${ids.A}:ai:POST`);
+  await page.goto("/");
+  const editor = await openDraft(page);
+  await editor.getByLabel("English", { exact: true }).fill("keep until the next valid autofill");
+  await go(page, "Auto-fill");
+  await backend.waitFor(`${ids.A}:ai:POST`);
+  await editor.getByLabel("French", { exact: true }).fill("merci");
+  await expect(editor.getByLabel("English", { exact: true })).toHaveValue("keep until the next valid autofill");
+  const second = backend.hold(`${ids.A}:ai:POST`);
+  await go(page, "Auto-fill");
+  await backend.waitFor(`${ids.A}:ai:POST`);
+  const oldResponse = page.waitForResponse((response) => response.url().includes("/api/autofill-vocabulary") && response.request().postDataJSON().word === "bonjour");
+  first.resolve();
+  await (await oldResponse).finished();
+  await expect(editor.getByLabel("French", { exact: true })).toHaveValue("merci");
+  await expect(editor.getByLabel("English", { exact: true })).toHaveValue("keep until the next valid autofill");
+  await expect(editor.getByRole("button", { name: "Auto-fill", exact: true })).toBeDisabled();
+  await expect(editor.getByText("Asking AI to build the vocabulary note...", { exact: true })).toBeVisible();
+  second.resolve();
+  await expect(editor.getByLabel("English", { exact: true })).toHaveValue("AI meaning");
+  expect(aiRequests(backend).map((entry) => entry.body.word)).toEqual(["bonjour", "merci"]);
+  expect(backend.writes(ids.A).filter((entry) => entry.resource === "notes")).toEqual([]);
+});
+
+test("manual field edits during autofill survive in both the form and saved note", async ({ page, context, baseURL }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+  const backend = await setupAccounts({ page, context, baseURL });
+  const gate = backend.hold(`${ids.A}:ai:POST`);
+  await page.goto("/");
+  const editor = await openDraft(page);
+  await editor.getByLabel("English", { exact: true }).fill("my meaning");
+  await editor.getByRole("combobox", { name: "Word type", exact: true }).selectOption("verb");
+  await go(page, "Auto-fill");
+  await backend.waitFor(`${ids.A}:ai:POST`);
+  // Returning to the original value is still an intentional manual edit.
+  await editor.getByLabel("English", { exact: true }).fill("temporary change");
+  await editor.getByLabel("English", { exact: true }).fill("my meaning");
+  await editor.getByLabel("Notes", { exact: true }).fill("my own explanation");
+  await editor.getByLabel("Tags", { exact: true }).fill("school, work");
+  await editor.getByLabel("je", { exact: true }).fill("my conjugation");
+  await editor.getByRole("combobox", { name: "Confidence", exact: true }).selectOption("3");
+  gate.resolve();
+  await expect(editor.getByText("Auto-filled. Review the details before saving.", { exact: true })).toBeVisible();
+  await expect(editor.getByLabel("English", { exact: true })).toHaveValue("my meaning");
+  await expect(editor.getByRole("textbox", { name: "Notes", exact: true })).toHaveValue("my own explanation");
+  await expect(editor.getByLabel("Tags", { exact: true })).toHaveValue("school, work");
+  await expect(editor.getByLabel("je", { exact: true })).toHaveValue("my conjugation");
+  await expect(editor.getByRole("textbox", { name: "Example", exact: true })).toHaveValue("AI example");
+  await expect(editor.getByLabel("IPA pronunciation", { exact: true })).toHaveValue("/test/");
+  await go(page, "Save note");
+  await expect(editor).toHaveCount(0);
+  const saved = backend.accounts[ids.A].notes.find((note) => note.french === "bonjour");
+  expect(saved).toMatchObject({ english: "my meaning", notes: "my own explanation", tags: ["school", "work"],
+    part_of_speech: "verb", conjugation: { je: "my conjugation" }, confidence: 3, example: "AI example" });
+  expect(errors).toEqual([]);
+});
+
+for (const change of ["word", "category", "language"]) {
+  test(`changing the ${change} invalidates pending autofill, even when returning to the original context`, async ({ page, context, baseURL }) => {
+    const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
+    const gate = backend.hold(`${ids.A}:ai:POST`);
+    await page.goto("/");
+    const editor = await openDraft(page);
+    await editor.getByLabel("English", { exact: true }).fill("untouched draft");
+    await go(page, "Auto-fill");
+    await backend.waitFor(`${ids.A}:ai:POST`);
+    if (change === "word") {
+      await editor.getByLabel("French", { exact: true }).fill("merci");
+      await editor.getByLabel("French", { exact: true }).fill("bonjour");
+    } else if (change === "category") {
+      await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("grammar");
+      await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("vocabulary");
+    } else {
+      await page.getByRole("button", { name: "简体中文", exact: true }).evaluate((button) => button.click());
+      await page.getByRole("button", { name: "English", exact: true }).evaluate((button) => button.click());
+    }
+    const response = page.waitForResponse((response) => response.url().includes("/api/autofill-vocabulary"));
+    gate.resolve();
+    await (await response).finished();
+    await expect(editor.getByLabel("English", { exact: true })).toHaveValue("untouched draft");
+    await expect(editor.getByLabel("Notes", { exact: true })).toHaveValue("");
+    await expect(editor.getByRole("button", { name: "Auto-fill", exact: true })).toBeEnabled();
+    await expect(editor.getByText("Auto-filled. Review the details before saving.", { exact: true })).toHaveCount(0);
+    expect(aiRequests(backend)).toHaveLength(1);
+  });
+}
+
+test("closing and reopening the same word discards uncancellable AI errors and allows a Chinese retry", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
+  backend.transport.aiError = { error: "AI daily limit reached", code: "daily_limit_reached" };
+  const gate = backend.hold(`${ids.A}:ai:POST`);
+  await page.goto("/");
+  await openDraft(page);
+  await go(page, "Auto-fill");
+  await backend.waitFor(`${ids.A}:ai:POST`);
+  await go(page, "Close editor");
+  const editor = await openDraft(page);
+  await editor.getByLabel("English", { exact: true }).fill("new editor draft");
+  const response = page.waitForResponse((response) => response.url().includes("/api/autofill-vocabulary"));
+  gate.resolve();
+  await (await response).finished();
+  await expect(editor.getByLabel("English", { exact: true })).toHaveValue("new editor draft");
+  await expect(editor.getByText("AI daily limit reached", { exact: true })).toHaveCount(0);
+  backend.transport.aiError = null;
+  await page.getByRole("button", { name: "简体中文", exact: true }).evaluate((button) => button.click());
+  await editor.getByRole("button", { name: "自动填充", exact: true }).click();
+  await expect(editor.getByLabel("中文释义", { exact: true })).toHaveValue("中文释义");
+  await expect(editor.getByRole("textbox", { name: "笔记", exact: true })).toHaveValue("中文笔记");
+  expect(aiRequests(backend).map((entry) => entry.body.language)).toEqual(["en", "zh"]);
+});
+
+test("switching directly between notes creates a fresh editor identity for pending AI", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
+  const gate = backend.hold(`${ids.A}:ai:POST`);
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  await go(page, "Edit A-word-1");
+  await go(page, "Auto-fill");
+  await backend.waitFor(`${ids.A}:ai:POST`);
+  // Exercise replacement without first unmounting through the Close button.
+  await page.getByRole("button", { name: "Edit A-word-2", exact: true }).evaluate((button) => button.click());
+  const editor = page.getByRole("dialog");
+  const response = page.waitForResponse((response) => response.url().includes("/api/autofill-vocabulary"));
+  gate.resolve();
+  await (await response).finished();
+  await expect(editor.getByLabel("French", { exact: true })).toHaveValue("A-word-2");
+  await expect(editor.getByLabel("English", { exact: true })).toHaveValue("A-meaning-2");
+  await expect(editor.getByRole("button", { name: "Auto-fill", exact: true })).toBeEnabled();
+  expect(backend.writes(ids.A).filter((entry) => entry.resource === "notes")).toEqual([]);
+});
+
+for (const editing of [false, true]) {
+  test(`rapid repeated ${editing ? "edit" : "create"} submissions perform one write and show saving state`, async ({ page, context, baseURL }) => {
+    const backend = await setupAccounts({ page, context, baseURL });
+    const method = editing ? "PATCH" : "POST";
+    const gate = backend.hold(`${ids.A}:notes:${method}`);
+    await page.goto("/");
+    if (editing) {
+      await go(page, "Vocabulary");
+      await go(page, "Edit A-word-2");
+    } else await openDraft(page, "one-create");
+    const editor = page.getByRole("dialog");
+    await editor.getByLabel("English", { exact: true }).fill("one save");
+    await editor.evaluate((form) => { form.requestSubmit(); form.requestSubmit(); });
+    await backend.waitFor(`${ids.A}:notes:${method}`);
+    await expect(editor).toHaveAttribute("aria-busy", "true");
+    await expect(editor.getByRole("button", { name: "Saving note...", exact: true })).toBeDisabled();
+    await expect(editor.getByLabel("French", { exact: true })).toBeDisabled();
+    await expect(editor.getByRole("button", { name: "Close", exact: true })).toBeEnabled();
+    await editor.evaluate((form) => form.requestSubmit());
+    expect(backend.writes(ids.A).filter((entry) => entry.resource === "notes")).toHaveLength(1);
+    gate.resolve();
+    await expect(editor).toHaveCount(0);
+    if (editing) expect(storedNote(backend, "A-2").english).toBe("one save");
+    else expect(backend.accounts[ids.A].notes.filter((note) => note.french === "one-create")).toHaveLength(1);
+    expect(backend.writes(ids.A).filter((entry) => entry.resource === "notes")).toHaveLength(1);
+  });
+}
+
+test("failed Save keeps the draft, unlocks controls, and allows one successful retry", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.transport.failNextCreate = true;
+  await page.goto("/");
+  const editor = await openDraft(page, "retry-create");
+  await editor.getByLabel("English", { exact: true }).fill("draft meaning");
+  await go(page, "Save note");
+  await expect(editor.getByText("Note save failed", { exact: true })).toBeVisible();
+  await expect(editor.getByLabel("French", { exact: true })).toBeEnabled();
+  await expect(editor.getByLabel("English", { exact: true })).toHaveValue("draft meaning");
+  expect(backend.accounts[ids.A].notes.some((note) => note.french === "retry-create")).toBe(false);
+  await editor.getByLabel("English", { exact: true }).fill("corrected meaning");
+  await go(page, "Save note");
+  await expect(editor).toHaveCount(0);
+  expect(backend.accounts[ids.A].notes.filter((note) => note.french === "retry-create")).toMatchObject([{ english: "corrected meaning" }]);
+  expect(backend.writes(ids.A).filter((entry) => entry.resource === "notes")).toHaveLength(2);
+});
+
+for (const fails of [false, true]) {
+  test(`a late same-account save ${fails ? "failure" : "success"} cannot affect a different editor's pending save`, async ({ page, context, baseURL }) => {
+    const backend = await setupAccounts({ page, context, baseURL });
+    const oldGate = backend.hold(`${ids.A}:notes:POST`);
+    if (fails) backend.failures.add(`${ids.A}:notes:POST`);
+    const nextGate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
+    await page.goto("/");
+    await go(page, "Vocabulary");
+    const editor = await openDraft(page, "old-editor-save");
+    await editor.getByLabel("English", { exact: true }).fill("old editor meaning");
+    await go(page, "Save note");
+    await backend.waitFor(`${ids.A}:notes:POST`);
+    await go(page, "Close");
+    await go(page, "Edit A-word-2");
+    await editor.getByLabel("English", { exact: true }).fill("new editor meaning");
+    await go(page, "Save note");
+    await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+    const response = page.waitForResponse((response) => response.url().includes("/rest/v1/notes") && response.request().method() === "POST");
+    oldGate.resolve();
+    await (await response).finished();
+    await expect(editor).toHaveAttribute("aria-busy", "true");
+    await expect(editor.getByLabel("French", { exact: true })).toHaveValue("A-word-2");
+    await expect(editor.getByLabel("English", { exact: true })).toHaveValue("new editor meaning");
+    await expect(editor.getByText("Late account A failure", { exact: true })).toHaveCount(0);
+    await expect(editor.getByRole("button", { name: "Saving note...", exact: true })).toBeDisabled();
+    nextGate.resolve();
+    await expect(editor).toHaveCount(0);
+    expect(storedNote(backend, "A-2").english).toBe("new editor meaning");
+    expect(backend.accounts[ids.A].notes.some((note) => note.french === "old-editor-save")).toBe(!fails);
+    expect(backend.writes(ids.A).filter((entry) => entry.resource === "notes")).toHaveLength(2);
+  });
+}
+
+test("saving cancels pending autofill and persists only the submitted draft", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
+  const aiGate = backend.hold(`${ids.A}:ai:POST`);
+  const saveGate = backend.hold(`${ids.A}:notes:POST`);
+  await page.goto("/");
+  const editor = await openDraft(page);
+  await editor.getByLabel("English", { exact: true }).fill("submitted meaning");
+  await go(page, "Auto-fill");
+  await backend.waitFor(`${ids.A}:ai:POST`);
+  await go(page, "Save note");
+  await backend.waitFor(`${ids.A}:notes:POST`);
+  const response = page.waitForResponse((response) => response.url().includes("/api/autofill-vocabulary"));
+  aiGate.resolve();
+  await (await response).finished();
+  await expect(editor.getByLabel("English", { exact: true })).toHaveValue("submitted meaning");
+  await expect(editor).toHaveAttribute("aria-busy", "true");
+  saveGate.resolve();
+  await expect(editor).toHaveCount(0);
+  expect(backend.accounts[ids.A].notes.find((note) => note.french === "bonjour")).toMatchObject({ english: "submitted meaning", notes: "" });
+});
+
+test("cancelling autofill during delayed Auth preflight sends no AI request", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  const editor = await openDraft(page);
+  await page.evaluate(async () => {
+    const { supabase } = await import("/src/lib/supabase.js");
+    const original = supabase.auth.getSession.bind(supabase.auth);
+    let first = true;
+    supabase.auth.getSession = async (...args) => {
+      const result = await original(...args);
+      if (first) {
+        first = false;
+        await new Promise((resolve) => { globalThis.releaseEditorPreflight = resolve; });
+      }
+      return result;
+    };
+  });
+  await go(page, "Auto-fill");
+  await page.waitForFunction(() => typeof globalThis.releaseEditorPreflight === "function");
+  await go(page, "Close editor");
+  await openDraft(page, "merci");
+  await page.evaluate(() => globalThis.releaseEditorPreflight());
+  await go(page, "Auto-fill");
+  await expect(editor.getByLabel("English", { exact: true })).toHaveValue("AI meaning");
+  expect(aiRequests(backend).map((entry) => entry.body.word)).toEqual(["merci"]);
+});
+
+test("AI quota errors remain actionable without automatic retry or changing the draft", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.transport.aiError = { error: "Daily AI auto-fill limit reached", code: "daily_limit_reached" };
+  await page.goto("/");
+  const editor = await openDraft(page);
+  await editor.getByLabel("English", { exact: true }).fill("manual meaning");
+  await go(page, "Auto-fill");
+  await expect(editor.getByText("Daily AI auto-fill limit reached", { exact: true })).toBeVisible();
+  await expect(editor.getByLabel("English", { exact: true })).toHaveValue("manual meaning");
+  await expect(editor.getByRole("button", { name: "Auto-fill", exact: true })).toBeEnabled();
+  expect(aiRequests(backend)).toHaveLength(1);
+  await go(page, "Save note");
+  await expect(editor).toHaveCount(0);
+  expect(aiRequests(backend)).toHaveLength(1);
+  expect(backend.accounts[ids.A].notes.find((note) => note.french === "bonjour").english).toBe("manual meaning");
 });

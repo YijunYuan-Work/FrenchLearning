@@ -3,6 +3,7 @@ import { assertAccountAccess } from "../utils/demoMode";
 
 export async function autoFillFrenchVocabulary(word, language = "en", { userId, isCurrentAccount, signal } = {}) {
   assertAccountAccess();
+  signal?.throwIfAborted();
   if (isCurrentAccount && !isCurrentAccount()) {
     throw new Error("The account changed. Reopen the editor before using AI auto-fill.");
   }
@@ -12,6 +13,7 @@ export async function autoFillFrenchVocabulary(word, language = "en", { userId, 
   }
 
   const { data } = await supabase.auth.getSession();
+  signal?.throwIfAborted();
   if ((isCurrentAccount && !isCurrentAccount()) || (userId && data.session?.user?.id !== userId)) {
     throw new Error("The account changed. Reopen the editor before using AI auto-fill.");
   }
@@ -33,6 +35,11 @@ export async function autoFillFrenchVocabulary(word, language = "en", { userId, 
   });
 
   const payload = await response.json().catch(() => ({}));
+  signal?.throwIfAborted();
+  assertAccountAccess();
+  if (isCurrentAccount && !isCurrentAccount()) {
+    throw new Error("The account changed. Reopen the editor before using AI auto-fill.");
+  }
   if (!response.ok) {
     const error = new Error(payload.error || "AI auto-fill failed.");
     error.code = payload.code;
