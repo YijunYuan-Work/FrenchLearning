@@ -19,6 +19,10 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
   const [loadState, setLoadState] = useState({ userId: null, status: "idle", error: "" });
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [selectedIds, setSelectedIds] = useState([]);
+  const deletingRef = useRef(false);
+  const pendingDeleteIds = useRef(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletionResult, setDeletionResult] = useState(null);
   const userId = user?.id;
 
   useEffect(() => {
@@ -95,7 +99,9 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
   }
 
   function persistPatch(itemId, getPatch) {
+    if (pendingDeleteIds.current.has(itemId)) return Promise.reject(new Error("This note is being deleted. Wait before editing it."));
     return mutateNote(itemId, async () => {
+      if (pendingDeleteIds.current.has(itemId)) throw new Error("This note is being deleted. Wait before editing it.");
       const item = itemsRef.current.find((entry) => entry.id === itemId);
       if (!item) throw new Error("This note is no longer available.");
       const patch = getPatch(item);
@@ -146,6 +152,7 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
   }
 
   function toggleSelected(id) {
+    if (deletingRef.current) return;
     setSelectedIds((current) =>
       current.includes(id)
         ? current.filter((selectedId) => selectedId !== id)
@@ -154,6 +161,7 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
   }
 
   function selectItems(ids, shouldSelect) {
+    if (deletingRef.current) return;
     setSelectedIds((current) => {
       if (!shouldSelect) {
         return current.filter((id) => !ids.includes(id));
@@ -164,40 +172,51 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
   }
 
   function clearSelection() {
+    if (deletingRef.current) return;
     setSelectedIds([]);
   }
 
-  async function deleteOne(itemId) {
-    if (!userId || !isCurrentAccount()) return;
-
-    try {
-      if (!isDemo) await deleteStoredNote(itemId, userId);
-      if (!isCurrentAccount()) return;
-      setItems((current) => current.filter((item) => item.id !== itemId));
-      setSelectedIds((current) => current.filter((id) => id !== itemId));
-      setError("");
-    } catch (error) {
-      if (isCurrentAccount()) setError(error.message);
-    }
+  function deleteOne(itemId) {
+    return deleteNotes([itemId]);
   }
 
-  async function deleteSelected() {
-    if (!userId || selectedIds.length === 0 || !isCurrentAccount()) return;
+  function deleteSelected() {
+    return deleteNotes(selectedIds);
+  }
 
-    try {
-      if (!isDemo) {
-        await Promise.all(
-          selectedIds.map((id) => deleteStoredNote(id, userId))
-        );
+  async function deleteNotes(requestedIds) {
+    if (!userId || deletingRef.current || !isCurrentAccount()) return;
+    const existingIds = new Set(itemsRef.current.map((item) => item.id));
+    const ids = [...new Set(requestedIds)].filter((id) => existingIds.has(id));
+    if (!ids.length) return;
+
+    deletingRef.current = true;
+    pendingDeleteIds.current = new Set(ids);
+    setIsDeleting(true);
+    setDeletionResult(null);
+    const result = { deleted: 0, failed: 0, failedIds: [] };
+    // Register deletes immediately in the API's owner-scoped write queue, so
+    // returning to this account also waits for already-started deletions.
+    await Promise.all(ids.map(async (id) => {
+      try {
+        if (!isDemo) await deleteStoredNote(id, userId, { isCurrent: isCurrentAccount });
+        result.deleted += 1;
+        if (!isCurrentAccount()) return;
+        setItems((current) => current.filter((item) => item.id !== id));
+        setSelectedIds((current) => current.filter((selectedId) => selectedId !== id));
+      } catch {
+        result.failed += 1;
+        result.failedIds.push(id);
+        if (isCurrentAccount()) setSelectedIds((current) => [...new Set([...current, id])]);
+      } finally {
+        pendingDeleteIds.current.delete(id);
       }
-      if (!isCurrentAccount()) return;
-      setItems((current) =>
-        current.filter((item) => !selectedIds.includes(item.id))
-      );
-      setSelectedIds([]);
-      setError("");
-    } catch (error) {
-      if (isCurrentAccount()) setError(error.message);
+    }));
+    deletingRef.current = false;
+    if (isCurrentAccount()) {
+      setIsDeleting(false);
+      setDeletionResult(result);
+      setSelectedIds((current) => [...new Set([...current, ...result.failedIds])]);
     }
   }
 
@@ -206,6 +225,9 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
     createImportedNote,
     deleteOne,
     deleteSelected,
+    retryFailedDeletions: () => deleteNotes(deletionResult?.failedIds ?? []),
+    deletionResult,
+    isDeleting,
     isLoading: !isDemo && Boolean(userId) && !isLoaded && !loadError,
     isLoaded,
     loadError,

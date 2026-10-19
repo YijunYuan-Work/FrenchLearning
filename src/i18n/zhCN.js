@@ -1,4 +1,9 @@
 export const zhCN = {
+  deletingNotes: "正在删除笔记……",
+  deleteNotesResult: "已删除：{deleted}。失败：{failed}。",
+  deleteNotesRetryCopy: "删除失败的笔记仍保持选中，请检查网络后重试。",
+  retryDeleteConfirm: "重试删除 {count} 条失败的笔记？",
+  retryFailedDeletions: "重试删除失败的笔记",
   quizAnswerSaving: "正在保存答案……",
   quizAnswerSaveFailed: "答案尚未完全保存，请重试。重试不会重复增加掌握度。",
   retryQuizAnswer: "重试保存答案",
