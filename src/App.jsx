@@ -16,7 +16,6 @@ import { isPublicDemoRoute } from "./utils/demoMode";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
 import { assertNoDuplicateNote, normalizeNoteInput } from "./utils/noteIntegrity";
-import { getDisplayName } from "./utils/accountIdentity";
 import { getTodayKey, MAX_CONFIDENCE } from "./utils/quiz";
 import { shouldDelayLearningMount } from "./utils/studyState";
 import { GrammarView } from "./views/GrammarView";
@@ -96,7 +95,7 @@ function AccountSession({ isDemoRoute }) {
 
 function Workspace({ isDemoRoute, auth }) {
   const learningDay = useLocalLearningDay();
-  const { t, languagePreferenceStatus, retryLanguagePreference } = useLanguage();
+  const { t, language, languagePreferenceStatus, retryLanguagePreference } = useLanguage();
   const { user, loading: authLoading, error: authError, isCurrentAccount, updateUser: setUser,
     handleAuthSubmit, handleSignOut } = auth;
   const [dataError, setDataError] = useState("");
@@ -368,7 +367,6 @@ function Workspace({ isDemoRoute, auth }) {
   }
 
   const ActiveView = viewBySection[activeSection] ?? TodayView;
-  const displayName = getDisplayName(user);
   const isLearningStateLoading = shouldDelayLearningMount({
     activeSection,
     dailyStateLoaded,
@@ -396,12 +394,7 @@ function Workspace({ isDemoRoute, auth }) {
       retry: () => setSettingsLoadAttempt((current) => current + 1),
     },
   ].filter((failure) => failure.error);
-  const pageTitle =
-    activeSection === "today"
-      ? t("todayTitle", "Bonjour, {username}. Ready for 12 minutes of French?", {
-          username: displayName,
-        })
-      : t(categories[activeSection].labelKey, categories[activeSection].label);
+  const pageTitle = t(categories[activeSection].labelKey, categories[activeSection].label);
 
   const viewProps = {
     learningDay,
@@ -410,6 +403,8 @@ function Workspace({ isDemoRoute, auth }) {
     activeSection,
     dailyProgress: visibleDailyProgress,
     dailyProgressReady: isDemoRoute || dailyStateLoaded,
+    learningDataReady: isDemoRoute || (notes.isLoaded && settingsLoad.userId === userId && settingsLoad.status === "ready"),
+    learningLoadFailed: loadFailures.length > 0,
     filteredItems,
     items,
     isDeleting: notes.isDeleting,
@@ -479,23 +474,24 @@ function Workspace({ isDemoRoute, auth }) {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-cloud/80 pt-[61px] text-ink md:pl-64 md:pt-0">
+    <div className="cahier-workspace" lang={language === "zh" ? "zh-CN" : "en"}>
       <Sidebar
         activeSection={activeSection}
         setActiveSection={setActiveSection}
+        isDemo={isDemoRoute}
+        onSignOut={handleSignOut}
+        user={user}
       />
 
-      <main className="mx-auto min-w-0 max-w-7xl">
+      <main className="cahier-main">
         <AppHeader
           activeSection={activeSection}
-          isDemo={isDemoRoute}
-          onSignOut={handleSignOut}
           openNewItem={openNewItem}
           pageTitle={pageTitle}
-          user={user}
+          learningDay={learningDay}
         />
 
-        <section className="grid gap-4 px-3 pb-6 pt-2 sm:px-4 sm:pb-8 md:px-7 lg:gap-5">
+        <section className="cahier-content">
           {notes.dataWarningCount > 0 && (
             <p className="rounded-lg border border-line bg-paper p-3 text-sm text-slate-700" role="status">
               {t("noteDataWarning", "{count} saved notes have invalid data. Safe defaults are used where possible; unrecognizable notes are hidden. Stored data was not changed.", { count: notes.dataWarningCount })}
@@ -560,7 +556,7 @@ function Workspace({ isDemoRoute, auth }) {
               )}
             </div>
           )}
-          {notes.isLoading && items.length === 0 && !isLearningStateLoading && (
+          {activeSection !== "today" && notes.isLoading && items.length === 0 && !isLearningStateLoading && (
             <div className="app-card p-3 text-sm font-medium text-inkSecondary">
               {t("loadingNotes", "Loading notes...")}
             </div>

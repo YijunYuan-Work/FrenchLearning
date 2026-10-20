@@ -11,6 +11,7 @@ export default [
       "node_modules/**",
       "playwright-report/**",
       "test-results/**",
+      "FrenchLearning UI 2.0 directions/**",
     ],
   },
   {
