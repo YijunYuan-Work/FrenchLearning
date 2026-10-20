@@ -173,6 +173,7 @@ test("a failed daily read cannot write defaults and Retry restores saved progres
   await page.goto("/");
   const error = page.getByRole("alert").filter({ hasText: "Your saved learning progress could not be loaded." });
   await expect(error).toBeVisible();
+  await expect(page.getByRole("status", { name: "Progress not loaded", exact: true })).toBeVisible();
   await openSession(page, "Quiz");
   await expect(page.getByText("Retry loading your data to resume your saved session.")).toBeVisible();
   await expect(page.getByText("Vocabulary quiz", { exact: true })).toHaveCount(0);
@@ -345,7 +346,7 @@ test("local midnight resets Today, Quiz and Study without rewriting yesterday", 
   await openSession(page, "Quiz");
   await expect(page.getByText("0/4", { exact: true })).toBeVisible();
   await openSession(page, "Today");
-  await expect(page.getByText("0/3", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status", { name: "0 of 3 tasks done", exact: true })).toBeVisible();
   expect(await page.evaluate(() => JSON.parse(globalThis.readSavedDaily()))).toEqual(yesterday);
   const today = await page.evaluate(async (id) => {
     const { getTodayKey } = await import("/src/utils/quiz.js");
@@ -379,7 +380,7 @@ for (const event of ["visibilitychange", "pageshow"]) {
     expect(today.study_state.cardIndex).toBe(0);
     expect(today.study_state.date).not.toBe(backend.saved.study_state.date);
     await openSession(page, "Today");
-    await expect(page.getByText("0/3", { exact: true })).toBeVisible();
+    await expect(page.getByRole("status", { name: "0 of 3 tasks done", exact: true })).toBeVisible();
   });
 }
 
@@ -449,7 +450,7 @@ test("rapid independent task completions merge in cloud storage", async ({ page,
   backend.saved.add_note = false;
   backend.saved.study = false;
   await page.goto("/");
-  await expect(page.getByText("0/3", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status", { name: "0 of 3 tasks done", exact: true })).toBeVisible();
   await page.evaluate(async ({ id, date }) => {
     const { updateDailyProgress } = await import("/src/api/dailyLearning.js");
     await Promise.all(["addNote", "study", "quiz"].map((task) => updateDailyProgress(id, { date, [task]: true })));
@@ -518,7 +519,7 @@ test("concurrent creation of a cloud day preserves goals and both session fields
   const initial = structuredClone(backend.saved);
   backend.saved = null;
   await page.goto("/");
-  await expect(page.getByText("0/3", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status", { name: "0 of 3 tasks done", exact: true })).toBeVisible();
   await page.evaluate(async ({ id, initial }) => {
     const { updateDailyProgress, updateDailyQuizState, updateDailyStudyState } = await import("/src/api/dailyLearning.js");
     const options = { expected: {}, exists: false };
@@ -529,4 +530,51 @@ test("concurrent creation of a cloud day preserves goals and both session fields
     ]);
   }, { id: user.id, initial });
   expect(backend.saved).toMatchObject({ add_note: true, quiz_state: initial.quiz_state, study_state: initial.study_state });
+});
+
+test("Today distinguishes pending or failed notes from an empty notebook and recovers its task rows", async ({ page, context, baseURL }) => {
+  const backend = await setupLearning({ page, context, baseURL });
+  backend.saved.add_note = false;
+  backend.saved.study = false;
+  backend.notesGate = deferred();
+  backend.failNotes = true;
+  await page.goto("/");
+  await backend.notesRead.promise;
+  const study = page.getByRole("button", { name: /^Complete daily study Review/ });
+  const quiz = page.getByRole("button", { name: /^Complete daily quiz Check/ });
+  await expect(study).toBeDisabled();
+  await expect(quiz).toBeDisabled();
+  await expect(study).toContainText("Loading your notes and settings...");
+  await expect(page.locator(".today-empty")).toHaveCount(0);
+  backend.notesGate.resolve();
+  const error = page.getByRole("alert").filter({ hasText: "Your notes could not be loaded." });
+  await expect(error).toBeVisible();
+  await expect(study).toContainText("Data unavailable");
+  await expect(page.locator(".today-empty")).toHaveCount(0);
+  backend.failNotes = false;
+  await error.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(study).toBeEnabled();
+  await expect(quiz).toBeEnabled();
+  await expect(study).toContainText("4 cards ready");
+  expect(backend.writes).toEqual([]);
+});
+
+test("Today renders a genuinely empty notebook and completed goals from saved state without inventing progress", async ({ page, context, baseURL }) => {
+  const backend = await setupLearning({ page, context, baseURL });
+  backend.notes = [];
+  backend.saved.add_note = false;
+  backend.saved.study = false;
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "0 of 3 tasks done", exact: true })).toBeVisible();
+  await expect(page.locator(".today-empty")).toContainText("Your notebook is still empty.");
+  await expect(page.getByRole("button", { name: /^Complete daily study Review/ })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /^Complete daily quiz Check/ })).toBeDisabled();
+  expect(backend.writes).toEqual([]);
+  backend.saved.add_note = true;
+  backend.saved.study = true;
+  backend.saved.quiz = true;
+  await page.reload();
+  await expect(page.getByRole("status", { name: "3 of 3 tasks done", exact: true })).toBeVisible();
+  await expect(page.getByText("Tout est fait.", { exact: true })).toBeVisible();
+  expect(backend.writes).toEqual([]);
 });

@@ -1,73 +1,120 @@
-import { Menu, Sparkles, X } from "lucide-react";
-import { useState } from "react";
+import { BookOpen, CalendarDays, CircleHelp, ListChecks, Menu, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { categories } from "../data/categories";
 import { useLanguage } from "../i18n/LanguageContext";
+import { getDisplayName } from "../utils/accountIdentity";
+import { Brand } from "./Brand";
+import { LanguageToggle } from "./LanguageToggle";
 
-export function Sidebar({ activeSection, setActiveSection }) {
+const groups = [
+  { label: "Pratique", keys: ["today", "review", "quiz"] },
+  { label: "Le cahier", keys: ["vocabulary", "phrases", "grammar", "pronunciation"] },
+  { label: "Bureau", keys: ["import", "settings"] },
+];
+const glosses = ["aujourd'hui", "étude", "dictée", "mots", "expressions", "grammaire", "phonétique"];
+const sectionKeys = Object.keys(categories);
+
+export function Sidebar({ activeSection, setActiveSection, isDemo, onSignOut, user }) {
   const { t } = useLanguage();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const activeCategory = categories[activeSection] ?? categories.today;
-  const ActiveIcon = activeCategory.icon;
+  const [panel, setPanel] = useState(null);
+  const dialogRef = useRef(null);
+  const displayName = getDisplayName(user);
+  const notesActive = groups[1].keys.includes(activeSection);
+  const moreActive = groups[2].keys.includes(activeSection);
+
+  useEffect(() => {
+    if (!panel) return undefined;
+    const dialog = dialogRef.current;
+    const trigger = document.activeElement;
+    dialog.showModal();
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => { if (desktop.matches) setPanel(null); };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => {
+      desktop.removeEventListener("change", closeOnDesktop);
+      dialog.close();
+      if (trigger?.isConnected && trigger.getClientRects().length > 0) trigger.focus();
+    };
+  }, [panel]);
+
+  function navigate(key) {
+    setActiveSection(key);
+    setPanel(null);
+  }
+
+  function navItem(key, inSheet = false) {
+    const item = categories[key];
+    const index = sectionKeys.indexOf(key);
+    const label = t(item.labelKey, item.label);
+    return (
+      <button
+        aria-current={activeSection === key ? "page" : undefined}
+        aria-label={label}
+        className={`cahier-nav-item${activeSection === key ? " is-active" : ""}`}
+        key={key}
+        onClick={() => navigate(key)}
+        title={label}
+        type="button"
+      >
+        <span className="cahier-nav-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+        <span className={inSheet ? "" : "cahier-nav-label"}>{key === "pronunciation" ? t("navPronunciation", "Pronunciation") : label}</span>
+        {glosses[index] && <span className="cahier-nav-gloss" aria-hidden="true" lang="fr">{glosses[index]}</span>}
+      </button>
+    );
+  }
+
+  const accountControls = (
+    <div className="cahier-account">
+      <LanguageToggle />
+      <div className="cahier-account-row">
+        <button className="text-action account-name" onClick={() => navigate("settings")} title={displayName} type="button">{displayName}</button>
+        {!isDemo && <button className="text-action sign-out" onClick={onSignOut} type="button">{t("signOut", "Sign out")}</button>}
+      </div>
+    </div>
+  );
 
   return (
-    <aside className="fixed inset-x-0 top-0 z-30 border-b border-line bg-white/92 shadow-soft backdrop-blur md:inset-y-0 md:right-auto md:w-64 md:border-b-0 md:border-r">
-      <div className="flex h-full flex-col gap-2 px-3 py-2 sm:px-4 md:px-4 md:py-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2 lg:gap-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-frenchBlue text-white shadow-soft">
-              <Sparkles size={20} />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xs font-bold text-frenchRed">
-                {t("frenchDesk", "French Desk")}
-              </p>
-              <h1 className="truncate text-lg font-black tracking-[-0.01em] sm:text-xl">
-                {t("learningHub", "Learning Hub")}
-              </h1>
-            </div>
-          </div>
-
-          <button
-            aria-expanded={isMobileMenuOpen}
-            className="focus-ring inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-line bg-white px-3 text-sm font-medium text-ink shadow-sm md:hidden"
-            onClick={() => setIsMobileMenuOpen((current) => !current)}
-            type="button"
-          >
-            <ActiveIcon size={16} className="text-frenchBlue" />
-            <span>{t(activeCategory.labelKey, activeCategory.label)}</span>
-            {isMobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
-          </button>
+    <>
+      <aside className="cahier-sidebar">
+        <div className="cahier-sidebar-brand">
+          <Brand />
+          <span className="cahier-rail-brand" aria-hidden="true">FD</span>
+          <span className="eyebrow cahier-brand-caption">{t("learningHub", "Learning Hub")}</span>
         </div>
-
-        <nav
-          className={`grid max-w-full gap-1.5 border-t border-line pt-2 md:mt-5 md:flex-1 md:content-start md:border-t-0 md:pt-0 ${
-            isMobileMenuOpen ? "" : "hidden md:grid"
-          }`}
-        >
-          {Object.entries(categories).map(([key, item]) => {
-            const Icon = item.icon;
-            const isActive = activeSection === key;
-            return (
-              <button
-                className={`focus-ring flex min-h-10 cursor-pointer items-center gap-2 rounded-xl px-3 text-left text-sm font-medium transition ${
-                  isActive
-                    ? "bg-frenchBlue text-white shadow-soft"
-                    : "text-inkSecondary hover:bg-sky hover:text-frenchBlue"
-                }`}
-                key={key}
-                onClick={() => {
-                  setActiveSection(key);
-                  setIsMobileMenuOpen(false);
-                }}
-                type="button"
-              >
-                <Icon size={17} />
-                <span className="whitespace-nowrap">{t(item.labelKey, item.label)}</span>
-              </button>
-            );
-          })}
+        <nav className="cahier-desktop-nav" aria-label={t("mainNavigation", "Main navigation")}>
+          {groups.map((group) => (
+            <div className="cahier-nav-group" key={group.label}>
+              <span className="cahier-nav-group-title" lang="fr" aria-hidden="true">{group.label}</span>
+              {group.keys.map((key) => navItem(key))}
+            </div>
+          ))}
         </nav>
-      </div>
-    </aside>
+        <div className="cahier-sidebar-account">{accountControls}</div>
+        <button className="cahier-rail-more icon-action" onClick={() => setPanel("more")} aria-label={t("more", "More")} type="button"><Menu size={20} /></button>
+      </aside>
+
+      <nav className="cahier-mobile-nav" aria-label={t("mainNavigation", "Main navigation")}>
+        {[["today", CalendarDays], ["review", ListChecks], ["quiz", CircleHelp]].map(([key, Icon]) => (
+          <button aria-current={activeSection === key ? "page" : undefined} key={key} onClick={() => navigate(key)} type="button">
+            <Icon size={20} aria-hidden="true" /><span>{t(categories[key].labelKey, categories[key].label)}</span>
+          </button>
+        ))}
+        <button aria-expanded={panel === "notes"} aria-haspopup="dialog" aria-current={notesActive ? "page" : undefined} onClick={() => setPanel("notes")} type="button"><BookOpen size={20} aria-hidden="true" /><span>{t("navNotes", "Notes")}</span></button>
+        <button aria-expanded={panel === "more"} aria-haspopup="dialog" aria-current={moreActive ? "page" : undefined} onClick={() => setPanel("more")} type="button"><Menu size={20} aria-hidden="true" /><span>{t("more", "More")}</span></button>
+      </nav>
+
+      {panel && (
+        <dialog className="cahier-nav-sheet" ref={dialogRef} aria-labelledby="navigation-sheet-title" onCancel={() => setPanel(null)} onClick={(event) => { if (event.target === event.currentTarget) setPanel(null); }}>
+          <div className="cahier-sheet-heading">
+            <h2 id="navigation-sheet-title" className="editorial-title">{panel === "notes" ? t("navNotes", "Notes") : t("more", "More")}</h2>
+            <button className="icon-action" aria-label={t("close", "Close")} onClick={() => setPanel(null)} type="button"><X size={20} /></button>
+          </div>
+          <nav aria-label={panel === "notes" ? t("navNotes", "Notes") : t("more", "More")}>
+            {(panel === "notes" ? groups[1].keys : groups[2].keys).map((key) => navItem(key, true))}
+          </nav>
+          {panel === "more" && accountControls}
+        </dialog>
+      )}
+    </>
   );
 }

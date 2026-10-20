@@ -1352,6 +1352,20 @@ async function openDraft(page, french = "bonjour") {
 
 const aiRequests = (backend) => backend.ledger.filter((entry) => entry.resource === "ai");
 
+test("mobile More keeps the real account settings and sign-out reachable", async ({ page, context, baseURL }) => {
+  await setupAccounts({ page, context, baseURL });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: /Bonjour, Account A/ })).toBeVisible();
+  await go(page, "More");
+  await page.getByRole("dialog", { name: "More", exact: true }).getByRole("button", { name: "Account A", exact: true }).click();
+  await expect(page.getByLabel("Display name", { exact: true })).toHaveValue("Account A");
+  await go(page, "More");
+  await page.getByRole("dialog", { name: "More", exact: true }).getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Sign in to your workspace.", exact: true })).toBeVisible();
+  await expect(page.locator(".cahier-workspace")).toHaveCount(0);
+});
+
 test("an obsolete word's uncancellable response cannot replace a new request or its loading state", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
   const first = backend.hold(`${ids.A}:ai:POST`);
@@ -2047,7 +2061,7 @@ test("resuming an import on the next local day earns its Add Note goal without p
   await page.clock.setSystemTime(nextDay);
   await page.evaluate(() => globalThis.dispatchEvent(new Event("pageshow")));
   await go(page, "Today");
-  await expect(page.getByText("0/3", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status", { name: "0 of 3 tasks done", exact: true })).toBeVisible();
   await go(page, "Import");
   await go(page, "Resume unprocessed rows");
   await expectBatch(page, 3, 0, 0, 0);

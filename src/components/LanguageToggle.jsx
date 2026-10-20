@@ -1,15 +1,12 @@
 import { useLanguage } from "../i18n/LanguageContext";
 
 export function LanguageToggle() {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   return (
-    <button
-      className="secondary-action h-10 px-3"
-      onClick={() => setLanguage(language === "en" ? "zh" : "en")}
-      type="button"
-    >
-      {language === "en" ? "简体中文" : "English"}
-    </button>
+    <div className="language-segment" role="group" aria-label={t("interfaceLanguage", "Interface language")}>
+      <button aria-label="English" aria-pressed={language === "en"} lang="en" onClick={() => setLanguage("en")} type="button">EN</button>
+      <button aria-label="简体中文" aria-pressed={language === "zh"} lang="zh-CN" onClick={() => setLanguage("zh")} type="button">中文</button>
+    </div>
   );
 }
