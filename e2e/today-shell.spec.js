@@ -10,6 +10,7 @@ test("Today task rows navigate without completing goals, then reflect real Study
   await expect(page.getByRole("heading", { name: "Flashcards", exact: true })).toBeVisible();
   while (await page.getByRole("button", { name: "Next", exact: true }).count()) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(page.locator(".study-moving.is-leaving")).toHaveCount(0);
   }
   await page.getByRole("button", { name: "Finish study", exact: true }).click();
   await page.getByRole("button", { name: "Today", exact: true }).click();

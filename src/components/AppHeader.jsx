@@ -25,7 +25,7 @@ export function AppHeader({ activeSection, openNewItem, pageTitle, learningDay }
         </div>
       </div>
       <div className="editorial-rule" />
-      {activeSection !== "today" && <h2 className="cahier-page-title editorial-title">{pageTitle}</h2>}
+      {activeSection !== "today" && activeSection !== "review" && <h2 className="cahier-page-title editorial-title">{pageTitle}</h2>}
     </header>
   );
 }
