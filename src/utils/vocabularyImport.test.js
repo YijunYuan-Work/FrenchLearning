@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createEmptyAdjectiveForms, createEmptyConjugation } from "../data/wordFields.js";
 import { importVocabularyRecords } from "./vocabularyImport.js";
+import { summarizeImportResults } from "./importResults.js";
 
 function record(overrides = {}) {
   return {
@@ -90,5 +91,36 @@ test("vocabulary import respects cancellation between rows", async () => {
   });
 
   assert.equal(saves, 1);
-  assert.equal(results.length, 1);
+  assert.equal(results.length, 2);
+  assert.deepEqual(results.map((result) => result.status), ["added", "unprocessed"]);
+});
+
+test("cancellation waits for the active save and reports the untouched remainder", async () => {
+  let release;
+  let cancelled = false;
+  const saved = [];
+  const completed = [];
+  const run = importVocabularyRecords({
+    records: [record(), record({ french: "salut" }), record({ french: "merci" })], existingItems: [],
+    saveNote: async (note) => {
+      saved.push(note);
+      await new Promise((resolve) => { release = resolve; });
+      return { id: "saved", ...note };
+    },
+    shouldCancel: () => cancelled,
+    onResult: (result) => completed.push(result),
+  });
+  cancelled = true;
+  release();
+  const results = await run;
+  assert.equal(saved.length, 1);
+  assert.equal(completed.length, 1);
+  assert.deepEqual(summarizeImportResults(results), { added: 1, skipped: 0, failed: 0, unprocessed: 2 });
+  assert.equal(results[1].item.french, "salut");
+});
+
+test("cancel before processing leaves every row resumable and makes no save", async () => {
+  const results = await importVocabularyRecords({ records: [record()], existingItems: [],
+    shouldCancel: () => true, saveNote: () => assert.fail("cancelled batch must not save") });
+  assert.deepEqual(summarizeImportResults(results), { added: 0, skipped: 0, failed: 0, unprocessed: 1 });
 });

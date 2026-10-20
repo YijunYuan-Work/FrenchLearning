@@ -2,11 +2,8 @@ import { Download, FileText, Languages, Upload } from "lucide-react";
 import { useMemo } from "react";
 import { Metric } from "../components/Metric";
 import { useLanguage } from "../i18n/LanguageContext";
-import {
-  parsePhraseCsv,
-  parseVocabularyCsv,
-  VOCABULARY_CSV_HEADERS,
-} from "../utils/importParsers";
+import { VOCABULARY_CSV_HEADERS } from "../utils/importParsers";
+import { summarizeImportResults } from "../utils/importResults";
 
 const importModes = [
   { value: "vocabulary", labelKey: "categoryVocabulary", label: "Vocabulary" },
@@ -15,9 +12,11 @@ const importModes = [
 
 export function ImportView({
   importJob,
+  isDemo,
   onCancelImport,
   onStartImport,
-  onUpdateImportJob,
+  onSelectImportFile,
+  onChangeImportMode,
 }) {
   const { t } = useLanguage();
   const {
@@ -28,14 +27,11 @@ export function ImportView({
     isImporting,
     progress,
     results,
+    status,
   } = importJob;
 
   const summary = useMemo(
-    () => ({
-      added: results.filter((result) => result.status === "added").length,
-      skipped: results.filter((result) => result.status === "skipped").length,
-      failed: results.filter((result) => result.status === "failed").length,
-    }),
+    () => summarizeImportResults(results),
     [results]
   );
   const failedResults = useMemo(
@@ -43,7 +39,7 @@ export function ImportView({
     [results]
   );
   const attentionResults = useMemo(
-    () => results.filter((result) => result.status !== "added"),
+    () => results.filter((result) => ["failed", "skipped"].includes(result.status)),
     [results]
   );
   const isPhraseMode = importMode === "phrases";
@@ -56,68 +52,10 @@ export function ImportView({
         count: importItems.length,
       });
 
-  async function handleFileChange(event) {
+  function handleFileChange(event) {
     const file = event.target.files?.[0];
-    onUpdateImportJob({
-      error: "",
-      fileName: file?.name ?? "",
-      importItems: [],
-      results: [],
-    });
-
-    if (!file) return;
-    const lowerFileName = file.name.toLowerCase();
-    if (!lowerFileName.endsWith(".csv")) {
-      onUpdateImportJob({
-        error: t("importCsvOnly", "Please choose a .csv file."),
-      });
-      return;
-    }
-
-    try {
-      const text = await file.text();
-      const parsedItems = isPhraseMode
-        ? parsePhraseCsv(text)
-        : parseVocabularyCsv(text);
-      onUpdateImportJob({ importItems: parsedItems });
-      if (parsedItems.length === 0) {
-        onUpdateImportJob({
-          error: isPhraseMode
-            ? t("importNoPhrases", "No phrase rows were found in this CSV.")
-            : t("importNoWords", "No vocabulary rows were found in this CSV."),
-        });
-      }
-    } catch (fileError) {
-      onUpdateImportJob({
-        error:
-          fileError.code === "VOCABULARY_CSV_MISSING_HEADERS"
-            ? t(
-                "importMissingHeaders",
-                "Missing required CSV headers: {headers}",
-                { headers: fileError.missingHeaders.join(", ") }
-              )
-            : t("importReadFailed", "Could not read this CSV file."),
-      });
-    }
-  }
-
-  function retryFailed() {
-    const failedItems = failedResults.map((result) => result.item ?? result.word);
-    if (failedItems.length === 0) return;
-    onUpdateImportJob({ importItems: failedItems });
-    onStartImport(failedItems);
-  }
-
-  function changeImportMode(nextMode) {
-    if (isImporting || nextMode === importMode) return;
-    onUpdateImportJob({
-      error: "",
-      fileName: "",
-      importItems: [],
-      importMode: nextMode,
-      progress: { current: 0, total: 0 },
-      results: [],
-    });
+    event.target.value = "";
+    onSelectImportFile(file);
   }
 
   function downloadVocabularyTemplate() {
@@ -134,7 +72,7 @@ export function ImportView({
 
   return (
     <div className="min-w-0">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Metric
           label={
             isPhraseMode
@@ -146,6 +84,7 @@ export function ImportView({
         <Metric label={t("importAdded", "Added")} value={summary.added} tone="green" />
         <Metric label={t("importSkipped", "Skipped")} value={summary.skipped} tone="blue" />
         <Metric label={t("importFailed", "Failed")} value={summary.failed} tone="red" />
+        <Metric label={t("importUnprocessed", "Unprocessed")} value={summary.unprocessed} />
       </div>
 
       <section className="app-card mt-5 p-5">
@@ -187,7 +126,7 @@ export function ImportView({
                 }`}
                 disabled={isImporting}
                 key={mode.value}
-                onClick={() => changeImportMode(mode.value)}
+                onClick={() => { if (mode.value !== importMode) onChangeImportMode(mode.value); }}
                 type="button"
               >
                 {t(mode.labelKey, mode.label)}
@@ -225,6 +164,7 @@ export function ImportView({
               {t("importCsvFile", "CSV file")}
             </span>
             <input
+              key={importMode}
               accept={fileAccept}
               className="focus-ring rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
               disabled={isImporting}
@@ -236,7 +176,9 @@ export function ImportView({
             )}
           </label>
 
-          {importItems.length > 0 && (
+          {status === "reading" && <p role="status">{t("importReading", "Reading CSV...")}</p>}
+          {isDemo && <p className="text-sm text-slate-600">{t("demoImportDisabled", "Import is disabled in the public demo.")}</p>}
+          {status === "ready" && importItems.length > 0 && (
             <div className="rounded-xl bg-sky p-3 text-sm font-semibold text-frenchBlue">
               {readyCopy}
             </div>
@@ -296,8 +238,8 @@ export function ImportView({
                 ))}
                 {importItems.length > 5 && (
                   <p className="bg-sky/25 px-3 py-2 text-xs font-bold text-slate-500">
-                    {t("importPreviewMore", "Showing first 5 rows. {count} more will also be imported.", {
-                      count: importItems.length - 5,
+                    {t("importPreviewCount", "Showing the first 5 of {count} rows.", {
+                      count: importItems.length,
                     })}
                   </p>
                 )}
@@ -306,14 +248,15 @@ export function ImportView({
           )}
 
           {error && (
-            <div className="rounded-xl bg-blush p-3 text-sm font-bold text-frenchRed">
+            <div className="rounded-xl bg-blush p-3 text-sm font-bold text-frenchRed" role="alert">
               {error}
             </div>
           )}
 
           {isImporting && (
-            <div className="rounded-xl bg-sky p-3 text-sm font-bold text-frenchBlue">
-              {t("importProgress", "Importing {current} of {total}...", {
+            <div className="rounded-xl bg-sky p-3 text-sm font-bold text-frenchBlue" role="status">
+              {status === "cancelling" && <p>{t("importCancelling", "Cancelling after the current row finishes...")}</p>}
+              {t("importRunProgress", "Processed {current} of {total} rows in this run.", {
                 current: progress.current,
                 total: progress.total,
               })}
@@ -324,36 +267,55 @@ export function ImportView({
             {isImporting && (
               <button
                 className="secondary-action h-10"
+                disabled={status === "cancelling"}
                 onClick={onCancelImport}
                 type="button"
               >
                 {t("importCancel", "Cancel import")}
               </button>
             )}
-            <button
+            {!isImporting && summary.unprocessed > 0 && ["cancelled", "incomplete"].includes(status) && (
+              <button className="primary-action h-10" disabled={isDemo} onClick={() => onStartImport("remaining")} type="button">
+                {t("importResume", "Resume unprocessed rows")}
+              </button>
+            )}
+            {failedResults.length > 0 && (
+              <button className="secondary-action h-10" disabled={isDemo || isImporting} onClick={() => onStartImport("failed")} type="button">
+                {t("importRetryFailed", "Retry failed only")}
+              </button>
+            )}
+            {(status === "ready" || isImporting || importItems.length === 0) && <button
               className="primary-action h-10 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isImporting || importItems.length === 0}
+              disabled={isDemo || isImporting || status !== "ready" || importItems.length === 0}
               onClick={() => onStartImport()}
               type="button"
             >
               {isImporting
                 ? t("importWorking", "Importing...")
                 : t("importStart", "Start import")}
-            </button>
+            </button>}
           </div>
         </div>
       </section>
 
-      {results.length > 0 && (
+      {results.length > 0 && !["ready", "reading"].includes(status) && (
         <section className="app-card mt-5 p-4">
-          <h3 className="font-black">
+          <h3 className="mb-3 font-black">{t("importResults", "Import results")}</h3>
+          {!isImporting && <div className="mb-3 text-sm font-bold" role="status">
+            <p>{status === "cancelled" ? t("importCancelled", "Import cancelled.")
+              : status === "incomplete" ? t("importIncomplete", "Import incomplete.")
+                : summary.failed > 0 ? t("importCompletedFailures", "Import complete with failures.")
+                  : t("importCompleted", "Import complete.")}</p>
+            <p>{t("importBatchSummary", "Batch: {total}. Added: {added}. Skipped: {skipped}. Failed: {failed}. Unprocessed: {unprocessed}.", { total: importItems.length, ...summary })}</p>
+          </div>}
+          {attentionResults.length > 0 && <h4 className="font-bold">
             {t("importNeedsAttention", "Items not imported")}
-          </h3>
-          {attentionResults.length === 0 ? (
+          </h4>}
+          {summary.added === importItems.length && status === "completed" ? (
             <p className="mt-3 rounded-xl bg-mint p-3 text-sm font-bold text-sage">
               {t("importAllImported", "All parsed items were imported.")}
             </p>
-          ) : (
+          ) : attentionResults.length > 0 && (
             <div className="mt-3 grid gap-2">
               {attentionResults.map((result, index) => (
                 <div
@@ -373,19 +335,10 @@ export function ImportView({
                     </span>
                   </div>
                   <p className="mt-1 text-slate-600">{result.reason}</p>
+                  {result.item?.sourceRow && <p className="mt-1 text-xs text-slate-500">{t("importSourceRow", "Source row {row}", { row: result.item.sourceRow })}</p>}
                 </div>
               ))}
             </div>
-          )}
-          {failedResults.length > 0 && (
-            <button
-              className="secondary-action mt-3 h-10"
-              disabled={isImporting}
-              onClick={retryFailed}
-              type="button"
-            >
-              {t("importRetryFailed", "Retry failed only")}
-            </button>
           )}
         </section>
       )}

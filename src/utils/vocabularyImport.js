@@ -2,6 +2,7 @@ import {
   createEmptyAdjectiveForms,
   createEmptyConjugation,
 } from "../data/wordFields.js";
+import { includeUnprocessedResults } from "./importResults.js";
 
 const defaultReasons = {
   added: "Added successfully.",
@@ -20,10 +21,15 @@ export async function importVocabularyRecords({
   saveNote,
   onSaved,
   onProgress,
+  onResult,
   shouldCancel,
   reasonFor = (code) => defaultReasons[code] ?? "Invalid row.",
 }) {
   const results = [];
+  function recordResult(result) {
+    results.push(result);
+    onResult?.(result, results.length - 1);
+  }
   const seenInFile = new Set();
   const knownWords = new Set(
     existingItems
@@ -39,7 +45,7 @@ export async function importVocabularyRecords({
     onProgress?.(index + 1, records.length);
 
     if (record.validationIssues?.length > 0) {
-      results.push({
+      recordResult({
         word: word || `Row ${record.sourceRow ?? index + 2}`,
         item: record,
         status: "failed",
@@ -51,7 +57,7 @@ export async function importVocabularyRecords({
     }
 
     if (seenInFile.has(normalizedWord)) {
-      results.push({
+      recordResult({
         word,
         item: record,
         status: "skipped",
@@ -62,7 +68,7 @@ export async function importVocabularyRecords({
     seenInFile.add(normalizedWord);
 
     if (knownWords.has(normalizedWord)) {
-      results.push({
+      recordResult({
         word,
         item: record,
         status: "skipped",
@@ -97,14 +103,14 @@ export async function importVocabularyRecords({
       const savedItem = await saveNote(nextItem);
       knownWords.add(savedItem.french.trim().toLocaleLowerCase("fr"));
       onSaved?.(savedItem);
-      results.push({
+      recordResult({
         word,
         item: record,
         status: "added",
         reason: reasonFor("added"),
       });
     } catch (error) {
-      results.push({
+      recordResult({
         word,
         item: record,
         status: "failed",
@@ -113,5 +119,5 @@ export async function importVocabularyRecords({
     }
   }
 
-  return results;
+  return includeUnprocessedResults(records, results);
 }
