@@ -1,4 +1,6 @@
 export const zhCN = {
+  close: "关闭",
+  savingNote: "正在保存笔记……",
   deletingNotes: "正在删除笔记……",
   deleteNotesResult: "已删除：{deleted}。失败：{failed}。",
   deleteNotesRetryCopy: "删除失败的笔记仍保持选中，请检查网络后重试。",

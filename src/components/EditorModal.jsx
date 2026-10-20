@@ -10,6 +10,7 @@ import {
 } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
 import { autoFillFrenchVocabulary } from "../services/vocabularyAutofill";
+import { mergeVocabularyAutofill } from "../utils/editorAutofill";
 import { FrenchCharacterKeyboard } from "./FrenchCharacterKeyboard";
 import { RichTextEditor } from "./RichTextEditor";
 
@@ -21,6 +22,7 @@ export function EditorModal({
   error,
   isDemo = false,
   isCurrentAccount,
+  isSaving = false,
   userId,
   form,
   onChange,
@@ -48,17 +50,38 @@ export function EditorModal({
   const onCloseRef = useRef(onClose);
   const previousFocusRef = useRef(null);
   const frenchInputRef = useRef(null);
-  const autoFillAbortRef = useRef(null);
+  const autoFillRequestRef = useRef(null);
+  const contextRef = useRef({ form, language });
+  contextRef.current = { form, language };
   const [autoFillState, setAutoFillState] = useState({
     status: "idle",
     message: "",
   });
 
   useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
+    onCloseRef.current = closeEditor;
+  });
 
-  useEffect(() => () => autoFillAbortRef.current?.abort(), []);
+  useEffect(() => {
+    setAutoFillState({ status: "idle", message: "" });
+    return () => {
+      const request = autoFillRequestRef.current;
+      autoFillRequestRef.current = null;
+      request?.controller.abort();
+    };
+  }, [language, userId]);
+
+  function invalidateAutoFill() {
+    const request = autoFillRequestRef.current;
+    autoFillRequestRef.current = null;
+    request?.controller.abort();
+    setAutoFillState({ status: "idle", message: "" });
+  }
+
+  function closeEditor() {
+    invalidateAutoFill();
+    onClose();
+  }
 
   useEffect(() => {
     const modal = modalRef.current;
@@ -106,13 +129,10 @@ export function EditorModal({
   }, []);
 
   function updateField(field, value) {
+    if (isSaving) return;
     onChange?.();
-    if (field === "french") {
-      setForm((current) => ({ ...current, french: value }));
-      setAutoFillState({ status: "idle", message: "" });
-      return;
-    }
-
+    if (field === "french" || field === "category") invalidateAutoFill();
+    else autoFillRequestRef.current?.editedFields.add(field);
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -132,6 +152,9 @@ export function EditorModal({
   }
 
   function updateConjugation(pronoun, value) {
+    if (isSaving) return;
+    onChange?.();
+    autoFillRequestRef.current?.editedFields.add("conjugation");
     setForm((current) => ({
       ...current,
       conjugation: {
@@ -143,6 +166,9 @@ export function EditorModal({
   }
 
   function updateAdjectiveForm(field, value) {
+    if (isSaving) return;
+    onChange?.();
+    autoFillRequestRef.current?.editedFields.add("adjectiveForms");
     setForm((current) => ({
       ...current,
       adjectiveForms: {
@@ -154,10 +180,13 @@ export function EditorModal({
   }
 
   async function handleAutoFill() {
-    if (isDemo || !isCurrentAccount()) return;
+    if (isDemo || isSaving || autoFillRequestRef.current || form.category !== "vocabulary" || !isCurrentAccount()) return;
     const controller = new AbortController();
-    autoFillAbortRef.current?.abort();
-    autoFillAbortRef.current = controller;
+    const request = { controller, french: form.french, category: form.category, language, editedFields: new Set() };
+    autoFillRequestRef.current = request;
+    const isActive = () => autoFillRequestRef.current === request && !controller.signal.aborted &&
+      isCurrentAccount() && contextRef.current.language === request.language &&
+      contextRef.current.form.french === request.french && contextRef.current.form.category === request.category;
     setAutoFillState({
       status: "loading",
       message: t("autoFillLoading", "Asking AI to build the vocabulary note..."),
@@ -167,21 +196,10 @@ export function EditorModal({
       const result = await autoFillFrenchVocabulary(form.french, language, {
         userId, isCurrentAccount, signal: controller.signal,
       });
-      if (!isCurrentAccount() || controller.signal.aborted) return;
-      setForm((current) => ({
-        ...current,
-        category: result.category,
-        french: result.word,
-        partOfSpeech: result.partOfSpeech,
-        ipa: result.ipa,
-        gender: result.gender,
-        conjugation: result.conjugation ?? createEmptyConjugation(),
-        adjectiveForms: result.adjectiveForms ?? createEmptyAdjectiveForms(),
-        english: result.english,
-        example: result.example,
-        notes: result.notes,
-        tags: (result.tags ?? []).join(", "),
-      }));
+      if (!isActive()) return;
+      setForm((current) => !controller.signal.aborted && isCurrentAccount() && contextRef.current.language === request.language &&
+        current.french === request.french && current.category === request.category
+        ? mergeVocabularyAutofill(current, result, request.editedFields) : current);
       setAutoFillState({
         status: "success",
         message: t(
@@ -190,12 +208,19 @@ export function EditorModal({
         ),
       });
     } catch (error) {
-      if (!isCurrentAccount() || controller.signal.aborted) return;
+      if (!isActive()) return;
       setAutoFillState({
         status: "error",
         message: error.message,
       });
+    } finally {
+      if (autoFillRequestRef.current === request) autoFillRequestRef.current = null;
     }
+  }
+
+  function handleSubmit(event) {
+    invalidateAutoFill();
+    onSave(event);
   }
 
   return (
@@ -204,7 +229,8 @@ export function EditorModal({
         aria-labelledby="editor-modal-title"
         aria-modal="true"
         className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-xl bg-paper p-5 shadow-lift"
-        onSubmit={onSave}
+        aria-busy={isSaving}
+        onSubmit={handleSubmit}
         ref={modalRef}
         role="dialog"
       >
@@ -213,14 +239,14 @@ export function EditorModal({
           <button
             aria-label={t("closeEditor", "Close editor")}
             className="focus-ring grid size-9 place-items-center rounded-lg border border-line bg-white"
-            onClick={onClose}
+            onClick={closeEditor}
             type="button"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <fieldset className="grid min-w-0 gap-4 md:grid-cols-2" disabled={isSaving} inert={isSaving}>
           {error && (
             <p className="rounded-xl bg-blush px-3 py-2 text-sm font-bold text-frenchRed md:col-span-2">
               {error}
@@ -263,7 +289,7 @@ export function EditorModal({
                 <button
                   className="focus-ring inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-frenchBlue/25 bg-white px-3 text-xs font-bold text-frenchBlue hover:bg-sky/60 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={
-                    isDemo || autoFillState.status === "loading" || !form.french.trim()
+                    isDemo || isSaving || autoFillState.status === "loading" || !form.french.trim()
                   }
                   onClick={handleAutoFill}
                   type="button"
@@ -477,14 +503,15 @@ export function EditorModal({
               </label>
             )
           )}
-        </div>
+        </fieldset>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button className="secondary-action h-10" onClick={onClose} type="button">
-            {t("cancel", "Cancel")}
+          <button className="secondary-action h-10" onClick={closeEditor} type="button">
+            {isSaving ? t("close", "Close") : t("cancel", "Cancel")}
           </button>
-          <button className="primary-action h-10" type="submit">
-            {t("saveNote", "Save note")}
+          <button className="primary-action h-10" disabled={isSaving} type="submit">
+            {isSaving && <Loader2 className="animate-spin" size={16} />}
+            {isSaving ? t("savingNote", "Saving note...") : t("saveNote", "Save note")}
           </button>
         </div>
       </form>
