@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans:wght@400&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>
+body{margin:0;background:#E4E0D8;font-family:'Instrument Sans',system-ui,sans-serif;color:#2A241C;-webkit-font-smoothing:antialiased}
+a{color:#3F6670;text-decoration:underline;text-underline-offset:3px}
+a:hover{color:#8A5F32}
+button,input{font:inherit}
+code{font-family:'JetBrains Mono',monospace;font-size:12px}
+input::placeholder{color:#958B7A;font-style:italic}
+input:focus{outline:none}
+@keyframes fl-spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+
+<section style="padding:56px 56px 8px;display:flex;flex-direction:column;gap:18px;width:1710px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:20px">
+    <span style="font:500 12px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F6656;white-space:nowrap">French Desk · UI 2.0 · Stage 3 · Le Cahier · Bois</span>
+    <nav style="display:flex;gap:6px;font-size:14px;flex-wrap:wrap;justify-content:flex-end">
+      <a href="Stage 3 - V Vocabulary.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">V. Vocabulary</a>
+      <a href="Stage 3 - VI Notes.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">VI. Phrases · Grammar · Pronunciation</a>
+      <a href="Stage 3 - VII Editor.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">VII. Editor</a>
+      <a href="Stage 3 - VIII Import Settings.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">VIII. Import · Settings</a>
+      <a href="Stage 3 - IX Components.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;background:#2A241C;color:#EFE9DF;text-decoration:none">IX. Components &amp; handoff</a>
+    </nav>
+  </div>
+  <div style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #2A241C;padding-bottom:16px">
+    <h1 style="margin:0;font:400 64px/1 'Newsreader',serif;letter-spacing:-.02em">Chapitre <span style="font-style:italic">IX</span> — Components &amp; handoff</h1>
+    <span style="font:italic 400 22px/1 'Newsreader',serif;color:#6F6656">extends <a href="Stage 2 - IV System.dc.html">Stage 2 · IV System</a></span>
+  </div>
+</section>
+
+<section style="padding:32px 56px 0;width:1710px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px">
+  <div style="grid-column:1 / -1;display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">i.</span><span style="font:400 30px/1 'Newsreader',serif">New tokens</span><span style="font-size:14px;color:#6F6656">Only three additions to the Stage 2 palette.</span></div>
+  <div style="background:#F8F5EF;border-radius:14px;padding:22px;display:flex;gap:16px;align-items:center"><span style="width:64px;height:64px;border-radius:6px;background:#A0402F;flex-shrink:0"></span><div style="display:flex;flex-direction:column;gap:4px"><b style="font-size:15px">danger <code>#A0402F</code></b><span style="font-size:13px;line-height:1.5;color:#4E4639">Destructive actions, failed results, field errors. 5.9:1 on paper. Never decorative.</span></div></div>
+  <div style="background:#F8F5EF;border-radius:14px;padding:22px;display:flex;gap:16px;align-items:center"><span style="width:64px;height:64px;border-radius:6px;background:#F2E1DA;box-shadow:inset 0 0 0 1px #E3C9BE;flex-shrink:0"></span><div style="display:flex;flex-direction:column;gap:4px"><b style="font-size:15px">danger-wash <code>#F2E1DA</code></b><span style="font-size:13px;line-height:1.5;color:#4E4639">Hover behind delete icons. Errors use the Stage 2 alert surface <code>#F2E7D9</code>.</span></div></div>
+  <div style="background:#F8F5EF;border-radius:14px;padding:22px;display:flex;gap:16px;align-items:center"><span style="width:64px;height:64px;border-radius:6px;background:#EDF0E6;box-shadow:inset 0 0 0 1px #D6DCC8;flex-shrink:0"></span><div style="display:flex;flex-direction:column;gap:4px"><b style="font-size:15px">ai-wash <code>#EDF0E6</code></b><span style="font-size:13px;line-height:1.5;color:#4E4639">Flash on auto-filled fields, fades to sheet over 600ms.</span></div></div>
+</section>
+
+<section style="padding:40px 56px 0;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">ii.</span><span style="font:400 30px/1 'Newsreader',serif">Library components</span><span style="font-size:14px;color:#6F6656">Hover, focus and press are live</span></div>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:16px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">SearchLine · TagSelect · SortSegment</span>
+      <label style="display:flex;align-items:center;gap:10px;border-bottom:1px solid #2A241C;padding:6px 0 8px"><i class="icon-search" style="font-size:18px;color:#6F6656"></i><input aria-label="Search" placeholder="Search words, meanings, tags…" style="flex:1;min-width:0;border:0;background:transparent;font:400 20px/1.3 'Newsreader',serif;color:#2A241C;padding:0"></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <span style="height:40px;border-radius:6px;background:#F8F5EF;box-shadow:inset 0 0 0 1px #CDBFA9;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:14px">All tags<i class="icon-chevron-down" style="color:#6F6656"></i></span>
+        <span style="display:grid;grid-template-columns:1fr 1fr;height:40px;padding:3px;box-sizing:border-box;border-radius:6px;box-shadow:inset 0 0 0 1px #CDBFA9;font-size:13px;font-weight:500"><span style="border-radius:4px;background:#2A241C;color:#EFE9DF;display:grid;place-items:center">A – Z</span><span style="display:grid;place-items:center">Newest</span></span>
+      </div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639">Search is a writing line (Newsreader 20). Select keeps the native <code>&lt;select&gt;</code> with custom chevron. Segments: 40px, radius 6 outer / 4 inner.</p>
+    </div>
+
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:16px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Tabs (filter) · StatLedger</span>
+      <div style="display:flex;gap:20px;border-bottom:1px solid #DDD3C3;font-size:14px;white-space:nowrap;overflow:hidden"><span style="height:40px;display:flex;align-items:center;gap:5px;font-weight:600;box-shadow:inset 0 -2px 0 #2A241C">All<i style="font:italic 400 14px 'Newsreader';color:#8A5F32">14</i></span><span style="height:40px;display:flex;align-items:center;gap:5px;color:#4E4639">Noun<i style="font:italic 400 14px 'Newsreader';color:#958B7A">6</i></span><span style="height:40px;display:flex;align-items:center;gap:5px;color:#4E4639">Verb<i style="font:italic 400 14px 'Newsreader';color:#958B7A">2</i></span><span style="height:40px;display:flex;align-items:center;gap:5px;color:#4E4639">Adjective<i style="font:italic 400 14px 'Newsreader';color:#958B7A">2</i></span></div>
+      <dl style="margin:0;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #DDD3C3;border-bottom:1px solid #DDD3C3"><div style="padding:10px 0;border-right:1px solid #DDD3C3;display:flex;flex-direction:column-reverse;gap:4px"><dt style="font-size:11px;color:#6F6656">Words</dt><dd style="margin:0;font:400 28px/1 'Newsreader'">214</dd></div><div style="padding:10px 0 10px 12px;border-right:1px solid #DDD3C3;display:flex;flex-direction:column-reverse;gap:4px"><dt style="font-size:11px;color:#6F6656">Practice</dt><dd style="margin:0;font:400 28px/1 'Newsreader';color:#8A5F32">38</dd></div><div style="padding:10px 0 10px 12px;border-right:1px solid #DDD3C3;display:flex;flex-direction:column-reverse;gap:4px"><dt style="font-size:11px;color:#6F6656">Tags</dt><dd style="margin:0;font:400 28px/1 'Newsreader';color:#3F6670">17</dd></div><div style="padding:10px 0 10px 12px;display:flex;flex-direction:column-reverse;gap:4px"><dt style="font-size:11px;color:#6F6656">Conf.</dt><dd style="margin:0;font:400 28px/1 'Newsreader';color:#55703F">62%</dd></div></dl>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639">Replaces the four <code>Metric</code> cards. Tabs underline 2px ink; counts italic. On mobile tabs scroll horizontally with snap.</p>
+    </div>
+
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:16px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Checkbox · IconButton · Tag · Meter</span>
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+        <span style="width:18px;height:18px;border-radius:3px;box-shadow:inset 0 0 0 1.5px #958B7A"></span>
+        <span style="width:18px;height:18px;border-radius:3px;background:#2A241C;color:#EFE9DF;display:grid;place-items:center"><i class="icon-check" style="font-size:12px"></i></span>
+        <span style="width:18px;height:18px;border-radius:3px;background:#2A241C;color:#EFE9DF;display:grid;place-items:center"><i class="icon-minus" style="font-size:12px"></i></span>
+        <button aria-label="Edit" style="width:36px;height:36px;border:0;border-radius:4px;background:transparent;color:#4E4639;cursor:pointer;display:grid;place-items:center" style-hover="background:#E8E1D4;color:#2A241C" style-focus="outline:2px solid #3F6670"><i class="icon-pencil" style="font-size:16px"></i></button>
+        <button aria-label="Delete" style="width:36px;height:36px;border:0;border-radius:4px;background:transparent;color:#4E4639;cursor:pointer;display:grid;place-items:center" style-hover="background:#F2E1DA;color:#A0402F" style-focus="outline:2px solid #3F6670"><i class="icon-trash-2" style="font-size:16px"></i></button>
+        <span style="font:italic 400 16px 'Newsreader',serif;color:#3F6670">#daily life</span>
+        <span style="display:flex;gap:2px"><span style="width:16px;height:4px;background:#55703F"></span><span style="width:16px;height:4px;background:#55703F"></span><span style="width:16px;height:4px;background:#DDD3C3"></span><span style="width:16px;height:4px;background:#DDD3C3"></span></span><span style="font-size:12px">Learning</span>
+      </div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639">Checkbox: 18px visual, 36px hit target (44 on touch). Tags are text, not pills; clicking a tag sets the tag filter. Meter is the Stage 2 confidence meter.</p>
+    </div>
+
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:16px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Pagination · Range</span>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:6px;height:40px;padding:0 10px;font-size:14px;font-weight:500;opacity:.35"><i class="icon-chevron-left"></i>Previous</span><span style="font:italic 400 18px 'Newsreader',serif;color:#4E4639">page <span style="font-style:normal;color:#2A241C">i</span> of ii</span><span style="display:flex;align-items:center;gap:6px;height:40px;padding:0 10px;font-size:14px;font-weight:500">Next<i class="icon-chevron-right"></i></span></div>
+      <span style="font:italic 400 16px 'Newsreader',serif;color:#4E4639">Showing 1–10 of 14 words</span>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639">Same Previous/Next behaviour. The duplicate top paginator becomes this range line; controls only at the bottom. Roman page numbers ≤ x, Arabic above.</p>
+    </div>
+
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:16px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">SelectionBar</span>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:8px;background:#2A241C;color:#EFE9DF"><span style="font:400 22px/1 'Newsreader'">3</span><span style="font-size:13px;color:#DDD3C3">selected</span><span style="flex:1"></span><span style="font-size:12px;padding:0 8px">Select page</span><span style="font-size:12px;padding:0 8px">Clear</span><span style="height:34px;padding:0 12px;border-radius:4px;background:#A0402F;color:#FCFAF6;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i class="icon-trash-2"></i>Delete selected</span></div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639">Floats 20px above the page bottom, enters y 24→0 + fade (260ms) at ≥1 selected. Mobile: header swaps to "n selected" with Cancel / Select page, delete pinned at bottom.</p>
+    </div>
+
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">ConfirmDialog</span>
+      <div style="background:#FCFAF6;border-radius:10px;box-shadow:0 20px 40px -20px rgba(42,36,28,.45);padding:20px;display:flex;flex-direction:column;gap:10px"><span style="font:italic 400 14px 'Newsreader';color:#A0402F">Supprimer</span><span style="font:400 24px/1.1 'Newsreader'">Delete 3 notes?</span><div style="height:3px;border-top:2px solid #2A241C;border-bottom:1px solid #2A241C"></div><span style="font:italic 400 15px 'Newsreader';color:#433C31">le bureau · heureux · souvent</span><div style="display:flex;justify-content:flex-end;gap:6px"><span style="height:36px;padding:0 14px;border-radius:4px;box-shadow:inset 0 0 0 1px #2A241C;display:flex;align-items:center;font-size:13px">Cancel</span><span style="height:36px;padding:0 14px;border-radius:4px;background:#A0402F;color:#FCFAF6;display:flex;align-items:center;font-size:13px;font-weight:600">Delete 3 notes</span></div></div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639"><code>role="alertdialog"</code>, initial focus on Cancel, Esc cancels. Also used for "Reload saved progress?".</p>
+    </div>
+  </div>
+</section>
+
+<section style="padding:40px 56px 0;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">iii.</span><span style="font:400 30px/1 'Newsreader',serif">Form fields &amp; feedback</span></div>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px 16px;align-items:center">
+      <span style="grid-column:1 / -1;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Field · 44px · radius 6</span>
+      <code style="color:#6F6656">default</code><span style="height:44px;border-radius:6px;background:#F8F5EF;box-shadow:inset 0 0 0 1px #CDBFA9"></span>
+      <code style="color:#6F6656">focus</code><span style="height:44px;border-radius:6px;background:#F8F5EF;box-shadow:inset 0 0 0 2px #3F6670;display:flex;align-items:center;padding:0 12px;font-size:15px">bakery</span>
+      <code style="color:#6F6656">error</code><div style="display:flex;flex-direction:column;gap:4px"><span style="height:44px;border-radius:6px;background:#F8F5EF;box-shadow:inset 0 0 0 1px #A0402F"></span><span style="font-size:12px;color:#A0402F;display:flex;gap:4px;align-items:center"><i class="icon-circle-alert"></i>Required.</span></div>
+      <code style="color:#6F6656">read-only</code><span style="height:44px;border-radius:6px;background:#E8E1D4;display:flex;align-items:center;gap:6px;padding:0 12px;font-size:15px;color:#4E4639"><i class="icon-lock" style="font-size:13px"></i>marie.dupont</span>
+      <code style="color:#6F6656">ai-filled</code><span style="height:44px;border-radius:6px;background:#EDF0E6;box-shadow:inset 0 0 0 1px #CDBFA9;display:flex;align-items:center;padding:0 12px;font-size:15px">warm, welcoming</span>
+    </div>
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Headword input · Stepper · Accent keys</span>
+      <span style="font:400 34px/1.2 'Newsreader',serif;border-bottom:1px solid #2A241C;padding-bottom:6px">chaleureux</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap"><span style="width:30px;height:30px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 17px 'Newsreader'">é</span><span style="width:30px;height:30px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 17px 'Newsreader'">è</span><span style="width:30px;height:30px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 17px 'Newsreader'">ç</span><span style="width:30px;height:30px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #3F6670;color:#3F6670;display:grid;place-items:center;font:400 17px 'Newsreader'">œ</span><span style="width:30px;height:30px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 17px 'Newsreader'">«</span></div>
+      <div style="display:grid;grid-template-columns:40px 64px 40px;height:44px;width:max-content;border-radius:6px;box-shadow:inset 0 0 0 1px #CDBFA9;background:#F8F5EF"><span style="display:grid;place-items:center"><i class="icon-minus"></i></span><span style="display:grid;place-items:center;font:400 22px 'Newsreader';border-left:1px solid #DDD3C3;border-right:1px solid #DDD3C3">50</span><span style="display:grid;place-items:center"><i class="icon-plus"></i></span></div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639">Accent keys keep <code>FrenchCharacterKeyboard</code> insert-at-caret logic; restyled as 30px keys (36 on touch, single scrolling row).</p>
+    </div>
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Feedback family</span>
+      <div style="display:flex;gap:8px;align-items:center;font-size:14px;color:#55703F"><i class="icon-check"></i>Saved.</div>
+      <div style="display:flex;gap:8px;align-items:center;font-size:14px;color:#3F6670"><i class="icon-loader-circle" style="animation:fl-spin 900ms linear infinite"></i>Asking AI to build the vocabulary note…</div>
+      <div style="display:flex;gap:8px;align-items:center;font-size:14px;color:#4E4639"><i class="icon-feather"></i>Saving note…</div>
+      <div role="alert" style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:6px;background:#F2E7D9;box-shadow:inset 0 0 0 1px #DCC6A8;font-size:14px;line-height:1.5"><i class="icon-cloud-off" style="color:#A0402F;margin-top:2px"></i><span style="flex:1">The note could not be saved.</span><span style="height:30px;padding:0 10px;border-radius:4px;box-shadow:inset 0 0 0 1px #2A241C;display:flex;align-items:center;font-size:12px;font-weight:500">Retry</span></div>
+      <div style="align-self:flex-start;display:flex;gap:10px;align-items:center;padding:10px 16px;border-radius:6px;background:#2A241C;color:#EFE9DF;font-size:14px"><i class="icon-check" style="color:#C9D6B9"></i>Note saved.</div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639">Inline status line → alert surface (only errors get a box) → toast (bottom-centre, 2.6s, only after a modal closes). Spinners only for indeterminate network waits.</p>
+    </div>
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Loading</span>
+      <div style="display:flex;flex-direction:column;gap:10px"><span style="width:60%;height:24px;border-radius:2px;background:#E3DACB"></span><span style="width:90%;height:12px;border-radius:2px;background:#E3DACB"></span><span style="height:1px;background:#DDD3C3"></span><span style="width:50%;height:24px;border-radius:2px;background:#E3DACB"></span><span style="width:80%;height:12px;border-radius:2px;background:#E3DACB"></span></div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639">Skeleton rows mirror the entry grid; no shimmer. Counts show "–" until known.</p>
+    </div>
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Empty states</span>
+      <div style="display:grid;grid-template-columns:56px 1fr;gap:14px;align-items:start"><span style="font:italic 400 44px/1 'Newsreader';color:#CDBFA9">∅</span><div style="display:flex;flex-direction:column;gap:6px"><span style="font:400 22px/1.15 'Newsreader'">Nothing matches “xylophone”.</span><span style="font-size:13px;color:#4E4639">Try another spelling, or clear filters.</span></div></div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639">Three kinds: first-run (large serif + primary action), no-results (∅ + clear filters), section-empty (one line). Typographic glyphs only — no illustrations.</p>
+    </div>
+    <div style="background:#EFE9DF;border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Modal shell</span>
+      <div style="border-radius:10px;background:#FCFAF6;box-shadow:0 20px 40px -20px rgba(42,36,28,.45);overflow:hidden;display:flex;flex-direction:column"><div style="padding:14px 16px 0;display:flex;flex-direction:column;gap:2px"><i style="font:italic 400 13px 'Newsreader';color:#8A5F32">Nouvelle note</i><span style="font:400 22px 'Newsreader'">Add note</span></div><div style="height:60px;border-top:1px solid #DDD3C3;margin-top:12px"></div><div style="padding:10px 16px;background:#F8F5EF;border-top:1px solid #DDD3C3;display:flex;justify-content:flex-end;gap:6px"><span style="height:30px;width:60px;border-radius:4px;box-shadow:inset 0 0 0 1px #2A241C"></span><span style="height:30px;width:80px;border-radius:4px;background:#2A241C"></span></div></div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639">Header + scrolling body + sticky footer. 880 max-w, max-h 100% − 56px. Scrim <code>rgba(42,36,28,.42)</code>. Mobile: full-screen sheet.</p>
+    </div>
+  </div>
+</section>
+
+<section style="padding:40px 56px 0;width:1710px;display:grid;grid-template-columns:1fr 1fr;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:0;border-top:2px solid #2A241C">
+    <div style="display:flex;align-items:baseline;gap:14px;padding:14px 0"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">iv.</span><span style="font:400 30px/1 'Newsreader',serif">Motion additions</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Filter / sort / page</b><span>List opacity 1→.35→1, 140ms each way. No reflow animation; letter heads re-render instantly.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Row hover / select</b><span>Background to <code>#F3EEE5</code> / sheet, 180ms. Checkbox fill 140ms. No lift on dictionary rows; fiches lift −2px.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Delete</b><span>Rows dim to .35 while deleting, then removed; status line replaces the bar.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Modal open / close</b><span>Scrim fade 200; panel y 12→0 + fade 240 ink. Close 180 ease-in. Mobile sheet: y 100%→0, 280.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Field focus</b><span>Inset ring 1→2px river, instant. Writing lines grow a 1px under-shadow.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Auto-fill result</b><span>ai-wash appears instantly, fades 600ms; "· auto-filled" note stays until next edit.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Import ticks</b><span>Each row tick colours on result, 240ms. Counters swap digits without rolling (they change too fast).</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Grammar reader</b><span>Switching notes: article y 8→0 + fade 240.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Reduced motion</b><span>All of the above → instant. Spinners remain (they convey state) but stop rotating; text carries the meaning.</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:0;border-top:2px solid #2A241C">
+    <div style="display:flex;align-items:baseline;gap:14px;padding:14px 0"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">v.</span><span style="font:400 30px/1 'Newsreader',serif">Responsive &amp; bilingual</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Dictionary entry</b><span>≥1024: 4 columns. 768–1023: headword above sense, status column stays. &lt;768: 3 columns (box · content · meter + "…" menu).</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Toolbar</b><span>&lt;768: search + filter button opening a bottom sheet (sort, tags). Tabs scroll horizontally.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Phrases</b><span>Parallel columns stack below 900px; the vertical hairline becomes nothing (spacing only).</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Grammar</b><span>Below 1024 the TOC and reader become two routes in-page (list → reader with back + prev/next).</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Import preview</b><span>Table keeps horizontal scroll ≥768. Below, each row renders as a stacked mini-card. Results always a list.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Editor</b><span>≥880: two columns for vocabulary. Below: one column, full-screen sheet, sticky footer above keyboard.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">Chinese UI</b><span>Labels never uppercase/tracked; eyebrow "LE CAHIER · 04" becomes "笔记 · 04". Section names keep the English word + Chinese gloss in titles (Vocabulary 词汇). Buttons size to content — no fixed widths.</span></div>
+    <div style="display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;padding:11px 0;border-top:1px solid #DDD3C3;font-size:14px;line-height:1.5"><b style="font-weight:600">French text</b><span>Always <code>lang="fr"</code>, Newsreader, <code>overflow-wrap:anywhere</code>; headword steps 30→24px past 14 chars.</span></div>
+  </div>
+</section>
+
+<section style="padding:40px 56px 96px;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">vi.</span><span style="font:400 30px/1 'Newsreader',serif">Implementation modules for Codex</span><span style="font-size:14px;color:#6F6656">Each module is shippable alone; no business-logic files change.</span></div>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px">
+    <div style="background:#F8F5EF;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5"><span style="font:italic 400 28px/1 'Newsreader';color:#8A5F32">M1</span><b style="font-size:16px">Tokens &amp; primitives</b><span style="color:#4E4639"><code>tailwind.config.js</code>, <code>index.css</code> (fonts, focus ring, reduced motion), new <code>ui/</code>: Button, IconButton, Field, Select, Segment, Tabs, Checkbox, Stepper, Meter, Alert, Toast, Dialog.</span></div>
+    <div style="background:#F8F5EF;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5"><span style="font:italic 400 28px/1 'Newsreader';color:#8A5F32">M2</span><b style="font-size:16px">Shell</b><span style="color:#4E4639"><code>Sidebar</code>, <code>AppHeader</code>, mobile tab bar + "More" sheet, page header (eyebrow, double rule). Applies to all pages at once.</span></div>
+    <div style="background:#F8F5EF;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5"><span style="font:italic 400 28px/1 'Newsreader';color:#8A5F32">M3</span><b style="font-size:16px">Library list</b><span style="color:#4E4639"><code>NotesToolbar</code>, <code>Metric</code>→StatLedger, <code>PaginationControls</code>, <code>SelectionToolbar</code>→SelectionBar, ConfirmDialog in <code>App.confirmDeletion</code> (replaces <code>window.confirm</code>, same guard).</span></div>
+    <div style="background:#F8F5EF;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5"><span style="font:italic 400 28px/1 'Newsreader';color:#8A5F32">M4</span><b style="font-size:16px">Entry presentations</b><span style="color:#4E4639">Split <code>LearningCard</code> into VocabEntry, PhraseEntry, PronunciationFiche; GrammarJournal (TOC + reader) inside <code>GrammarView</code>. <code>RichTextContent</code> CSS only.</span></div>
+    <div style="background:#F8F5EF;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5"><span style="font:italic 400 28px/1 'Newsreader';color:#8A5F32">M5</span><b style="font-size:16px">Editor modal</b><span style="color:#4E4639">Layout + styling in <code>EditorModal</code>, <code>RichTextEditor</code>, <code>FrenchCharacterKeyboard</code>. Keep every ref, abort and <code>editedFields</code> path; add only the visual <code>aiFilled</code> set for washes.</span></div>
+    <div style="background:#F8F5EF;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5"><span style="font:italic 400 28px/1 'Newsreader';color:#8A5F32">M6</span><b style="font-size:16px">Import</b><span style="color:#4E4639"><code>ImportView</code> only. Steps derive from existing <code>status</code>; row ledger from <code>results</code> order. <code>useImportJob</code> untouched.</span></div>
+    <div style="background:#F8F5EF;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5"><span style="font:italic 400 28px/1 'Newsreader';color:#8A5F32">M7</span><b style="font-size:16px">Settings</b><span style="color:#4E4639"><code>SettingsView</code> only. Dirty = compare to last-saved values in component state; Discard resets the form. Submit handlers unchanged.</span></div>
+    <div style="background:#2A241C;color:#EFE9DF;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5"><span style="font:italic 400 28px/1 'Newsreader';color:#E0CDB0">N.B.</span><b style="font-size:16px">New strings (need zh)</b><span style="color:#DDD3C3">Dictionary letter counts, "Nothing matches “{q}”", "Clear search &amp; filters", "Discard changes", "Saved.", "Choose another", "Preview", "Run summary", "Supprimer"/"Nouvelle note" annotations (decorative, untranslated), "Note saved." toast.</span></div>
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

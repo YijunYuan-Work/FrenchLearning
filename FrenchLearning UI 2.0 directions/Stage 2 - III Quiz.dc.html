@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans:wght@400&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>
+body{margin:0;background:#E4E0D8;font-family:'Instrument Sans',system-ui,sans-serif;color:#2A241C;-webkit-font-smoothing:antialiased}
+a{color:#3F6670;text-decoration:underline;text-underline-offset:3px}
+a:hover{color:#8A5F32}
+button{font:inherit}
+input::placeholder{color:#958B7A;font-style:italic}
+input:focus{outline:none}
+</style>
+</helmet>
+
+<section style="padding:56px 56px 8px;display:flex;flex-direction:column;gap:18px;width:1710px">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span style="font:500 12px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F6656">French Desk · UI 2.0 · Stage 2 · Le Cahier · Bois</span>
+    <nav style="display:flex;gap:6px;font-size:14px">
+      <a href="Stage 2 - I Today.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">I. Today</a>
+      <a href="Stage 2 - II Study.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">II. Study</a>
+      <a href="Stage 2 - III Quiz.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;background:#2A241C;color:#EFE9DF;text-decoration:none">III. Quiz</a>
+      <a href="Stage 2 - IV System.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">IV. System &amp; motion</a>
+    </nav>
+  </div>
+  <div style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #2A241C;padding-bottom:16px">
+    <h1 style="margin:0;font:400 64px/1 'Newsreader',serif;letter-spacing:-.02em">Chapitre <span style="font-style:italic">III</span> — Quiz</h1>
+    <span style="font:italic 400 22px/1 'Newsreader',serif;color:#6F6656">dictée · vocabulary recall</span>
+  </div>
+</section>
+
+<section style="padding:32px 56px 0;display:flex;gap:40px;align-items:flex-start;width:1710px">
+  <div style="width:1280px;height:800px;display:grid;grid-template-columns:248px minmax(0,1fr);background:#EFE9DF;color:#2A241C;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 #DDD3C3,0 24px 60px -24px rgba(50,38,20,.25);flex-shrink:0">
+    <aside style="background:#E7ECED;border-right:1px solid #DDD3C3;padding:30px 20px 24px;display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;flex-direction:column;gap:8px;padding:0 8px">
+        <div style="display:flex;gap:3px"><span style="width:14px;height:3px;background:#23408E"></span><span style="width:14px;height:3px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #DDD3C3"></span><span style="width:14px;height:3px;background:#B43A2E"></span></div>
+        <span style="font:italic 500 28px/1 'Newsreader',serif;letter-spacing:-.01em">French Desk</span>
+        <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656">Learning Hub</span>
+      </div>
+      <nav style="display:flex;flex-direction:column;gap:2px;flex:1">
+        <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6F6656;padding:0 8px 8px">Pratique</span>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">01</span><span style="font-weight:500;font-size:15px">Today</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">aujourd'hui</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">02</span><span style="font-weight:500;font-size:15px">Study</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">étude</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;background:#F8F5EF;box-shadow:0 1px 0 #DDD3C3;color:#3F6670"><span style="font:italic 400 14px/1 'Newsreader',serif">03</span><span style="font-weight:600;font-size:15px">Quiz</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#8A5F32">dictée</span></div>
+        <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6F6656;padding:20px 8px 8px">Le cahier</span>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">04</span><span style="font-weight:500;font-size:15px">Vocabulary</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">mots</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">05</span><span style="font-weight:500;font-size:15px">Phrases</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">expressions</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">06</span><span style="font-weight:500;font-size:15px">Grammar</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">grammaire</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">07</span><span style="font-weight:500;font-size:15px">Pronunciation</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">phonétique</span></div>
+        <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6F6656;padding:20px 8px 8px">Bureau</span>
+        <div style="display:grid;grid-template-columns:22px 1fr;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">08</span><span style="font-weight:500;font-size:15px">Import</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">09</span><span style="font-weight:500;font-size:15px">Settings</span></div>
+      </nav>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:0 8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;border:1px solid #CDBFA9;border-radius:999px;padding:3px;font-size:13px;font-weight:500"><span style="text-align:center;padding:6px 0;border-radius:999px;background:#2A241C;color:#EFE9DF">EN</span><span style="text-align:center;padding:6px 0;color:#4E4639;font-family:'Noto Sans SC'">中文</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#4E4639"><span>Demo</span><span style="color:#8A5F32">Sign out</span></div>
+      </div>
+    </aside>
+
+    <main style="padding:30px 60px 24px;display:flex;flex-direction:column;min-width:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A5F32;font-weight:600">Personal French workspace</span>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span style="font:italic 400 15px/1 'Newsreader',serif;color:#4E4639;white-space:nowrap">lundi 19 octobre 2026</span>
+          <span style="width:1px;height:20px;background:#DDD3C3"></span>
+          <button style="display:flex;align-items:center;gap:8px;white-space:nowrap;height:40px;padding:0 18px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-weight:500;font-size:14px;cursor:pointer" style-hover="background:#3F6670"><i class="icon-plus" style="font-size:16px"></i>Add note</button>
+        </div>
+      </div>
+      <div style="height:3px;border-top:2px solid #2A241C;border-bottom:1px solid #2A241C;margin:16px 0 22px;flex-shrink:0"></div>
+
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:end">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:#8A5F32">Vocabulary quiz</span>
+          <h3 style="margin:0;font:400 44px/1 'Newsreader',serif;letter-spacing:-.02em">Write the <span style="font-style:italic">English</span> meaning.</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#4E4639;max-width:600px">Correct answers move the word up one confidence level. Words at max confidence are skipped in future daily quizzes.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px" aria-live="polite"><div style="display:flex;align-items:baseline;gap:6px"><span style="font:400 56px/.9 'Newsreader',serif;color:#3F6670;letter-spacing:-.03em">{{ answeredNum }}</span><span style="font:italic 400 26px/1 'Newsreader',serif;color:#6F6656">/ {{ totalNum }}</span></div><span style="font-size:13px;color:#6F6656">Today's quiz</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px">
+        <div style="display:flex;gap:4px"><sc-for list="{{ qsegs }}" as="q" hint-placeholder-count="6"><span style="flex:1;height:5px;background:{{ q.bg }};box-shadow:{{ q.ring }};transition:{{ q.trans }}"></span></sc-for></div>
+        <div style="display:flex;gap:22px;font-size:13px;color:#4E4639">
+          <span>Correct <b style="font:400 17px 'Newsreader',serif;color:#55703F">{{ correctN }}</b></span>
+          <span>Not quite <b style="font:400 17px 'Newsreader',serif;color:#8A5F32">{{ wrongN }}</b></span>
+          <span>Remaining <b style="font:400 17px 'Newsreader',serif;color:#3F6670">{{ remainingN }}</b></span>
+          <span>Daily goal <b style="font:400 17px 'Newsreader',serif;color:#2A241C">6</b></span>
+        </div>
+      </div>
+
+      <sc-if value="{{ vQuiz }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;min-height:0;margin-top:22px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);border-radius:10px;background:#F8F5EF;box-shadow:0 1px 0 #CDBFA9,0 22px 40px -28px rgba(50,38,20,.45);overflow:hidden">
+          <div style="position:relative;padding:28px 36px;display:flex;flex-direction:column;gap:10px;border-right:1px solid #DDD3C3;box-shadow:inset -6px 0 10px -8px rgba(50,38,20,.18);opacity:{{ qOp }};transform:{{ qTr }};transition:{{ qTrans }}">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:italic 400 17px/1 'Newsreader',serif;color:#8A5F32">nº {{ qNum }}</span><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">French</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px">
+              <span style="font:400 {{ w.size }}/1.06 'Newsreader',serif;letter-spacing:-.02em;overflow-wrap:anywhere;text-wrap:balance">{{ w.fr }}</span>
+              <span style="font:400 15px/1 'Noto Sans','Instrument Sans',sans-serif;color:#4E4639;letter-spacing:.02em">{{ w.ipa }}</span>
+            </div>
+            <sc-if value="{{ restored }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 15px/1.4 'Newsreader',serif;color:#8A5F32">Restored from your last visit — this answer was not fully saved.</span></sc-if>
+          </div>
+
+          <form onSubmit="{{ onSubmit }}" style="padding:28px 36px;display:flex;flex-direction:column;gap:16px;min-width:0;overflow:auto;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 35px,rgba(63,102,112,.07) 35px,rgba(63,102,112,.07) 36px);opacity:{{ qOp }};transform:{{ qTr }};transition:{{ qTrans }}">
+            <label for="quiz-answer" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Your answer</label>
+            <div style="position:relative">
+              <input id="quiz-answer" ref="{{ inputRef }}" autocomplete="off" value="{{ input }}" onChange="{{ onInput }}" disabled="{{ locked }}" placeholder="Type the English meaning" style="width:100%;box-sizing:border-box;border:0;background:transparent;font:400 32px/1.25 'Newsreader',serif;color:#2A241C;padding:6px 0 8px;border-bottom:1px solid {{ lineColor }};box-shadow:0 1px 0 {{ lineColor }};transition:{{ lineTrans }}" style-focus="box-shadow:0 2px 0 #3F6670;border-bottom-color:#3F6670">
+              <span style="position:absolute;left:0;bottom:-1px;height:2px;background:#55703F;width:{{ saveW }};transition:{{ saveTrans }}"></span>
+            </div>
+            <sc-if value="{{ needsGender }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                <span id="gender-label" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Gender</span>
+                <div role="radiogroup" aria-labelledby="gender-label" style="display:flex;gap:4px;padding:3px;border-radius:999px;box-shadow:inset 0 0 0 1px #CDBFA9">
+                  <sc-for list="{{ genders }}" as="g" hint-placeholder-count="3">
+                    <button type="button" role="radio" aria-checked="{{ g.checked }}" onClick="{{ g.onClick }}" disabled="{{ locked }}" style="display:flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 14px;border:0;border-radius:999px;cursor:pointer;background:{{ g.bg }};color:{{ g.fg }};box-shadow:{{ g.ring }};transition:{{ g.trans }}" style-focus="outline:2px solid #3F6670;outline-offset:2px"><span style="font:italic 400 17px/1 'Newsreader',serif;display:block;padding-bottom:2px">{{ g.art }}</span><span style="font-size:13px;line-height:1;font-weight:500;display:block">{{ g.label }}</span></button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ showActions }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:auto;padding-top:8px">
+                <button type="button" onClick="{{ reveal }}" style="height:44px;padding:0 14px;border:0;background:transparent;color:#4E4639;font-size:14px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:4px;text-decoration-color:#CDBFA9" style-hover="color:#2A241C" style-focus="outline:2px solid #3F6670;outline-offset:2px">Show correct answer</button>
+                <button type="submit" disabled="{{ cantCheck }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:{{ checkBg }};color:{{ checkFg }};font-size:14px;font-weight:500;cursor:{{ checkCursor }};transition:background 160ms ease" style-focus="outline:2px solid #3F6670;outline-offset:2px">Check answer<span style="font:500 10px 'JetBrains Mono';opacity:.7;border:1px solid currentColor;border-radius:3px;padding:1px 4px">↵</span></button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isSaving }}" hint-placeholder-val="{{ false }}">
+              <div role="status" style="display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:14px;border-top:1px solid #DDD3C3;font:italic 400 18px/1.3 'Newsreader',serif;color:#55703F"><i class="icon-feather" style="font-size:17px"></i>Saving your answer…</div>
+            </sc-if>
+
+            <sc-if value="{{ isFailed }}" hint-placeholder-val="{{ false }}">
+              <div role="alert" style="display:flex;flex-direction:column;gap:12px;margin-top:auto;padding:16px 18px;border-radius:6px;background:#F2E7D9;box-shadow:inset 0 0 0 1px #DCC6A8">
+                <div style="display:flex;gap:10px;align-items:flex-start"><i class="icon-cloud-off" style="font-size:18px;color:#8A5F32;margin-top:2px"></i><span style="font-size:15px;line-height:1.5;color:#2A241C">Your answer is not fully saved. Retry to finish without increasing confidence twice.</span></div>
+                <button type="button" onClick="{{ retry }}" style="align-self:flex-start;display:flex;align-items:center;gap:8px;height:40px;padding:0 16px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#3F6670" style-focus="outline:2px solid #3F6670;outline-offset:2px"><i class="icon-rotate-cw" style="font-size:15px"></i>Retry saving answer</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isResult }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:12px;margin-top:auto;padding-top:14px;border-top:1px solid #DDD3C3;opacity:{{ fbOp }};transform:{{ fbTr }};transition:{{ fbTrans }}" aria-live="polite">
+                <div style="display:flex;align-items:center;gap:10px"><span style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:{{ fbColor }};color:#F8F5EF"><i class="{{ fbIcon }}" style="font-size:16px"></i></span><span style="font:italic 400 28px/1 'Newsreader',serif;color:{{ fbColor }}">{{ fbTitle }}</span></div>
+                <dl style="margin:0;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 16px;align-items:baseline;font-size:15px">
+                  <dt style="color:#6F6656">Meaning</dt><dd style="margin:0;font-weight:600;color:#2A241C">{{ w.enDisplay }}</dd><dd style="margin:0;font:italic 400 15px 'Newsreader',serif;color:{{ mColor }}">{{ mVerdict }}</dd>
+                  <sc-if value="{{ needsGender }}" hint-placeholder-val="{{ false }}"><dt style="color:#6F6656">Gender</dt><dd style="margin:0;font-weight:600;color:#2A241C">{{ w.gender }}</dd><dd style="margin:0;font:italic 400 15px 'Newsreader',serif;color:{{ gColor }}">{{ gVerdict }}</dd></sc-if>
+                </dl>
+                <sc-if value="{{ isCorrect }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:12px"><span style="display:flex;gap:3px"><sc-for list="{{ confSegs }}" as="k" hint-placeholder-count="4"><span style="width:20px;height:4px;background:#DDD3C3;position:relative;overflow:hidden;display:block"><span style="position:absolute;inset:0;background:#55703F;transform-origin:left center;transform:{{ k.tr }};transition:{{ k.trans }}"></span></span></sc-for></span><span style="font-size:14px;color:#433C31">Confidence advanced to {{ newConf }}.</span></div>
+                </sc-if>
+                <sc-if value="{{ isRevealed }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 16px 'Newsreader',serif;color:#4E4639">Answer revealed. Confidence was not changed.</span></sc-if>
+                <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px">
+                  <sc-if value="{{ canMark }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ markCorrect }}" style="display:flex;align-items:center;gap:6px;height:44px;padding:0 14px;border:0;border-radius:4px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;color:#2A241C;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#EFE9DF" style-focus="outline:2px solid #3F6670;outline-offset:2px"><i class="icon-circle-check" style="font-size:15px"></i>Mark as correct</button></sc-if>
+                  <button type="button" ref="{{ nextRef }}" onClick="{{ nextWord }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#3F6670" style-focus="outline:2px solid #3F6670;outline-offset:2px">Next word<i class="icon-arrow-right" style="font-size:16px"></i></button>
+                </div>
+              </div>
+            </sc-if>
+          </form>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ vComplete }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:56px;align-items:center;opacity:{{ endOp }};transform:{{ endTr }};transition:{{ endTrans }}">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A5F32;font-weight:600">Quiz result · résultat</span>
+            <h3 style="margin:0;font:400 52px/1.04 'Newsreader',serif;letter-spacing:-.025em">Today's quiz is <span style="font-style:italic">complete.</span></h3>
+            <p style="margin:0;font-size:17px;color:#4E4639">You tested {{ answeredN }} words.</p>
+            <sc-if value="{{ perfect }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 22px/1 'Newsreader',serif;color:#55703F">Sans faute.</span></sc-if>
+            <div style="display:flex;align-items:center;gap:16px;margin-top:10px;flex-wrap:wrap">
+              <button onClick="{{ startNew }}" disabled="{{ noneLeft }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:{{ startBg }};color:{{ startFg }};font-size:14px;font-weight:500;cursor:{{ startCursor }}" style-focus="outline:2px solid #3F6670;outline-offset:2px"><i class="icon-rotate-ccw" style="font-size:16px"></i>Start a new quiz</button>
+              <sc-if value="{{ noneLeft }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 16px/1.4 'Newsreader',serif;color:#4E4639">No unseen words remain today.</span></sc-if>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;border-top:2px solid #2A241C">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:16px 0;border-bottom:1px solid #DDD3C3"><span style="font-size:15px">Correct</span><span style="font:400 52px/1 'Newsreader',serif;color:#55703F">{{ correctN }}</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:16px 0;border-bottom:1px solid #DDD3C3"><span style="font-size:15px">Not quite</span><span style="font:400 52px/1 'Newsreader',serif;color:#8A5F32">{{ wrongN }}</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:16px 0;border-bottom:1px solid #DDD3C3"><span style="font-size:15px">Remaining</span><span style="font:400 52px/1 'Newsreader',serif;color:#3F6670">{{ unseenN }}</span></div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ vEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:620px">
+          <span style="font:italic 400 64px/1 'Newsreader',serif;color:#CDBFA9">« … »</span>
+          <h3 style="margin:0;font:400 40px/1.05 'Newsreader',serif;letter-spacing:-.02em">{{ emptyTitle }}</h3>
+          <p style="margin:0;font-size:17px;line-height:1.6;color:#4E4639">{{ emptyCopy }}</p>
+          <sc-if value="{{ emptyIsNone }}" hint-placeholder-val="{{ true }}"><button style="align-self:flex-start;display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#3F6670"><i class="icon-plus" style="font-size:16px"></i>Add vocabulary</button></sc-if>
+          <sc-if value="{{ emptyIsReady }}" hint-placeholder-val="{{ false }}"><button onClick="{{ startNew }}" style="align-self:flex-start;display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#3F6670"><i class="icon-rotate-ccw" style="font-size:16px"></i>Start a new quiz</button></sc-if>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <div style="width:350px;display:flex;flex-direction:column;gap:20px;flex-shrink:0">
+    <div style="background:#F8F5EF;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Prototype · jump to state</span>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="8">
+          <button onClick="{{ s.onClick }}" style="display:flex;justify-content:space-between;align-items:center;height:42px;padding:0 14px;border:0;border-radius:6px;cursor:pointer;text-align:left;background:{{ s.bg }};color:{{ s.fg }}" style-focus="outline:2px solid #3F6670;outline-offset:2px"><span style="font-weight:500;font-size:14px">{{ s.label }}</span><span style="font:italic 400 14px 'Newsreader',serif;opacity:.8">{{ s.note }}</span></button>
+        </sc-for>
+      </div>
+      <button onClick="{{ toggleFail }}" role="switch" aria-checked="{{ failAria }}" style="display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 14px;border:0;border-radius:6px;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px #CDBFA9;color:#2A241C"><span style="font-size:14px;font-weight:500">Next save fails</span><span style="width:34px;height:20px;border-radius:999px;background:{{ failTrack }};position:relative;display:block;transition:background 160ms"><span style="position:absolute;top:2px;left:{{ failKnob }};width:16px;height:16px;border-radius:50%;background:#F8F5EF;transition:left 160ms"></span></span></button>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639;border-top:1px solid #DDD3C3;padding-top:12px">Try: <i>bakery</i> + Feminine, a wrong answer then <b>Mark as correct</b>, or switch on "Next save fails" to see Retry. Enter checks; after feedback, focus lands on Next word so Enter continues.</p>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E3DACB;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.5;color:#433C31">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Notes</span>
+      <div><b style="font-weight:600">Spread.</b> Left page is the prompt, right page is your writing — the notebook metaphor carries the input.</div>
+      <div><b style="font-weight:600">Direction fixed.</b> French → meaning, as in <code style="font-family:'JetBrains Mono';font-size:12px">QuizView</code>. Stage 1's dictée sketch had it reversed; corrected here.</div>
+      <div><b style="font-weight:600">Gender</b> replaces the select with a 3-way radio pill (Unknown = nothing chosen, Check disabled).</div>
+      <div><b style="font-weight:600">Saving.</b> Only correct answers persist; the sage ink line under the answer draws while <code style="font-family:'JetBrains Mono';font-size:12px">isSavingAnswer</code>.</div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 0;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 28px/1 'Newsreader',serif">State flow</span><span style="font-size:14px;color:#6F6656">Mirrors QuizView: correct and manually-marked answers go through the pending → complete save; wrong and revealed answers do not persist confidence</span></div>
+  <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;font-size:13px;line-height:1.5;color:#4E4639">
+    <div style="grid-row:1 / 4;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:18px;background:#F8F5EF;border-radius:8px"><span style="font:italic 400 24px 'Newsreader',serif;color:#3F6670">Question</span>Input + gender editable. Check disabled until both filled.</div>
+    <div style="display:flex;align-items:center;gap:8px;color:#2A241C"><i class="icon-arrow-right"></i>Check · correct</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:14px;background:#FCFAF6;box-shadow:inset 0 0 0 1px #DDD3C3;border-radius:8px"><span style="font:italic 400 20px 'Newsreader',serif;color:#55703F">Saving</span>Inputs lock; ink line draws; status "Saving your answer…"</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:14px;background:#FCFAF6;box-shadow:inset 0 0 0 1px #DDD3C3;border-radius:8px"><span style="font:italic 400 20px 'Newsreader',serif;color:#55703F">Correct</span>Confidence segment fills (420ms). Focus → Next word.</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:14px;background:#F2E7D9;box-shadow:inset 0 0 0 1px #DCC6A8;border-radius:8px"><span style="font:italic 400 20px 'Newsreader',serif;color:#8A5F32">Save failed</span>role=alert. Retry → Saving. Same view when a pending answer is restored on load.</div>
+    <div style="display:flex;align-items:center;gap:8px;color:#2A241C"><i class="icon-arrow-right"></i>Check · wrong</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:14px;background:#FCFAF6;box-shadow:inset 0 0 0 1px #DDD3C3;border-radius:8px"><span style="font:italic 400 20px 'Newsreader',serif;color:#8A5F32">Not quite</span>Per-field verdicts. Mark as correct → Saving.</div>
+    <div style="display:flex;align-items:center;gap:8px;color:#2A241C;grid-column:4 / 6"><i class="icon-arrow-right"></i>Next word: page fades up 180ms, next enters from below 300ms. Input refocuses.</div>
+    <div style="display:flex;align-items:center;gap:8px;color:#2A241C"><i class="icon-arrow-right"></i>Show correct answer</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:14px;background:#FCFAF6;box-shadow:inset 0 0 0 1px #DDD3C3;border-radius:8px"><span style="font:italic 400 20px 'Newsreader',serif;color:#4E4639">Revealed</span>Confidence unchanged. Next word.</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:14px;background:#2A241C;color:#DDD3C3;border-radius:8px;grid-column:4 / 6"><span style="font:italic 400 20px 'Newsreader',serif;color:#C9D6B9">Complete</span>After the last answer: Correct · Not quite · Remaining. Start a new quiz only if unseen eligible words remain.</div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 96px;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 28px/1 'Newsreader',serif">Mobile quiz</span><span style="font-size:14px;color:#6F6656">The word compresses when the keyboard opens; actions stay pinned directly above it. No horizontal scroll at 320px.</span></div>
+  <div style="display:flex;gap:36px;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:grid;grid-template-columns:44px 1fr auto;align-items:center;padding:0 16px 8px;margin:0 4px"><span style="width:44px;height:44px;display:grid;place-items:center"><i class="icon-chevron-left" style="font-size:22px"></i></span><span style="font-size:15px;font-weight:500;text-align:center">词汇测验</span><span style="font:400 20px/1 'Newsreader',serif;color:#3F6670">2<span style="font-style:italic;font-size:14px;color:#6F6656"> / 6</span></span></div>
+      <div style="display:flex;gap:3px;padding:0 20px 12px;border-bottom:2px solid #2A241C;margin:0 0 0"><span style="flex:1;height:4px;background:#55703F"></span><span style="flex:1;height:4px;background:#8A5F32"></span><span style="flex:1;height:4px;background:#3F6670"></span><span style="flex:1;height:4px;background:#DDD3C3"></span><span style="flex:1;height:4px;background:#DDD3C3"></span><span style="flex:1;height:4px;background:#DDD3C3"></span></div>
+      <div style="flex:1;padding:16px 20px 0;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:italic 400 14px 'Newsreader',serif;color:#8A5F32">nº 03</span><span style="font-size:12px;color:#6F6656">写出中文意思。</span></div>
+        <span style="font:400 38px/1.05 'Newsreader',serif;letter-spacing:-.02em">le rendez-vous</span>
+        <span style="font:400 13px 'Noto Sans';color:#4E4639">/ʁɑ̃.de.vu/</span>
+        <label style="font-size:12px;font-weight:500;color:#6F6656;margin-top:6px">你的答案</label>
+        <div style="display:flex;align-items:flex-end;border-bottom:2px solid #3F6670;padding-bottom:6px"><span style="font:500 24px/1.3 'Noto Serif SC',serif">约会</span><span style="width:2px;height:28px;background:#3F6670;margin-left:2px"></span></div>
+        <div role="radiogroup" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:3px;border-radius:999px;box-shadow:inset 0 0 0 1px #CDBFA9">
+          <span style="height:40px;border-radius:999px;background:#2A241C;color:#EFE9DF;display:flex;align-items:center;justify-content:center;gap:4px;font-size:13px"><i style="font:italic 400 15px 'Newsreader',serif">le</i>阳性</span>
+          <span style="height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:4px;font-size:13px"><i style="font:italic 400 15px 'Newsreader',serif">la</i>阴性</span>
+          <span style="height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:4px;font-size:13px"><i style="font:italic 400 15px 'Newsreader',serif">le/la</i>阴阳皆可</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:8px;padding:8px 12px;background:#EFE9DF;border-top:1px solid #DDD3C3">
+        <button style="height:46px;border:0;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 1px #CDBFA9;font-family:'Noto Sans SC';font-size:14px">显示正确答案</button>
+        <button style="height:46px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-family:'Noto Sans SC';font-size:15px;font-weight:500">检查答案</button>
+      </div>
+      <div style="height:250px;background:#D3D6DB;padding:8px 4px 26px;display:flex;flex-direction:column;gap:9px;flex-shrink:0">
+        <div style="display:flex;gap:6px;padding:0 3px"><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span></div>
+        <div style="display:flex;gap:6px;padding:0 20px"><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span></div>
+        <div style="display:flex;gap:6px;padding:0 3px"><span style="width:44px;height:40px;border-radius:5px;background:#ABB0BA"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="width:44px;height:40px;border-radius:5px;background:#ABB0BA"></span></div>
+        <div style="display:flex;gap:6px;padding:0 3px"><span style="width:88px;height:40px;border-radius:5px;background:#ABB0BA"></span><span style="flex:1;height:40px;border-radius:5px;background:#FCFCFE;box-shadow:0 1px 0 #8E9196"></span><span style="width:88px;height:40px;border-radius:5px;background:#3F6670;color:#fff;display:grid;place-items:center;font-size:13px;font-family:'Instrument Sans'">go</span></div>
+      </div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · KEYBOARD OPEN · 中文</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:grid;grid-template-columns:44px 1fr auto;align-items:center;padding:0 16px 8px;margin:0 4px"><span style="width:44px;height:44px;display:grid;place-items:center"><i class="icon-chevron-left" style="font-size:22px"></i></span><span style="font-size:15px;font-weight:500;text-align:center">Vocabulary quiz</span><span style="font:400 20px/1 'Newsreader',serif;color:#3F6670">3<span style="font-style:italic;font-size:14px;color:#6F6656"> / 6</span></span></div>
+      <div style="display:flex;gap:3px;padding:0 20px 12px;border-bottom:2px solid #2A241C"><span style="flex:1;height:4px;background:#55703F"></span><span style="flex:1;height:4px;background:#8A5F32"></span><span style="flex:1;height:4px;background:#55703F"></span><span style="flex:1;height:4px;background:#8A5F32"></span><span style="flex:1;height:4px;background:#DDD3C3"></span><span style="flex:1;height:4px;background:#DDD3C3"></span></div>
+      <div style="flex:1;padding:18px 20px 0;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+        <span style="font:italic 400 14px 'Newsreader',serif;color:#8A5F32">nº 04</span>
+        <span style="font:400 36px/1.05 'Newsreader',serif;letter-spacing:-.02em;overflow-wrap:anywhere">l'épanouissement</span>
+        <span style="font:400 13px 'Noto Sans';color:#4E4639">/e.pa.nwis.mɑ̃/</span>
+        <div style="border-bottom:1px solid #8A5F32;padding:6px 0;font:400 24px/1.3 'Newsreader',serif;color:#4E4639">openness</div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding-top:6px">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:50%;background:#8A5F32;color:#F8F5EF;display:grid;place-items:center"><i class="icon-x" style="font-size:15px"></i></span><span style="font:italic 400 26px/1 'Newsreader',serif;color:#8A5F32">Not quite</span></div>
+          <dl style="margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 14px;font-size:15px;line-height:1.45">
+            <dt style="color:#6F6656">Meaning</dt><dd style="margin:0"><b style="font-weight:600">fulfilment, blossoming; personal growth and flourishing</b><br><i style="font-family:'Newsreader';color:#8A5F32">Not quite</i></dd>
+            <dt style="color:#6F6656">Gender</dt><dd style="margin:0"><b style="font-weight:600">masculine</b><br><i style="font-family:'Newsreader';color:#55703F">Correct</i></dd>
+          </dl>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 16px 30px;border-top:1px solid #DDD3C3">
+        <button style="height:52px;border:0;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;font-size:15px;font-weight:500">Mark as correct</button>
+        <button style="height:52px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px">Next word<i class="icon-arrow-right" style="font-size:16px"></i></button>
+      </div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · NOT QUITE · LONG TRANSLATION · EN</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:grid;grid-template-columns:44px 1fr auto;align-items:center;padding:0 16px 8px;margin:0 4px"><span style="width:44px;height:44px;display:grid;place-items:center"><i class="icon-chevron-left" style="font-size:22px"></i></span><span style="font-size:15px;font-weight:500;text-align:center">词汇测验</span><span style="font:400 20px/1 'Newsreader',serif;color:#3F6670">2<span style="font-style:italic;font-size:14px;color:#6F6656"> / 6</span></span></div>
+      <div style="display:flex;gap:3px;padding:0 20px 12px;border-bottom:2px solid #2A241C"><span style="flex:1;height:4px;background:#55703F"></span><span style="flex:1;height:4px;background:#8A5F32"></span><span style="flex:1;height:4px;background:#3F6670"></span><span style="flex:1;height:4px;background:#DDD3C3"></span><span style="flex:1;height:4px;background:#DDD3C3"></span><span style="flex:1;height:4px;background:#DDD3C3"></span></div>
+      <div style="flex:1;padding:18px 20px 0;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+        <span style="font:italic 400 14px 'Newsreader',serif;color:#8A5F32">nº 03 · 上次未保存的答案</span>
+        <span style="font:400 38px/1.05 'Newsreader',serif;letter-spacing:-.02em">le rendez-vous</span>
+        <span style="font:400 13px 'Noto Sans';color:#4E4639">/ʁɑ̃.de.vu/</span>
+        <div style="border-bottom:1px solid #55703F;padding:6px 0;font:500 24px/1.3 'Noto Serif SC',serif;color:#4E4639">约会</div>
+        <div style="display:flex;gap:6px;align-items:center;font-size:13px;color:#4E4639">性别 <span style="padding:6px 12px;border-radius:999px;background:#DDD3C3;color:#2A241C"><i style="font:italic 400 14px 'Newsreader',serif">le</i> 阳性</span></div>
+        <div role="alert" style="display:flex;flex-direction:column;gap:12px;margin-top:8px;padding:16px;border-radius:6px;background:#F2E7D9;box-shadow:inset 0 0 0 1px #DCC6A8">
+          <div style="display:flex;gap:10px;align-items:flex-start"><i class="icon-cloud-off" style="font-size:18px;color:#8A5F32;margin-top:3px"></i><span style="font-size:15px;line-height:1.65">答案尚未完全保存，请重试。重试不会重复增加掌握度。</span></div>
+        </div>
+      </div>
+      <div style="padding:10px 16px 30px;border-top:1px solid #DDD3C3"><button style="width:100%;height:52px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-family:'Noto Sans SC';font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px"><i class="icon-rotate-cw" style="font-size:16px"></i>重试保存答案</button></div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · RESTORED PENDING · RETRY · 中文</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:0 16px 8px;margin:0 4px"><span style="width:44px;height:44px;display:grid;place-items:center"><i class="icon-chevron-left" style="font-size:22px"></i></span><span style="font-size:15px;font-weight:500;text-align:center">词汇测验</span><span></span></div>
+      <div style="display:flex;gap:3px;padding:0 20px 12px;border-bottom:2px solid #2A241C"><span style="flex:1;height:4px;background:#55703F"></span><span style="flex:1;height:4px;background:#8A5F32"></span><span style="flex:1;height:4px;background:#55703F"></span><span style="flex:1;height:4px;background:#55703F"></span><span style="flex:1;height:4px;background:#55703F"></span><span style="flex:1;height:4px;background:#8A5F32"></span></div>
+      <div style="flex:1;padding:36px 24px 0;display:flex;flex-direction:column;gap:14px">
+        <span style="font-size:12px;letter-spacing:.12em;color:#8A5F32;font-weight:500">测验结果 · résultat</span>
+        <h3 style="margin:0;font:700 30px/1.3 'Noto Serif SC',serif">今天的测验已完成。</h3>
+        <p style="margin:0;font-size:16px;color:#4E4639">你测验了 6 个词。</p>
+        <div style="display:flex;flex-direction:column;border-top:2px solid #2A241C;margin-top:8px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:14px 0;border-bottom:1px solid #DDD3C3"><span style="font-size:15px">正确</span><span style="font:400 44px/1 'Newsreader',serif;color:#55703F">4</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:14px 0;border-bottom:1px solid #DDD3C3"><span style="font-size:15px">还差一点</span><span style="font:400 44px/1 'Newsreader',serif;color:#8A5F32">2</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:14px 0;border-bottom:1px solid #DDD3C3"><span style="font-size:15px">剩余</span><span style="font:400 44px/1 'Newsreader',serif;color:#3F6670">12</span></div>
+        </div>
+      </div>
+      <div style="padding:10px 16px 30px;border-top:1px solid #DDD3C3"><button style="width:100%;height:52px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-family:'Noto Sans SC';font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px"><i class="icon-rotate-ccw" style="font-size:16px"></i>开始新的测验</button></div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · COMPLETE · 中文</span>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;reducedMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  words = [
+    { fr: 'la boulangerie', ipa: '/bu.lɑ̃ʒ.ʁi/', en: ['bakery'], enDisplay: 'bakery', gender: 'feminine', conf: 2 },
+    { fr: 'souvent', ipa: '/su.vɑ̃/', en: ['often', 'frequently'], enDisplay: 'often', conf: 1 },
+    { fr: 'le rendez-vous', ipa: '/ʁɑ̃.de.vu/', en: ['appointment', 'meeting', 'date'], enDisplay: 'appointment, meeting', gender: 'masculine', conf: 1 },
+    { fr: "l'épanouissement", ipa: '/e.pa.nwis.mɑ̃/', en: ['fulfilment', 'fulfillment', 'blossoming', 'flourishing', 'personal growth'], enDisplay: 'fulfilment, blossoming; personal growth and flourishing', gender: 'masculine', conf: 1 },
+    { fr: 'organiser', ipa: '/ɔʁ.ɡa.ni.ze/', en: ['to organize', 'organize', 'to organise', 'organise'], enDisplay: 'to organize', conf: 2 },
+    { fr: 'la chaise', ipa: '/ʃɛz/', en: ['chair'], enDisplay: 'chair', gender: 'feminine', conf: 3 },
+  ];
+  genderOpts = [['masculine', 'le', 'Masculine'], ['feminine', 'la', 'Feminine'], ['masculine or feminine', 'le/la', 'Masc. or fem.']];
+  inputRef = React.createRef();
+  nextRef = React.createRef();
+  state = { sc: 'fresh', view: 'quiz', idx: 0, answers: {}, input: '', gender: '', phase: 'question', result: null, failNext: false, anim: 'idle', saveW: 0, restored: false, confs: {}, fbIn: true, confIn: true, unseen: 12, endIn: true };
+  scen = {
+    fresh: { label: 'New quiz', note: '0 / 6', s: { view: 'quiz', idx: 0, answers: {} } },
+    mid: { label: 'Mid-quiz', note: '2 / 6', s: { view: 'quiz', idx: 2, answers: { 0: { correct: true }, 1: { correct: false } } } },
+    long: { label: 'Long word + translation', note: 'nº 4', s: { view: 'quiz', idx: 3, answers: { 0: { correct: true }, 1: { correct: false }, 2: { correct: true } } } },
+    restored: { label: 'Restored pending answer', note: 'retry', s: { view: 'quiz', idx: 2, answers: { 0: { correct: true }, 1: { correct: false } }, input: 'appointment', gender: 'masculine', phase: 'failed', restored: true } },
+    complete: { label: 'Quiz complete', note: '4 correct', s: { view: 'complete', idx: 5, answers: { 0: { correct: true }, 1: { correct: false }, 2: { correct: true }, 3: { correct: true }, 4: { correct: true }, 5: { correct: false } }, unseen: 12 } },
+    completeNone: { label: 'Complete · none left', note: 'disabled', s: { view: 'complete', idx: 5, answers: { 0: { correct: true }, 1: { correct: true }, 2: { correct: true }, 3: { correct: true }, 4: { correct: true }, 5: { correct: true } }, unseen: 0 } },
+    ready: { label: 'Ready for another quiz', note: 'no queue', s: { view: 'empty', emptyKind: 'ready', answers: {} } },
+    none: { label: 'No eligible vocabulary', note: 'empty', s: { view: 'empty', emptyKind: 'none', answers: {} } },
+  };
+  componentWillUnmount() { [this.t1, this.t2].forEach(clearTimeout); }
+  componentDidUpdate() {
+    const ps = this._prev || this.state;
+    const s = this.state;
+    if (ps.phase !== 'result' && s.phase === 'result') requestAnimationFrame(() => this.nextRef.current?.focus({ preventScroll: true }));
+    if (ps.idx !== s.idx && s.phase === 'question' && ps.view === s.view) requestAnimationFrame(() => this.inputRef.current?.focus({ preventScroll: true }));
+    this._prev = { phase: s.phase, idx: s.idx, view: s.view };
+  }
+  rm() { return !!this.props.reducedMotion; }
+  raf2(fn) { requestAnimationFrame(() => requestAnimationFrame(fn)); }
+  setSc(k) {
+    [this.t1, this.t2].forEach(clearTimeout);
+    const s = this.scen[k].s;
+    this.setState({ sc: k, input: '', gender: '', phase: 'question', result: null, anim: 'pre', saveW: 0, restored: false, confs: {}, emptyKind: null, unseen: 12, endIn: false, ...s });
+    this.raf2(() => this.setState({ anim: 'idle', endIn: true }));
+  }
+  norm(v) { return v.trim().toLowerCase().replace(/\s+/g, ' '); }
+  w() { return this.words[this.state.idx]; }
+  onSubmit = (e) => {
+    e.preventDefault();
+    const s = this.state, w = this.w();
+    if (s.phase !== 'question' || !s.input.trim() || (w.gender && !s.gender)) return;
+    const a = this.norm(s.input);
+    const meaningOk = w.en.some((x) => this.norm(x) === a || this.norm(x).replace(/^to /, '') === a);
+    const genderOk = w.gender ? s.gender === w.gender : true;
+    if (meaningOk && genderOk) return this.save(false, { meaningOk, genderOk });
+    this.showResult({ kind: 'wrong', meaningOk, genderOk, answers: { ...s.answers, [s.idx]: { correct: false } } });
+  };
+  showResult({ kind, meaningOk, genderOk, answers, newConf }) {
+    this.setState({ phase: 'result', result: { kind, meaningOk, genderOk, newConf }, answers, fbIn: false, confIn: false });
+    this.raf2(() => this.setState({ fbIn: true }));
+    if (kind === 'correct') this.t2 = setTimeout(() => this.setState({ confIn: true }), this.rm() ? 0 : 260);
+  }
+  save(manual, verdict) {
+    const s = this.state;
+    this.setState({ phase: 'saving', saveW: 0, restored: s.restored });
+    this.raf2(() => this.setState({ saveW: 1 }));
+    this.t1 = setTimeout(() => {
+      if (this.state.failNext) return this.setState({ phase: 'failed', failNext: false, saveW: 0 });
+      const w = this.w();
+      const prev = this.state.confs[this.state.idx] ?? w.conf;
+      const newConf = Math.min(prev + 1, 4);
+      this.setState({ confs: { ...this.state.confs, [this.state.idx]: newConf }, restored: false });
+      this.showResult({ kind: 'correct', meaningOk: verdict ? verdict.meaningOk : true, genderOk: verdict ? verdict.genderOk : true, manual, newConf, answers: { ...this.state.answers, [this.state.idx]: { correct: true } } });
+    }, this.rm() ? 700 : 1100);
+  }
+  reveal = () => {
+    const s = this.state;
+    if (s.phase !== 'question') return;
+    this.showResult({ kind: 'revealed', meaningOk: false, genderOk: false, answers: { ...s.answers, [s.idx]: { correct: false, revealed: true } } });
+  };
+  markCorrect = () => this.save(true, { meaningOk: true, genderOk: true });
+  retry = () => this.save(false, { meaningOk: true, genderOk: true });
+  nextWord = () => {
+    const s = this.state;
+    const nextIdx = this.words.findIndex((_, i) => !s.answers[i]);
+    const go = () => {
+      if (nextIdx === -1) { this.setState({ view: 'complete', endIn: false, phase: 'question', result: null }); this.raf2(() => this.setState({ endIn: true })); return; }
+      this.setState({ idx: nextIdx, input: '', gender: '', phase: 'question', result: null, saveW: 0, anim: 'pre' });
+      this.raf2(() => this.setState({ anim: 'idle' }));
+    };
+    if (this.rm()) return go();
+    this.setState({ anim: 'out' });
+    this.t1 = setTimeout(go, 180);
+  };
+  renderVals() {
+    const rm = this.rm();
+    const tr = (v) => (rm ? 'none' : v);
+    const s = this.state;
+    const w = this.w();
+    const r = s.result;
+    const answered = Object.keys(s.answers).length;
+    const correctN = Object.values(s.answers).filter((a) => a.correct).length;
+    const locked = s.phase !== 'question';
+    const kind = r?.kind;
+    const fb = { correct: ['#55703F', 'icon-check', 'Correct'], wrong: ['#8A5F32', 'icon-x', 'Not quite'], revealed: ['#4E4639', 'icon-eye', 'Answer revealed'] }[kind] || ['#4E4639', 'icon-eye', ''];
+    let lineColor = '#2A241C';
+    if (s.phase === 'saving' || kind === 'correct') lineColor = '#55703F';
+    else if (kind === 'wrong' || s.phase === 'failed') lineColor = '#8A5F32';
+    else if (kind === 'revealed') lineColor = '#958B7A';
+    const pad = (n) => String(n).padStart(2, '0');
+    let qTr = 'none', qOp = 1, qTrans = tr('opacity 300ms ease-out, transform 300ms cubic-bezier(.2,.7,.2,1)');
+    if (s.anim === 'out') { qTr = 'translateY(-8px)'; qOp = 0; qTrans = 'opacity 180ms ease-in, transform 180ms ease-in'; }
+    if (s.anim === 'pre') { qTr = 'translateY(10px)'; qOp = 0; qTrans = 'none'; }
+    const prevConf = s.confs[s.idx] != null && kind === 'correct' ? (r.newConf - 1) : (s.confs[s.idx] ?? w.conf);
+    const verdict = (ok) => (kind === 'revealed' ? '' : ok ? 'Correct' : 'Not quite');
+    const vColor = (ok) => (ok ? '#55703F' : '#8A5F32');
+    const emptyKind = s.emptyKind;
+    return {
+      inputRef: this.inputRef, nextRef: this.nextRef,
+      vQuiz: s.view === 'quiz', vComplete: s.view === 'complete', vEmpty: s.view === 'empty',
+      w: { ...w, size: w.fr.length > 14 ? '48px' : '64px', gender: w.gender || '' },
+      qNum: pad(s.idx + 1),
+      answeredNum: answered, totalNum: this.words.length,
+      correctN, wrongN: answered - correctN, remainingN: this.words.length - answered, answeredN: answered,
+      qsegs: this.words.map((_, i) => {
+        const a = s.answers[i];
+        const cur = i === s.idx && s.view === 'quiz' && !a;
+        return { bg: a ? (a.correct ? '#55703F' : '#8A5F32') : cur ? '#3F6670' : '#DDD3C3', ring: 'none', trans: tr('background 360ms ease') };
+      }),
+      input: s.input, onInput: (e) => this.setState({ input: e.target.value }),
+      onSubmit: this.onSubmit, locked,
+      needsGender: !!w.gender,
+      genders: this.genderOpts.map(([v, art, label]) => {
+        const on = s.gender === v;
+        const isAnswer = locked && kind && kind !== 'correct' && w.gender === v && !on;
+        return { art, label, checked: on ? 'true' : 'false', bg: on ? '#2A241C' : 'transparent', fg: on ? '#EFE9DF' : '#2A241C', ring: isAnswer ? 'inset 0 0 0 1px #55703F' : 'none', trans: tr('background 160ms ease, color 160ms ease'), onClick: () => !locked && this.setState({ gender: v }) };
+      }),
+      showActions: s.phase === 'question',
+      cantCheck: !s.input.trim() || (!!w.gender && !s.gender),
+      checkBg: !s.input.trim() || (!!w.gender && !s.gender) ? '#DDD3C3' : '#2A241C',
+      checkFg: !s.input.trim() || (!!w.gender && !s.gender) ? '#6F6656' : '#EFE9DF',
+      checkCursor: !s.input.trim() || (!!w.gender && !s.gender) ? 'not-allowed' : 'pointer',
+      reveal: this.reveal, retry: this.retry, markCorrect: this.markCorrect, nextWord: this.nextWord,
+      isSaving: s.phase === 'saving', isFailed: s.phase === 'failed', isResult: s.phase === 'result',
+      restored: s.restored && s.phase === 'failed',
+      saveW: s.phase === 'saving' && s.saveW ? '100%' : '0%',
+      saveTrans: s.phase === 'saving' && s.saveW && !rm ? 'width 1000ms cubic-bezier(.3,.6,.2,1)' : 'none',
+      lineColor, lineTrans: tr('border-color 300ms ease, box-shadow 300ms ease'),
+      fbColor: fb[0], fbIcon: fb[1], fbTitle: fb[2],
+      fbOp: s.fbIn || rm ? 1 : 0, fbTr: s.fbIn || rm ? 'none' : 'translateY(6px)', fbTrans: tr('opacity 240ms ease-out, transform 240ms ease-out'),
+      mVerdict: verdict(r?.meaningOk), mColor: vColor(r?.meaningOk),
+      gVerdict: verdict(r?.genderOk), gColor: vColor(r?.genderOk),
+      isCorrect: kind === 'correct', isRevealed: kind === 'revealed', canMark: kind === 'wrong',
+      newConf: r?.newConf,
+      confSegs: [1, 2, 3, 4].map((v) => {
+        const filled = v <= prevConf || (s.confIn && v <= (r?.newConf || 0));
+        return { tr: filled ? 'scaleX(1)' : 'scaleX(0)', trans: tr('transform 420ms cubic-bezier(.2,.7,.2,1)') };
+      }),
+      qOp, qTr, qTrans,
+      endOp: s.endIn || rm ? 1 : 0, endTr: s.endIn || rm ? 'none' : 'translateY(10px)', endTrans: tr('opacity 360ms ease-out, transform 360ms ease-out'),
+      perfect: answered > 0 && correctN === answered,
+      unseenN: s.unseen, noneLeft: s.unseen === 0,
+      startBg: s.unseen ? '#2A241C' : '#DDD3C3', startFg: s.unseen ? '#EFE9DF' : '#6F6656', startCursor: s.unseen ? 'pointer' : 'not-allowed',
+      startNew: () => this.setSc('fresh'),
+      emptyTitle: emptyKind === 'ready' ? 'Ready for another quiz?' : 'No vocabulary is due today.',
+      emptyCopy: emptyKind === 'ready' ? 'Start a new quiz to pull the next available vocabulary set.' : 'Add vocabulary or lower-confidence words to build a daily quiz.',
+      emptyIsNone: emptyKind !== 'ready', emptyIsReady: emptyKind === 'ready',
+      toggleFail: () => this.setState((x) => ({ failNext: !x.failNext })),
+      failAria: s.failNext ? 'true' : 'false', failTrack: s.failNext ? '#8A5F32' : '#CDBFA9', failKnob: s.failNext ? '16px' : '2px',
+      scenarios: Object.entries(this.scen).map(([k, v]) => ({ label: v.label, note: v.note, bg: s.sc === k ? '#2A241C' : '#EFE9DF', fg: s.sc === k ? '#EFE9DF' : '#2A241C', onClick: () => this.setSc(k) })),
+    };
+  }
+}
+</script>
+</body>
+</html>
