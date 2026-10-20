@@ -404,4 +404,12 @@ export const zhCN = {
   settingsStudyPhrases: "学习短语卡片",
   settingsSaveLearning: "保存学习设置",
   settingsSaved: "学习设置已更新。",
+  studySession: "学习会话",
+  backToToday: "返回今日",
+  revealStudyDetails: "查看 {word} 的详情",
+  studyCardDetails: "卡片详情",
+  showingDetails: "已显示详情",
+  showingFront: "已显示法语",
+  studyCompleteLead: "做得好，你完成了",
+  studyCompleteCycle: "这一轮学习。",
 };
