@@ -109,7 +109,7 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
     const column = url.searchParams.get("select");
     const key = `${id}:${resource}:${request.method()}${resource === "user_preferences" ? `:${column}` : ""}`;
     const noteId = resource === "notes" ? url.searchParams.get("id")?.slice(3) : null;
-    ledger.push({ id, resource, method: request.method(), body, column, noteId, filter: url.searchParams.get("user_id") });
+    ledger.push({ id, resource, method: request.method(), body, column, noteId, filter: url.searchParams.get("user_id"), categoryFilter: url.searchParams.get("category") });
     if (!hits.has(key)) hits.set(key, deferred());
     hits.get(key).resolve();
     const rowKey = noteId ?? (resource === "notes" && request.method() === "POST" ? body?.french : null);
@@ -146,6 +146,9 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
         if (failNoteOnce.delete(`${id}:${noteId}`)) return route.fulfill({ status: 400, json: { message: "Confidence save failed" } });
         expect(url.searchParams.get("user_id")).toBe(`eq.${id}`);
         const index = account.notes.findIndex((note) => note.id === noteId);
+        if (url.searchParams.get("category") && (index < 0 || `eq.${account.notes[index].category}` !== url.searchParams.get("category"))) {
+          return route.fulfill({ status: 406, json: { code: "PGRST116", message: "No eligible Vocabulary row" } });
+        }
         if (index < 0) return route.fulfill({ status: 404, json: { message: "Note missing" } });
         account.notes[index] = { ...account.notes[index], ...body };
         if (lostNoteResponses.delete(`${id}:${noteId}`)) {
@@ -673,6 +676,177 @@ test("returning to A waits for its old in-flight language write before hydrating
   expect(languageRequests(backend, ids.B, "POST")).toEqual([]);
 });
 
+async function changeQuizNoteCategory(page, french, category) {
+  await go(page, "Vocabulary");
+  await go(page, `Edit ${french}`);
+  const editor = page.getByRole("dialog");
+  await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption(category);
+  if (category === "grammar") await editor.getByRole("textbox", { name: "Grammar note", exact: true }).fill("A grammar explanation.");
+  await go(page, "Save note");
+  await expect(editor).toHaveCount(0);
+}
+
+for (const category of ["phrases", "grammar", "pronunciation"]) {
+  test(`saved Quiz removes a Vocabulary note moved to ${category} and resumes the valid order`, async ({ page, context, baseURL }) => {
+    const backend = await setupAccounts({ page, context, baseURL });
+    await page.goto("/");
+    await go(page, "Quiz");
+    await expect(page.getByText("A-word-2", { exact: true })).toBeVisible();
+    await changeQuizNoteCategory(page, "A-word-2", category);
+    await go(page, "Quiz");
+    await expect(page.getByText("A-word-3", { exact: true })).toBeVisible();
+    await expect(page.getByText("1/2", { exact: true })).toBeVisible();
+    await expect(page.getByText("A-word-2", { exact: true })).toHaveCount(0);
+    await expect.poll(() => backend.accounts[ids.A].daily.quiz_state.queueIds).toEqual(["A-1", "A-3"]);
+    expect(backend.accounts[ids.A].daily.quiz_state.seenIds).toEqual(["A-1", "A-2", "A-3"]);
+    expect(storedNote(backend, "A-2").confidence).toBe(1);
+    await page.reload();
+    await go(page, "Quiz");
+    await expect(page.getByText("A-word-3", { exact: true })).toBeVisible();
+    await go(page, "Show correct answer");
+    await go(page, "Next word");
+    await expect(page.getByRole("heading", { name: "Today's quiz is complete.", exact: true })).toBeVisible();
+    await expect(page.getByText("You tested 2 words.", { exact: true })).toBeVisible();
+    await expect.poll(() => backend.accounts[ids.A].daily.quiz).toBe(true);
+    expect(notePatches(backend, "A-2")).toHaveLength(1);
+    expect(notePatches(backend, "A-3")).toHaveLength(0);
+  });
+}
+
+test("Quiz retains completed history and counts after moves and deletion while pruning mixed invalid questions", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.accounts[ids.A].daily.quiz_state.queueIds.push("missing", "broken", "mastered", "A-2");
+  backend.accounts[ids.A].notes.push(
+    { id: "broken", category: "vocabulary", french: "broken", english: {}, confidence: 1 },
+    { id: "mastered", category: "vocabulary", french: "mastered", english: "known", confidence: 4 },
+  );
+  await page.goto("/");
+  await go(page, "Quiz");
+  await expect(page.getByText("1/3", { exact: true })).toBeVisible();
+  await expect.poll(() => backend.accounts[ids.A].daily.quiz_state.queueIds).toEqual(["A-1", "A-2", "A-3"]);
+  await answerQuiz(page, "A-meaning-2");
+  await go(page, "Next word");
+  await changeQuizNoteCategory(page, "A-word-2", "grammar");
+  for (const french of ["A-word-1", "A-word-3"]) {
+    page.once("dialog", (dialog) => dialog.accept());
+    await go(page, `Delete ${french}`);
+    await expect(page.getByRole("heading", { name: french, exact: true })).toHaveCount(0);
+  }
+  await go(page, "Quiz");
+  await expect(page.getByText("2/2", { exact: true })).toBeVisible();
+  await expect(page.getByText("You tested 2 words.", { exact: true })).toBeVisible();
+  await expect.poll(() => backend.accounts[ids.A].daily.quiz).toBe(true);
+  const state = backend.accounts[ids.A].daily.quiz_state;
+  expect(state.queueIds).toEqual(["A-1", "A-2"]);
+  expect(Object.values(state.answered).filter((result) => result.correct)).toHaveLength(2);
+  expect(state.seenIds).toContain("missing");
+  expect(storedNote(backend, "A-2").category).toBe("grammar");
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  await page.reload();
+  await go(page, "Quiz");
+  await expect(page.getByText("2/2", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check answer", exact: true })).toHaveCount(0);
+  expect(backend.accounts[ids.A].daily.quiz_state.answered).toEqual(state.answered);
+});
+
+test("a category edit before pending answer intent is acknowledged prevents any Quiz confidence write", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const gate = backend.hold(`${ids.A}:daily_learning_state:PATCH`);
+  await page.goto("/");
+  await go(page, "Quiz");
+  await answerQuiz(page, "A-meaning-2");
+  await backend.waitFor(`${ids.A}:daily_learning_state:PATCH`);
+  await changeQuizNoteCategory(page, "A-word-2", "phrases");
+  await go(page, "Quiz");
+  await expect(page.getByText("A-word-3", { exact: true })).toBeVisible();
+  await answerQuiz(page, "A-meaning-3");
+  gate.resolve();
+  await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toBeVisible();
+  await expect.poll(() => backend.accounts[ids.A].daily.quiz_state.queueIds).toEqual(["A-1", "A-3"]);
+  expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"]).toBeUndefined();
+  expect(storedNote(backend, "A-2").confidence).toBe(1);
+  expect(storedNote(backend, "A-3").confidence).toBe(2);
+  expect(notePatches(backend, "A-2").every((entry) => entry.body.confidence === undefined)).toBe(true);
+  expect(backend.accounts[ids.A].daily.quiz).toBe(false);
+});
+
+test("a Quiz answer queued behind a category save is rejected before its confidence PATCH starts", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  await go(page, "Edit A-word-2");
+  const editor = page.getByRole("dialog");
+  await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("phrases");
+  await go(page, "Save note");
+  await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+  await go(page, "Close editor");
+  await go(page, "Quiz");
+  await answerQuiz(page, "A-meaning-2");
+  await expect.poll(() => backend.accounts[ids.A].daily.quiz_state.answered["A-2"]?.status).toBe("pending");
+  gate.resolve();
+  await expect(page.getByText("A-word-3", { exact: true })).toBeVisible();
+  await expect.poll(() => backend.accounts[ids.A].daily.quiz_state.queueIds).toEqual(["A-1", "A-3"]);
+  expect(storedNote(backend, "A-2").category).toBe("phrases");
+  expect(storedNote(backend, "A-2").confidence).toBe(1);
+  expect(notePatches(backend, "A-2")).toHaveLength(1);
+  expect(notePatches(backend, "A-2")[0].body.confidence).toBeUndefined();
+  await answerQuiz(page, "A-meaning-3");
+  await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toBeVisible();
+});
+
+for (const switchAccount of [false, true]) {
+  test(`an in-flight Quiz update cannot advance a remotely reclassified note${switchAccount ? " across account switching" : ""}`, async ({ page, context, baseURL }) => {
+    const backend = await setupAccounts({ page, context, baseURL });
+    const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
+    const originalB = structuredClone(backend.accounts[ids.B]);
+    await page.goto("/");
+    await go(page, "Quiz");
+    await answerQuiz(page, "A-meaning-2");
+    await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
+    // Simulate another device committing a category change before this PATCH.
+    storedNote(backend, "A-2").category = "phrases";
+    if (switchAccount) {
+      await backend.switchTo("B");
+      await go(page, "Quiz");
+      await expect(page.getByText("B-word-2", { exact: true })).toBeVisible();
+    }
+    gate.resolve();
+    if (switchAccount) {
+      await expect.poll(() => notePatches(backend, "A-2").length).toBe(1);
+      await backend.switchTo("A");
+      await go(page, "Quiz");
+    }
+    await expect(page.getByText("A-word-3", { exact: true })).toBeVisible();
+    await expect.poll(() => backend.accounts[ids.A].daily.quiz_state.queueIds).toEqual(["A-1", "A-3"]);
+    expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"]).toBeUndefined();
+    expect(storedNote(backend, "A-2").confidence).toBe(1);
+    expect(notePatches(backend, "A-2")).toHaveLength(1);
+    expect(notePatches(backend, "A-2")[0].categoryFilter).toBe("eq.vocabulary");
+    expect(backend.accounts[ids.B]).toEqual(originalB);
+    expect(backend.writes(ids.B)).toEqual([]);
+  });
+}
+
+test("demo Quiz reconciles reclassified questions without account or backend writes", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  const originalA = structuredClone(backend.accounts[ids.A]);
+  await page.addInitScript(() => { Math.random = () => 0; });
+  await page.goto("/#/demo");
+  await go(page, "Quiz");
+  const french = await page.locator("form p.text-3xl").innerText();
+  expect(french).toBe("organiser");
+  await changeQuizNoteCategory(page, french, "phrases");
+  await go(page, "Quiz");
+  await expect(page.locator("form p.text-3xl")).not.toHaveText(french);
+  const nextFrench = await page.locator("form p.text-3xl").innerText();
+  await go(page, "Today");
+  await go(page, "Quiz");
+  await expect(page.locator("form p.text-3xl")).toHaveText(nextFrench);
+  expect(backend.accounts[ids.A]).toEqual(originalA);
+  expect(backend.writes(ids.A)).toEqual([]);
+});
+
 const notePatches = (backend, noteId) => backend.ledger.filter((entry) => entry.resource === "notes" && entry.method === "PATCH" && entry.noteId === noteId);
 const storedNote = (backend, noteId) => backend.accounts[ids.A].notes.find((note) => note.id === noteId);
 async function answerQuiz(page, answer) {
@@ -1068,7 +1242,7 @@ test("bulk deletes wait for pending Quiz updates and removed notes stay out of Q
   await go(page, "Quiz");
   await expect(page.getByRole("heading", { name: "Today's quiz is complete.", exact: true })).toBeVisible();
   await expect.poll(() => backend.accounts[ids.A].daily.quiz_state.queueIds).toEqual(["A-1"]);
-  expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("pending");
+  expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"]).toBeUndefined();
   await go(page, "Study");
   await expect(page.getByText("Card 1 of 1", { exact: true })).toBeVisible();
   await expect.poll(() => backend.accounts[ids.A].daily.study_state.cycleIds).toEqual(["A-1"]);

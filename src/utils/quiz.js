@@ -26,6 +26,7 @@ export function shuffleItems(items) {
 function normalizeFrenchKey(value) {
   return String(value ?? "")
     .trim()
+    .normalize("NFC")
     .toLocaleLowerCase("fr");
 }
 
@@ -55,7 +56,7 @@ export function getEligibleVocabulary(items) {
   return uniqueLearningItems(
     items.filter(
       (item) =>
-        item.category === "vocabulary" &&
+        isQuizVocabularyNote(item) &&
         Number(item.confidence) < MAX_CONFIDENCE
     )
   ).sort((a, b) => {
@@ -63,6 +64,59 @@ export function getEligibleVocabulary(items) {
       if (confidenceGap !== 0) return confidenceGap;
       return a.french.localeCompare(b.french, "fr");
     });
+}
+
+export function isQuizVocabularyNote(item) {
+  return Boolean(item && typeof item.id === "string" && item.id.trim() &&
+    item.category === "vocabulary" && typeof item.french === "string" && item.french.trim() &&
+    typeof item.english === "string" && item.english.trim() &&
+    typeof item.confidence === "number" && Number.isInteger(item.confidence) &&
+    item.confidence >= 1 && item.confidence <= MAX_CONFIDENCE);
+}
+
+export function isCompletedQuizAnswer(result) {
+  return Boolean(result && !Array.isArray(result) && typeof result.correct === "boolean" &&
+    (result.status === undefined || result.status === "complete"));
+}
+
+export function reconcileQuizState(state, items) {
+  const byId = new Map(items.filter((item) => item && typeof item.id === "string").map((item) => [item.id, item]));
+  const ids = (values) => [...new Set((Array.isArray(values) ? values : []).filter((id) => typeof id === "string" && id.trim()))];
+  const answers = state.answered && !Array.isArray(state.answered) ? state.answered : {};
+  const originalQueue = ids([...(Array.isArray(state.queueIds) ? state.queueIds : []),
+    ...Object.keys(answers).filter((id) => isCompletedQuizAnswer(answers[id]))]);
+  const historyKeys = new Set(originalQueue.filter((id) => isCompletedQuizAnswer(answers[id]))
+    .map((id) => byId.get(id)?.french).filter((word) => typeof word === "string").map(normalizeFrenchKey));
+  const wordKeys = new Set(historyKeys);
+  const queueIds = [];
+  const answered = {};
+  for (const id of originalQueue) {
+    const result = answers[id];
+    // Completed outcomes are history, even after deletion/reclassification.
+    // Pending outcomes are not history and require a still-valid Vocabulary note.
+    if (isCompletedQuizAnswer(result)) {
+      queueIds.push(id);
+      answered[id] = result;
+      continue;
+    }
+    const item = byId.get(id);
+    const pending = result?.status === "pending" && Number.isInteger(result.targetConfidence) &&
+      result.targetConfidence >= 1 && result.targetConfidence <= MAX_CONFIDENCE &&
+      typeof result.answer === "string" && (result.genderAnswer === undefined || typeof result.genderAnswer === "string");
+    if (Object.hasOwn(answers, id) && !pending) continue;
+    if (!isQuizVocabularyNote(item) || (!pending && item.confidence >= MAX_CONFIDENCE)) continue;
+    const key = normalizeFrenchKey(item.french);
+    if (wordKeys.has(key)) continue;
+    wordKeys.add(key);
+    queueIds.push(id);
+    if (pending) answered[id] = result;
+  }
+  // Keep removed IDs seen so restoring/reclassifying a note cannot repeat it today.
+  const seenIds = ids([...(Array.isArray(state.seenIds) ? state.seenIds : []), ...originalQueue, ...Object.keys(answers)]);
+  const sameIds = (left, right) => Array.isArray(left) && left.length === right.length && left.every((id, index) => id === right[index]);
+  const sameAnswers = Object.keys(answers).length === Object.keys(answered).length && Object.keys(answered).every((id) => answers[id] === answered[id]);
+  return sameIds(state.queueIds, queueIds) && sameIds(state.seenIds, seenIds) && sameAnswers && state.answered === answers
+    ? state : { ...state, queueIds, answered, seenIds };
 }
 
 export function createQuizQueueIds(
@@ -110,7 +164,7 @@ export function normalizeQuizState(value, date) {
     date,
     ...(Number.isFinite(limit) && limit > 0 ? { limit } : {}),
     queueIds: value.queueIds,
-    answered: value.answered ?? {},
+    answered: value.answered && !Array.isArray(value.answered) ? value.answered : {},
     seenIds: Array.isArray(value.seenIds) ? value.seenIds : value.queueIds,
   };
 }
