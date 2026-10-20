@@ -58,7 +58,7 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
   const failedCreates = new Set();
   const failedDeletes = new Set();
   const lostDeleteResponses = new Set();
-  const transport = { failCompletedQuiz: false, aiError: null, failNextCreate: false };
+  const transport = { failCompletedQuiz: false, aiError: null, aiStatus: 429, aiRaw: undefined, failNextCreate: false };
 
   if (ignoreAiCancellation) {
     // Keep real Auth, request and response handling, but simulate a transport
@@ -180,7 +180,8 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
       return route.fulfill({ json: request.method() === "GET" ? [account.preferences] : account.preferences });
     }
     if (resource === "ai") {
-      if (transport.aiError) return route.fulfill({ status: 429, json: transport.aiError });
+      if (transport.aiRaw !== undefined) return route.fulfill({ status: transport.aiStatus, contentType: "text/html", body: transport.aiRaw });
+      if (transport.aiError) return route.fulfill({ status: transport.aiStatus, json: transport.aiError });
       return route.fulfill({ json: {
         category: "vocabulary", word: body.word, english: body.language === "zh" ? "中文释义" : "AI meaning",
         partOfSpeech: "verb", tags: ["AI topic"], notes: body.language === "zh" ? "中文笔记" : "AI notes",
@@ -1455,6 +1456,63 @@ test("AI quota errors remain actionable without automatic retry or changing the 
   await expect(editor).toHaveCount(0);
   expect(aiRequests(backend)).toHaveLength(1);
   expect(backend.accounts[ids.A].notes.find((note) => note.french === "bonjour").english).toBe("manual meaning");
+});
+
+for (const failure of ["timeout", "invalid-response", "non-json", "null-json", "connection"]) {
+  test(`AI ${failure} preserves the draft and allows one explicit retry`, async ({ page, context, baseURL }) => {
+    const backend = await setupAccounts({ page, context, baseURL });
+    const timeout = failure === "timeout";
+    backend.transport.aiStatus = timeout ? 504 : 502;
+    backend.transport.aiError = { error: timeout ? "AI auto-fill timed out. Please try again." : "AI auto-fill returned an incomplete or unreadable response. Please try again.", code: timeout ? "OPENAI_TIMEOUT" : "OPENAI_INVALID_RESPONSE", retryable: true };
+    if (failure === "non-json") backend.transport.aiRaw = "<html>Bad Gateway</html>";
+    if (failure === "null-json") {
+      await page.route("**/api/autofill-vocabulary", (route) => route.fulfill({ status: 502, json: null }), { times: 1 });
+    }
+    if (failure === "connection") {
+      await page.route("**/api/autofill-vocabulary", (route) => route.abort("connectionfailed"), { times: 1 });
+    }
+    await page.goto("/");
+    const editor = await openDraft(page, "cœur");
+    await editor.getByLabel("English", { exact: true }).fill("my meaning");
+    await editor.getByRole("textbox", { name: "Notes", exact: true }).fill("my notes");
+    await go(page, "Auto-fill");
+    const message = timeout ? "AI auto-fill timed out." : failure === "connection" ? "Could not connect to AI auto-fill." : failure === "non-json" || failure === "null-json" ? "AI auto-fill is temporarily unavailable." : "AI auto-fill returned an incomplete";
+    await expect(editor.getByText(message, { exact: false })).toBeVisible();
+    await expect(editor.getByLabel("French", { exact: true })).toHaveValue("cœur");
+    await expect(editor.getByLabel("English", { exact: true })).toHaveValue("my meaning");
+    await expect(editor.getByRole("textbox", { name: "Notes", exact: true })).toHaveValue("my notes");
+    await expect(editor.getByRole("button", { name: "Auto-fill", exact: true })).toBeEnabled();
+    if (failure !== "connection" && failure !== "null-json") expect(aiRequests(backend)).toHaveLength(1);
+    backend.transport.aiError = null;
+    backend.transport.aiRaw = undefined;
+    await go(page, "Auto-fill");
+    await expect(editor.getByLabel("English", { exact: true })).toHaveValue("AI meaning");
+    await go(page, "Save note");
+    await expect(editor).toHaveCount(0);
+    expect(backend.accounts[ids.A].notes.find((note) => note.french === "cœur").notes).toBe("AI notes");
+    expect(aiRequests(backend)).toHaveLength(failure === "connection" || failure === "null-json" ? 1 : 2);
+  });
+}
+
+test("Chinese editor localizes upstream errors and keeps a manual retry available", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.accounts[ids.A].preferences.language = "zh";
+  backend.transport.aiStatus = 504;
+  backend.transport.aiError = { code: "OPENAI_TIMEOUT", error: "AI auto-fill timed out. Please try again." };
+  await page.goto("/");
+  await go(page, "添加笔记");
+  const editor = page.getByRole("dialog");
+  await editor.getByLabel("法语", { exact: true }).fill("œuf");
+  await editor.getByRole("textbox", { name: "中文释义", exact: true }).fill("鸡蛋");
+  await go(page, "自动填充");
+  await expect(editor.getByText(/AI 自动填充超时/)).toBeVisible();
+  await expect(editor.getByText(/本次尝试计入今日 AI 限额/)).toBeVisible();
+  await expect(editor.getByRole("textbox", { name: "中文释义", exact: true })).toHaveValue("鸡蛋");
+  expect(aiRequests(backend)).toHaveLength(1);
+  backend.transport.aiError = null;
+  await go(page, "自动填充");
+  await expect(editor.getByRole("textbox", { name: "中文释义", exact: true })).toHaveValue("中文释义");
+  expect(aiRequests(backend).map((entry) => entry.body.language)).toEqual(["zh", "zh"]);
 });
 
 function importCsv(mode, rows, ending = "\n", prefix = "") {

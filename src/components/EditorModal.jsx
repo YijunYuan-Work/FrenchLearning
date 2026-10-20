@@ -211,7 +211,10 @@ export function EditorModal({
       if (!isActive()) return;
       setAutoFillState({
         status: "error",
-        message: error.message,
+        message: [
+          t(`autoFillError${error.code}`, error.message),
+          typeof error.code === "string" && error.code.startsWith("OPENAI_") ? t("autoFillAttemptNotice", "This attempt counts toward today's AI limit. Retrying uses another attempt.") : "",
+        ].filter(Boolean).join(" "),
       });
     } finally {
       if (autoFillRequestRef.current === request) autoFillRequestRef.current = null;

@@ -1,4 +1,65 @@
 import { createClient } from "@supabase/supabase-js";
+import { setTimeout as delay } from "node:timers/promises";
+
+export const upstreamTimeouts = Object.freeze({ wiktionary: 15000, openai: 30000 });
+const frenchLetters = "[A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF\\u0152\\u0153]";
+const frenchEntryPattern = new RegExp(`^${frenchLetters}+(?:(?:['-]| +)${frenchLetters}+)*$`, "u");
+
+class ApiError extends Error {
+  constructor(status, code, message, details = {}) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
+// The deadline covers headers, body reads, and (for Wiktionary) retry waits.
+async function withUpstreamDeadline(service, operation) {
+  const controller = new AbortController();
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new ApiError(504, `${service.toUpperCase()}_TIMEOUT`,
+        `${service === "openai" ? "AI auto-fill" : "Wiktionary verification"} timed out. Please try again.`, { retryable: true }));
+      controller.abort();
+    }, upstreamTimeouts[service]);
+  });
+  try {
+    return await Promise.race([operation(controller.signal), timeout]);
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(502, `${service.toUpperCase()}_UNAVAILABLE`,
+      `${service === "openai" ? "AI auto-fill" : "Wiktionary verification"} is temporarily unavailable. Please try again.`, { retryable: true });
+  } finally {
+    clearTimeout(timer);
+    controller.abort();
+  }
+}
+
+async function fetchUpstreamJson(url, options, service) {
+  const response = await fetch(url, options);
+  options.signal.throwIfAborted();
+  if (!response.ok) return { response };
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    options.signal.throwIfAborted();
+    throw invalidUpstreamResponse(service);
+  }
+  options.signal.throwIfAborted();
+  return { response, payload };
+}
+
+function invalidUpstreamResponse(service) {
+  return new ApiError(502, `${service.toUpperCase()}_INVALID_RESPONSE`,
+    `${service === "openai" ? "AI auto-fill" : "Wiktionary verification"} returned an incomplete or unreadable response. Please try again.`, { retryable: true });
+}
+
+function isObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 
 const allowedPartsOfSpeech = [
   "noun",
@@ -122,7 +183,7 @@ function sendJson(response, status, body) {
 }
 
 async function readRequestBody(request) {
-  if (request.body && typeof request.body === "object") {
+  if (request.body !== undefined && typeof request.body !== "string") {
     return request.body;
   }
 
@@ -142,7 +203,8 @@ async function readRequestBody(request) {
 function normalizeWord(value) {
   return String(value ?? "")
     .trim()
-    .replace(/[’]/g, "'")
+    .replace(/[’‘]/g, "'")
+    .replace(/[\u2010\u2011]/g, "-")
     .normalize("NFC");
 }
 
@@ -150,7 +212,7 @@ function isSingleFrenchEntry(value) {
   return (
     value.length > 0 &&
     value.length <= 48 &&
-    /^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF'\u2019 -]+$/.test(value) &&
+    frenchEntryPattern.test(value) &&
     value.split(/\s+/).length <= 4
   );
 }
@@ -194,12 +256,6 @@ function extractLanguageSection(wikitext, language) {
   );
 
   return lines.slice(start + 1, end === -1 ? undefined : end).join("\n");
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
 }
 
 function getWiktionaryCacheKey(word) {
@@ -246,18 +302,14 @@ function extractWiktionaryPageContent(page) {
   return revision?.slots?.main?.content ?? revision?.content ?? "";
 }
 
-class WiktionaryTemporaryError extends Error {
+class WiktionaryTemporaryError extends ApiError {
   constructor(status, retryAfterMs) {
-    super(
-      `Wiktionary verification is temporarily unavailable${status ? ` (${status})` : ""}. Import will retry after a short pause.`
-    );
-    this.status = status;
-    this.retryAfterMs = retryAfterMs;
-    this.code = "WIKTIONARY_TEMPORARY";
+    super(503, "WIKTIONARY_TEMPORARY", "Wiktionary verification is temporarily unavailable. Please try again after a short pause.",
+      { retryable: true, retryAfterMs, upstreamStatus: status });
   }
 }
 
-async function verifyFrenchWiktionaryEntry(word) {
+async function verifyFrenchWiktionaryEntry(word, signal) {
   const cached = getCachedWiktionaryVerification(word);
   if (cached !== undefined) return cached;
 
@@ -284,12 +336,17 @@ async function verifyFrenchWiktionaryEntry(word) {
   let retryAfterMs = 0;
 
   for (let attempt = 1; attempt <= 4; attempt += 1) {
-    const response = await fetch(url, { headers: wiktionaryHeaders });
+    const { response, payload: data } = await fetchUpstreamJson(url, { headers: wiktionaryHeaders, signal }, "wiktionary");
     lastStatus = response.status;
 
     if (response.ok) {
-      const data = await response.json();
-      const hasFrenchEntry = (data.query?.pages ?? []).some((page) => {
+      if (!isObject(data) || !Array.isArray(data.query?.pages) || !data.query.pages.length ||
+          data.query.pages.some((page) => !isObject(page) ||
+            (!page.missing && typeof extractWiktionaryPageContent(page) !== "string") ||
+            (!page.missing && !extractWiktionaryPageContent(page)))) {
+        throw invalidUpstreamResponse("wiktionary");
+      }
+      const hasFrenchEntry = data.query.pages.some((page) => {
         if (page.missing) return false;
         const wikitext = extractWiktionaryPageContent(page);
         return extractLanguageSection(wikitext, "French").trim().length > 0;
@@ -306,12 +363,15 @@ async function verifyFrenchWiktionaryEntry(word) {
     }
 
     if (![500, 502, 503, 504].includes(response.status)) {
-      setCachedWiktionaryVerification(word, false);
-      return false;
+      if (response.status === 404) {
+        setCachedWiktionaryVerification(word, false);
+        return false;
+      }
+      throw new ApiError(502, "WIKTIONARY_UNAVAILABLE", "Wiktionary verification is temporarily unavailable. Please try again.", { retryable: true });
     }
 
     retryAfterMs = getRetryDelayMs(response, attempt);
-    await sleep(retryAfterMs);
+    if (attempt < 4) await delay(retryAfterMs, undefined, { signal });
   }
 
   wiktionaryCooldownUntil = Date.now() + wiktionaryTemporaryCacheMs;
@@ -420,14 +480,17 @@ function cleanAutofillResult(value, requestedWord) {
 }
 
 function extractResponseText(payload) {
+  if (!isObject(payload) || (payload.status && payload.status !== "completed")) return "";
   if (typeof payload.output_text === "string" && payload.output_text.trim()) {
     return payload.output_text;
   }
 
   const outputItems = Array.isArray(payload.output) ? payload.output : [];
   for (const item of outputItems) {
+    if (!isObject(item)) continue;
     const contentItems = Array.isArray(item.content) ? item.content : [];
     for (const content of contentItems) {
+      if (!isObject(content)) continue;
       if (typeof content.text === "string" && content.text.trim()) {
         return content.text;
       }
@@ -469,30 +532,43 @@ async function authenticateUser(request) {
 }
 
 export default async function handler(request, response) {
+  try {
+    await handleRequest(request, response);
+  } catch (error) {
+    const failure = error instanceof ApiError ? error :
+      new ApiError(500, "AUTOFILL_FAILED", "AI auto-fill could not be completed. Please try again.");
+    sendJson(response, failure.status, {
+      error: failure.message, code: failure.code, status: failure.status, ...failure.details,
+    });
+  }
+}
+
+async function handleRequest(request, response) {
   if (request.method !== "POST") {
-    sendJson(response, 405, { error: "Method not allowed." });
-    return;
+    throw new ApiError(405, "METHOD_NOT_ALLOWED", "Method not allowed.");
   }
 
   let user;
   try {
     user = await authenticateUser(request);
-  } catch (error) {
-    sendJson(response, 500, { error: error.message });
-    return;
+  } catch {
+    throw new ApiError(503, "AUTH_UNAVAILABLE", "Sign-in verification is temporarily unavailable. Please try again.", { retryable: true });
   }
 
   if (!user) {
-    sendJson(response, 401, { error: "Sign in before using AI auto-fill." });
-    return;
+    throw new ApiError(401, "AUTH_REQUIRED", "Sign in before using AI auto-fill.");
   }
 
   let body;
   try {
     body = await readRequestBody(request);
   } catch {
-    sendJson(response, 400, { error: "Invalid request body." });
-    return;
+    throw new ApiError(400, "INVALID_REQUEST", "Invalid request body. Send a French word and an optional language (en or zh).");
+  }
+
+  if (!isObject(body) || typeof body.word !== "string" ||
+      (body.language !== undefined && !allowedOutputLanguages.has(body.language))) {
+    throw new ApiError(400, "INVALID_REQUEST", "Invalid request body. Send a French word and an optional language (en or zh).");
   }
 
   const word = normalizeWord(body.word);
@@ -509,57 +585,33 @@ export default async function handler(request, response) {
     outputLanguage === "zh"
       ? "学校、工作、食物、旅行、家庭、情绪、日常生活、购物、健康、时间、天气、科技、正式表达"
       : "school, work, food, travel, family, emotions, daily life, shopping, health, time, weather, technology, or formal speech";
-  if (!isSingleFrenchEntry(word)) {
-    sendJson(response, 400, {
-      error: "Enter one French word or short expression.",
-    });
-    return;
+  if (/[\p{Cc}\p{Cf}]/u.test(body.word) || !isSingleFrenchEntry(word)) {
+    throw new ApiError(400, "INVALID_WORD", "Enter one French word or short expression (up to 48 characters and 4 words).");
   }
 
-  let hasFrenchEntry;
-  try {
-    hasFrenchEntry = await verifyFrenchWiktionaryEntry(word);
-  } catch (error) {
-    if (error.code === "WIKTIONARY_TEMPORARY") {
-      sendJson(response, 503, {
-        code: error.code,
-        error: error.message,
-        retryAfterMs: error.retryAfterMs,
-        status: error.status,
-      });
-      return;
-    }
-
-    sendJson(response, 502, { error: error.message });
-    return;
-  }
+  const hasFrenchEntry = await withUpstreamDeadline("wiktionary", (signal) => verifyFrenchWiktionaryEntry(word, signal));
 
   if (!hasFrenchEntry) {
-    sendJson(response, 422, {
-      error:
-        "I could not find this as a French entry in Wiktionary. Check the spelling and try again.",
-    });
-    return;
+    throw new ApiError(422, "WORD_NOT_FOUND", "I could not find this as a French entry in Wiktionary. Check the spelling and try again.");
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    sendJson(response, 500, { error: "OPENAI_API_KEY is not configured." });
-    return;
+    throw new ApiError(500, "AUTOFILL_NOT_CONFIGURED", "AI auto-fill is not configured. Please contact the site owner.");
   }
 
   let rateLimitResult;
   try {
     rateLimitResult = await consumeAutofillQuota(request);
-  } catch (error) {
-    sendJson(response, 500, {
-      error: `Secure AI usage tracking failed: ${error.message}`,
-    });
-    return;
+  } catch {
+    throw new ApiError(503, "QUOTA_UNAVAILABLE", "AI usage tracking is temporarily unavailable. Please try again later.", { retryable: true });
   }
 
   if (!rateLimitResult.allowed) {
     sendJson(response, 429, {
       error: `Daily AI auto-fill limit reached (${rateLimitResult.requestCount}/${rateLimitResult.limit} used for the ${rateLimitResult.subscriptionTier} plan). Try again tomorrow.`,
+      code: "DAILY_LIMIT_REACHED",
+      status: 429,
+      retryable: false,
       limit: rateLimitResult.limit,
       requestCount: rateLimitResult.requestCount,
       subscriptionTier: rateLimitResult.subscriptionTier,
@@ -567,7 +619,8 @@ export default async function handler(request, response) {
     return;
   }
 
-  const openAiResponse = await fetch("https://api.openai.com/v1/responses", {
+  const { response: openAiResponse, payload } = await withUpstreamDeadline("openai", (signal) => fetchUpstreamJson("https://api.openai.com/v1/responses", {
+    signal,
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -607,29 +660,39 @@ Rules:
         },
       },
     }),
-  });
+  }, "openai"));
 
-  const payload = await openAiResponse.json();
   if (!openAiResponse.ok) {
-    sendJson(response, openAiResponse.status, {
-        error:
-          payload.error?.message ||
-          "AI auto-fill failed. Please try again in a moment.",
-    });
-    return;
+    const retryable = openAiResponse.status === 429 || openAiResponse.status >= 500 || openAiResponse.status === 408;
+    throw new ApiError(retryable ? 503 : 502, retryable ? "OPENAI_UNAVAILABLE" : "OPENAI_REJECTED",
+      retryable ? "AI auto-fill is temporarily unavailable. Please try again later." :
+        "AI auto-fill could not process the request. Please contact the site owner if this continues.", { retryable });
   }
 
   const text = extractResponseText(payload);
   if (!text) {
-    sendJson(response, 502, {
-      error: "AI auto-fill returned an empty response.",
-    });
-    return;
+    throw invalidUpstreamResponse("openai");
   }
 
+  let result;
   try {
-    sendJson(response, 200, cleanAutofillResult(JSON.parse(text), word));
+    result = JSON.parse(text);
   } catch {
-    sendJson(response, 502, { error: "AI auto-fill returned invalid JSON." });
+    throw invalidUpstreamResponse("openai");
   }
+  if (!isValidVocabularyResult(result)) throw invalidUpstreamResponse("openai");
+  sendJson(response, 200, cleanAutofillResult(result, word));
+}
+
+function isValidVocabularyResult(value) {
+  if (!isObject(value)) return false;
+  const strings = ["word", "english", "partOfSpeech", "category", "ipa", "gender", "example", "notes"];
+  return strings.every((key) => typeof value[key] === "string") &&
+    value.word.trim() && value.english.trim() && value.category === "vocabulary" &&
+    allowedPartsOfSpeech.includes(value.partOfSpeech) &&
+    vocabularySchema.properties.gender.enum.includes(value.gender) &&
+    Array.isArray(value.tags) && value.tags.every((tag) => typeof tag === "string") &&
+    ["conjugation", "adjectiveForms"].every((key) => isObject(value[key]) &&
+      Object.keys(value[key]).length === vocabularySchema.properties[key].required.length &&
+      vocabularySchema.properties[key].required.every((field) => typeof value[key][field] === "string"));
 }

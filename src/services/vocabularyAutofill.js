@@ -24,34 +24,43 @@ export async function autoFillFrenchVocabulary(word, language = "en", { userId, 
   }
 
   assertAccountAccess();
-  const response = await fetch("/api/autofill-vocabulary", {
-    signal,
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ word: normalizedWord, language }),
-  });
+  let response;
+  try {
+    response = await fetch("/api/autofill-vocabulary", {
+      signal,
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ word: normalizedWord, language }),
+    });
+  } catch {
+    signal?.throwIfAborted();
+    const error = new Error("Could not connect to AI auto-fill. Check your connection and click Auto-fill to retry.");
+    error.code = "AUTOFILL_NETWORK_ERROR";
+    throw error;
+  }
 
-  const payload = await response.json().catch(() => ({}));
+  const dataPayload = await response.json().catch(() => null);
+  const payload = dataPayload && typeof dataPayload === "object" && !Array.isArray(dataPayload) ? dataPayload : {};
   signal?.throwIfAborted();
   assertAccountAccess();
   if (isCurrentAccount && !isCurrentAccount()) {
     throw new Error("The account changed. Reopen the editor before using AI auto-fill.");
   }
   if (!response.ok) {
-    const error = new Error(payload.error || "AI auto-fill failed.");
-    error.code = payload.code;
+    const error = new Error(typeof payload.error === "string" ? payload.error : "AI auto-fill is temporarily unavailable. Click Auto-fill to retry.");
+    error.code = typeof payload.code === "string" ? payload.code : "AUTOFILL_UNAVAILABLE";
     error.retryAfterMs = payload.retryAfterMs;
-    error.status = payload.status ?? response.status;
+    error.status = response.status;
     throw error;
   }
 
-  if (!payload?.word || !payload?.english || !payload?.partOfSpeech) {
-    throw new Error(
-      "AI auto-fill returned an incomplete response. Check the API configuration and try again."
-    );
+  if (!["word", "english", "partOfSpeech"].every((field) => typeof payload[field] === "string" && payload[field].trim())) {
+    const error = new Error("AI auto-fill returned an incomplete response. Click Auto-fill to retry.");
+    error.code = "OPENAI_INVALID_RESPONSE";
+    throw error;
   }
 
   return payload;
