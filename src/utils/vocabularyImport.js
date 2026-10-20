@@ -3,6 +3,7 @@ import {
   createEmptyConjugation,
 } from "../data/wordFields.js";
 import { includeUnprocessedResults } from "./importResults.js";
+import { noteTitleKey } from "./noteIntegrity.js";
 
 const defaultReasons = {
   added: "Added successfully.",
@@ -34,14 +35,14 @@ export async function importVocabularyRecords({
   const knownWords = new Set(
     existingItems
       .filter((item) => item.category === "vocabulary")
-      .map((item) => item.french.trim().toLocaleLowerCase("fr"))
+      .map((item) => noteTitleKey(item.french))
   );
 
   for (const [index, record] of records.entries()) {
     if (shouldCancel?.()) break;
 
     const word = record.french?.trim() ?? "";
-    const normalizedWord = word.toLocaleLowerCase("fr");
+    const normalizedWord = noteTitleKey(word);
     onProgress?.(index + 1, records.length);
 
     if (record.validationIssues?.length > 0) {
@@ -101,7 +102,7 @@ export async function importVocabularyRecords({
 
     try {
       const savedItem = await saveNote(nextItem);
-      knownWords.add(savedItem.french.trim().toLocaleLowerCase("fr"));
+      knownWords.add(noteTitleKey(savedItem.french));
       onSaved?.(savedItem);
       recordResult({
         word,

@@ -63,6 +63,17 @@ test("vocabulary import skips duplicates in the file and existing notes", async 
   );
 });
 
+test("vocabulary imports share trimmed, case-insensitive NFC duplicate identity with editor saves", async () => {
+  let saves = 0;
+  const results = await importVocabularyRecords({
+    records: [record({ french: " e\u0301cole " }), record({ french: "ÉCOLE" })],
+    existingItems: [{ id: "old", category: "vocabulary", french: " ÉCOLE " }],
+    saveNote: async () => { saves += 1; },
+  });
+  assert.equal(saves, 0);
+  assert.deepEqual(results.map((result) => result.status), ["skipped", "skipped"]);
+});
+
 test("vocabulary import reports invalid rows without saving them", async () => {
   let saves = 0;
   const results = await importVocabularyRecords({

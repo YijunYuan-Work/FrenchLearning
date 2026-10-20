@@ -4,6 +4,7 @@ import { importVocabularyRecords } from "../utils/vocabularyImport";
 import { parsePhraseCsv, parseVocabularyCsv } from "../utils/importParsers";
 import { createImportResults, includeUnprocessedResults, summarizeImportResults } from "../utils/importResults";
 import { getTodayKey } from "../utils/quiz";
+import { noteTitleKey } from "../utils/noteIntegrity";
 
 const emptyImportJob = {
   error: "",
@@ -140,7 +141,7 @@ export function useImportJob({
     const knownPhrases = new Set(
       items
         .filter((item) => item.category === "phrases")
-        .map((item) => item.french.trim().toLocaleLowerCase("fr"))
+        .map((item) => noteTitleKey(item.french))
     );
 
     for (const row of rows) {
@@ -148,7 +149,7 @@ export function useImportJob({
 
       const french = row.french.trim();
       const english = row.english.trim();
-      const normalizedFrench = french.toLocaleLowerCase("fr");
+      const normalizedFrench = noteTitleKey(french);
 
       if (!french || !english) {
         recordResult({
@@ -200,7 +201,7 @@ export function useImportJob({
           ...createEmptyWordDetails(),
         });
 
-        knownPhrases.add(savedItem.french.trim().toLocaleLowerCase("fr"));
+        knownPhrases.add(noteTitleKey(savedItem.french));
         recordResult({
           word: french,
           item: row,

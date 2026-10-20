@@ -15,10 +15,9 @@ import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
 import { isPublicDemoRoute } from "./utils/demoMode";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
-import { normalizeTags } from "./utils/tags";
+import { assertNoDuplicateNote, normalizeNoteInput } from "./utils/noteIntegrity";
 import { getDisplayName } from "./utils/accountIdentity";
 import { getTodayKey, MAX_CONFIDENCE } from "./utils/quiz";
-import { isRichTextEmpty, sanitizeRichTextHtml } from "./utils/richText";
 import { shouldDelayLearningMount } from "./utils/studyState";
 import { GrammarView } from "./views/GrammarView";
 import { ImportView } from "./views/ImportView";
@@ -310,53 +309,18 @@ function Workspace({ isDemoRoute, auth }) {
     event.preventDefault();
     if (!user || !isCurrentAccount() || editorSessionRef.current !== session || session.saving) return;
 
-    const trimmedFrench = form.french.trim();
-    const normalizedFrench = trimmedFrench.toLocaleLowerCase("fr");
-    const duplicate = items.find(
-      (item) =>
-        item.id !== editingItem?.id &&
-        item.category === form.category &&
-        item.french.trim().toLocaleLowerCase("fr") === normalizedFrench
-    );
-
-    if (duplicate) {
-      setEditorError(
-        t("duplicateNote", '"{word}" already exists in {category}.', {
-          word: trimmedFrench,
-          category: t(
-            categories[form.category].labelKey,
-            categories[form.category].label
-          ),
-        })
-      );
+    let nextItem;
+    try {
+      nextItem = normalizeNoteInput({
+        ...form,
+        id: editingItem?.id ?? crypto.randomUUID(),
+        lastReviewed: editingItem?.lastReviewed ?? "Not reviewed",
+        createdAt: editingItem?.createdAt ?? new Date().toISOString(),
+      }, { tagText: true });
+      assertNoDuplicateNote(nextItem, items, editingItem?.id);
+    } catch (error) {
+      setEditorError(t(`noteValidation${error.field}`, error.message));
       return;
-    }
-
-    const nextItem = {
-      ...form,
-      french: trimmedFrench,
-      id: editingItem?.id ?? crypto.randomUUID(),
-      ...normalizeWordDetails(form),
-      tags: normalizeTags(form.tags),
-      confidence: Number(form.confidence),
-      lastReviewed: editingItem?.lastReviewed ?? "Not reviewed",
-      createdAt: editingItem?.createdAt ?? new Date().toISOString(),
-    };
-    if (nextItem.category === "grammar") {
-      const sanitizedNotes = sanitizeRichTextHtml(nextItem.notes);
-      Object.assign(nextItem, {
-        english: "",
-        example: "",
-        notes: isRichTextEmpty(sanitizedNotes) ? "" : sanitizedNotes,
-        ...createEmptyWordDetails(),
-      });
-    }
-    if (nextItem.category === "phrases") {
-      Object.assign(nextItem, {
-        example: "",
-        notes: "",
-        ...createEmptyWordDetails(),
-      });
     }
 
     session.saving = true;
@@ -374,7 +338,7 @@ function Workspace({ isDemoRoute, auth }) {
         closeEditor(session);
       }
     } catch (error) {
-      if (isCurrentAccount() && editorSessionRef.current === session) setEditorError(error.message);
+      if (isCurrentAccount() && editorSessionRef.current === session) setEditorError(t(`noteValidation${error.field}`, error.message));
     } finally {
       session.saving = false;
       if (isCurrentAccount() && editorSessionRef.current === session) setIsSavingNote(false);
@@ -532,6 +496,11 @@ function Workspace({ isDemoRoute, auth }) {
         />
 
         <section className="grid gap-4 px-3 pb-6 pt-2 sm:px-4 sm:pb-8 md:px-7 lg:gap-5">
+          {notes.dataWarningCount > 0 && (
+            <p className="rounded-lg border border-line bg-paper p-3 text-sm text-slate-700" role="status">
+              {t("noteDataWarning", "{count} saved notes have invalid data. Safe defaults are used where possible; unrecognizable notes are hidden. Stored data was not changed.", { count: notes.dataWarningCount })}
+            </p>
+          )}
           {languagePreferenceStatus.error && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-frenchRed/25 bg-blush p-3 text-sm text-frenchRed" role="alert">
               <p>{languagePreferenceStatus.error === "load"
