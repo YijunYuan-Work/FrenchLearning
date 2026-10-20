@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { changedNoteFields, createNoteMutationQueue } from "../utils/noteMutations";
+import { assertNoDuplicateNote, normalizeNoteInput } from "../utils/noteIntegrity";
 import {
   createNote,
   deleteNote as deleteStoredNote,
@@ -18,6 +19,7 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
   }, []);
   const [loadState, setLoadState] = useState({ userId: null, status: "idle", error: "" });
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [dataWarningCount, setDataWarningCount] = useState(0);
   const [selectedIds, setSelectedIds] = useState([]);
   const deletingRef = useRef(false);
   const pendingDeleteIds = useRef(new Set());
@@ -37,14 +39,16 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
 
     let isMounted = true;
     setItems([]);
+    setDataWarningCount(0);
     setSelectedIds([]);
     setLoadState({ userId, status: "loading", error: "" });
     setError("");
 
     listNotes(userId, { isCurrent: isCurrentAccount })
-      .then((savedNotes) => {
+      .then(({ notes: savedNotes, warningCount }) => {
         if (!isMounted || !isCurrentAccount()) return;
         setItems(savedNotes);
+        setDataWarningCount(warningCount);
         setSelectedIds([]);
         setLoadState({ userId, status: "ready", error: "" });
       })
@@ -64,6 +68,8 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
   async function save(nextItem, editingId, originalItem) {
     if (!isCurrentAccount()) throw new Error("The account changed. Reopen the note before saving.");
     if (!userId) throw new Error("Sign in before saving notes.");
+    nextItem = normalizeNoteInput(nextItem);
+    assertNoDuplicateNote(nextItem, itemsRef.current, editingId);
 
     if (editingId) {
       const patch = changedNoteFields(nextItem, originalItem ?? itemsRef.current.find((item) => item.id === editingId));
@@ -88,6 +94,8 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
   async function createImportedNote(nextItem) {
     if (!isCurrentAccount()) throw new Error("The account changed. Start a new import.");
     if (!userId) throw new Error("Sign in before importing notes.");
+    nextItem = normalizeNoteInput(nextItem);
+    assertNoDuplicateNote(nextItem, itemsRef.current);
 
     const savedItem = isDemo
       ? { ...nextItem, id: crypto.randomUUID() }
@@ -104,9 +112,14 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
       if (pendingDeleteIds.current.has(itemId)) throw new Error("This note is being deleted. Wait before editing it.");
       const item = itemsRef.current.find((entry) => entry.id === itemId);
       if (!item) throw new Error("This note is no longer available.");
-      const patch = getPatch(item);
+      const requestedPatch = getPatch(item);
+      const isContentEdit = Object.keys(requestedPatch).some((key) => !["confidence", "lastReviewed"].includes(key));
+      const validated = isContentEdit ? normalizeNoteInput({ ...item, ...requestedPatch }) :
+        { ...item, ...normalizeNoteInput(requestedPatch, { partial: true, category: item.category }) };
+      if (isContentEdit) assertNoDuplicateNote(validated, itemsRef.current, itemId);
+      const patch = Object.fromEntries(Object.keys(requestedPatch).map((key) => [key, validated[key]]));
       if (Object.keys(patch).length === 0) return item;
-      const saved = isDemo ? { ...item, ...patch } : await updateNote(itemId, patch, userId, { isCurrent: isCurrentAccount });
+      const saved = isDemo ? { ...item, ...patch } : await updateNote(itemId, patch, userId, { isCurrent: isCurrentAccount, category: validated.category });
       if (!isCurrentAccount()) throw new Error("The account changed before the note finished saving.");
       // Merge only fields owned by this operation, never a whole delayed row.
       const confirmed = Object.fromEntries(Object.keys(patch).map((key) => [key, saved[key]]));
@@ -231,6 +244,7 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
     isLoading: !isDemo && Boolean(userId) && !isLoaded && !loadError,
     isLoaded,
     loadError,
+    dataWarningCount,
     retryLoad,
     items,
     markReviewed,

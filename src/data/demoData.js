@@ -43,10 +43,10 @@ export const demoNotes = [
     conjugation: {
       je: "organise",
       tu: "organises",
-      il: "organise",
+      "il/elle": "organise",
       nous: "organisons",
       vous: "organisez",
-      ils: "organisent",
+      "ils/elles": "organisent",
     },
     adjectiveForms: {},
     lastReviewed: "Not reviewed",

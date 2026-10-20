@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
 import { assertAccountAccess } from "../utils/demoMode";
+import { normalizeNoteInput, normalizeStoredNotes } from "../utils/noteIntegrity";
 import {
   collectPaginatedRows,
   NOTES_PAGE_SIZE,
@@ -8,23 +9,9 @@ import {
 const pendingNoteWrites = new Map();
 
 function toNote(row) {
-  return {
-    id: row.id,
-    category: row.category,
-    french: row.french,
-    english: row.english,
-    example: row.example ?? "",
-    notes: row.notes ?? "",
-    tags: row.tags ?? [],
-    confidence: row.confidence ?? 1,
-    partOfSpeech: row.part_of_speech ?? "",
-    ipa: row.ipa ?? "",
-    gender: row.gender ?? "",
-    conjugation: row.conjugation ?? {},
-    adjectiveForms: row.adjective_forms ?? {},
-    lastReviewed: row.last_reviewed ?? "Not reviewed",
-    createdAt: row.created_at ?? "",
-  };
+  const note = normalizeStoredNotes([row]).notes[0];
+  if (!note) throw new Error("The saved note returned invalid data. Reload your notes before retrying.");
+  return note;
 }
 
 function toNoteRow(note, userId) {
@@ -36,7 +23,7 @@ function toNoteRow(note, userId) {
     example: note.example ?? "",
     notes: note.notes ?? "",
     tags: note.tags ?? [],
-    confidence: Number(note.confidence) || 1,
+    confidence: note.confidence,
     part_of_speech: note.partOfSpeech ?? "",
     ipa: note.ipa ?? "",
     gender: note.gender ?? "",
@@ -44,6 +31,15 @@ function toNoteRow(note, userId) {
     adjective_forms: note.adjectiveForms ?? {},
     last_reviewed: note.lastReviewed ?? "Not reviewed",
   };
+}
+
+function throwNoteWriteError(error) {
+  if (error.code === "23505") {
+    const duplicate = new Error("A note with this title already exists in this category. Edit it or choose a different title.");
+    Object.assign(duplicate, { code: "NOTE_DUPLICATE", field: "duplicate" });
+    throw duplicate;
+  }
+  throw error;
 }
 
 export async function listNotes(userId, { isCurrent = () => true } = {}) {
@@ -69,25 +65,28 @@ export async function listNotes(userId, { isCurrent = () => true } = {}) {
     return data ?? [];
   }, NOTES_PAGE_SIZE);
 
-  return rows.map(toNote);
+  return normalizeStoredNotes(rows);
 }
 
 export async function createNote(note, userId) {
+  assertAccountAccess();
+  const validated = normalizeNoteInput(note);
   const { data, error } = await supabase
     .from("notes")
-    .insert(toNoteRow(note, userId))
+    .insert(toNoteRow(validated, userId))
     .select()
     .single();
 
   if (error) {
-    throw error;
+    throwNoteWriteError(error);
   }
 
   return toNote(data);
 }
 
-export function updateNote(noteId, note, userId, { isCurrent = () => true } = {}) {
-  return queueNoteWrite(noteId, userId, isCurrent, () => patchNote(noteId, note, userId));
+export function updateNote(noteId, note, userId, { isCurrent = () => true, category } = {}) {
+  const validated = normalizeNoteInput(note, { partial: true, category });
+  return queueNoteWrite(noteId, userId, isCurrent, () => patchNote(noteId, validated, userId));
 }
 
 function queueNoteWrite(noteId, userId, isCurrent, operation) {
@@ -122,7 +121,7 @@ async function patchNote(noteId, note, userId) {
     .single();
 
   if (error) {
-    throw error;
+    throwNoteWriteError(error);
   }
 
   return toNote(data);
