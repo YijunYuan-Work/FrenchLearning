@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { changedNoteFields, createNoteMutationQueue } from "../utils/noteMutations";
 import { assertNoDuplicateNote, normalizeNoteInput } from "../utils/noteIntegrity";
+import { isQuizVocabularyNote } from "../utils/quiz";
 import {
   createNote,
   deleteNote as deleteStoredNote,
@@ -106,12 +107,15 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
     return savedItem;
   }
 
-  function persistPatch(itemId, getPatch) {
+  function persistPatch(itemId, getPatch, { vocabularyOnly = false } = {}) {
     if (pendingDeleteIds.current.has(itemId)) return Promise.reject(new Error("This note is being deleted. Wait before editing it."));
     return mutateNote(itemId, async () => {
       if (pendingDeleteIds.current.has(itemId)) throw new Error("This note is being deleted. Wait before editing it.");
       const item = itemsRef.current.find((entry) => entry.id === itemId);
       if (!item) throw new Error("This note is no longer available.");
+      if (vocabularyOnly && !isQuizVocabularyNote(item)) {
+        throw Object.assign(new Error("This note is no longer eligible for the Vocabulary quiz."), { code: "QUIZ_ITEM_INELIGIBLE" });
+      }
       const requestedPatch = getPatch(item);
       const isContentEdit = Object.keys(requestedPatch).some((key) => !["confidence", "lastReviewed"].includes(key));
       const validated = isContentEdit ? normalizeNoteInput({ ...item, ...requestedPatch }) :
@@ -119,7 +123,7 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
       if (isContentEdit) assertNoDuplicateNote(validated, itemsRef.current, itemId);
       const patch = Object.fromEntries(Object.keys(requestedPatch).map((key) => [key, validated[key]]));
       if (Object.keys(patch).length === 0) return item;
-      const saved = isDemo ? { ...item, ...patch } : await updateNote(itemId, patch, userId, { isCurrent: isCurrentAccount, category: validated.category });
+      const saved = isDemo ? { ...item, ...patch } : await updateNote(itemId, patch, userId, { isCurrent: isCurrentAccount, category: validated.category, vocabularyOnly });
       if (!isCurrentAccount()) throw new Error("The account changed before the note finished saving.");
       // Merge only fields owned by this operation, never a whole delayed row.
       const confirmed = Object.fromEntries(Object.keys(patch).map((key) => [key, saved[key]]));
@@ -148,7 +152,7 @@ export function useNotes({ demoItems, isDemo, isCurrentAccount, setError, user }
     const saved = await persistPatch(itemId, (current) => ({
       confidence: Math.min(4, Math.max(Number(current.confidence), Number(targetConfidence))),
       lastReviewed: "Today",
-    }));
+    }), { vocabularyOnly: true });
     if (Number(saved.confidence) < target) throw new Error("The confidence update was not confirmed.");
     return saved;
   }

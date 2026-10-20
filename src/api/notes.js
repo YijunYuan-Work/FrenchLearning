@@ -84,9 +84,9 @@ export async function createNote(note, userId) {
   return toNote(data);
 }
 
-export function updateNote(noteId, note, userId, { isCurrent = () => true, category } = {}) {
+export function updateNote(noteId, note, userId, { isCurrent = () => true, category, vocabularyOnly = false } = {}) {
   const validated = normalizeNoteInput(note, { partial: true, category });
-  return queueNoteWrite(noteId, userId, isCurrent, () => patchNote(noteId, validated, userId));
+  return queueNoteWrite(noteId, userId, isCurrent, () => patchNote(noteId, validated, userId, vocabularyOnly));
 }
 
 function queueNoteWrite(noteId, userId, isCurrent, operation) {
@@ -101,7 +101,7 @@ function queueNoteWrite(noteId, userId, isCurrent, operation) {
   return write.finally(() => { if (pendingNoteWrites.get(key) === write) pendingNoteWrites.delete(key); });
 }
 
-async function patchNote(noteId, note, userId) {
+async function patchNote(noteId, note, userId, vocabularyOnly) {
   assertAccountAccess();
   const columns = {
     category: "category", french: "french", english: "english", example: "example",
@@ -112,15 +112,18 @@ async function patchNote(noteId, note, userId) {
   const patch = Object.fromEntries(Object.entries(columns)
     .filter(([key]) => Object.hasOwn(note, key))
     .map(([key, column]) => [column, key === "french" ? String(note[key]).trim() : note[key]]));
-  const { data, error } = await supabase
+  let query = supabase
     .from("notes")
     .update(patch)
     .eq("id", noteId)
-    .eq("user_id", userId)
-    .select()
-    .single();
+    .eq("user_id", userId);
+  if (vocabularyOnly) query = query.eq("category", "vocabulary");
+  const { data, error } = await query.select().single();
 
   if (error) {
+    if (vocabularyOnly && error.code === "PGRST116") {
+      throw Object.assign(new Error("This note is no longer eligible for the Vocabulary quiz."), { code: "QUIZ_ITEM_INELIGIBLE" });
+    }
     throwNoteWriteError(error);
   }
 

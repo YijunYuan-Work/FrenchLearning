@@ -9,6 +9,7 @@ import {
   isMeaningCorrect,
   MAX_CONFIDENCE,
   normalizeQuizState,
+  reconcileQuizState,
   uniqueLearningItems,
 } from "./quiz.js";
 
@@ -103,8 +104,8 @@ test("noun gender answers accept dropdown values and Chinese labels", () => {
 
 test("eligible quiz vocabulary excludes mastered and non-vocabulary notes", () => {
   const items = [
-    { id: "1", category: "vocabulary", confidence: 1, french: "aller" },
-    { id: "2", category: "vocabulary", confidence: MAX_CONFIDENCE, french: "être" },
+    { id: "1", category: "vocabulary", confidence: 1, french: "aller", english: "go" },
+    { id: "2", category: "vocabulary", confidence: MAX_CONFIDENCE, french: "être", english: "be" },
     { id: "3", category: "phrases", confidence: 1, french: "bonjour" },
   ];
 
@@ -116,9 +117,9 @@ test("eligible quiz vocabulary excludes mastered and non-vocabulary notes", () =
 
 test("eligible vocabulary deduplicates repeated words", () => {
   const items = [
-    { id: "1", category: "vocabulary", confidence: 1, french: "aller" },
-    { id: "2", category: "vocabulary", confidence: 1, french: "Aller" },
-    { id: "3", category: "vocabulary", confidence: 1, french: "venir" },
+    { id: "1", category: "vocabulary", confidence: 1, french: "aller", english: "go" },
+    { id: "2", category: "vocabulary", confidence: 1, french: "Aller", english: "go" },
+    { id: "3", category: "vocabulary", confidence: 1, french: "venir", english: "come" },
   ];
 
   assert.deepEqual(
@@ -129,9 +130,9 @@ test("eligible vocabulary deduplicates repeated words", () => {
 
 test("new quiz queues exclude words that already appeared", () => {
   const items = [
-    { id: "1", category: "vocabulary", confidence: 1, french: "aller" },
-    { id: "2", category: "vocabulary", confidence: 1, french: "venir" },
-    { id: "3", category: "vocabulary", confidence: 1, french: "faire" },
+    { id: "1", category: "vocabulary", confidence: 1, french: "aller", english: "go" },
+    { id: "2", category: "vocabulary", confidence: 1, french: "venir", english: "come" },
+    { id: "3", category: "vocabulary", confidence: 1, french: "faire", english: "do" },
   ];
 
   const state = createDailyQuizState(items, "2026-06-19", ["1", "2"]);
@@ -146,6 +147,7 @@ test("quiz queue defaults to 50 words and accepts a custom limit", () => {
     category: "vocabulary",
     confidence: 1,
     french: `mot-${index + 1}`,
+    english: "meaning",
   }));
 
   assert.equal(DAILY_QUIZ_LIMIT, 50);
@@ -179,4 +181,57 @@ test("learning items still de-duplicate repeated IDs", () => {
     uniqueLearningItems(items).map((item) => item.id),
     ["1", "2"]
   );
+});
+
+const quizNote = (id, changes = {}) => ({ id, french: id, english: `meaning-${id}`, category: "vocabulary", confidence: 1, ...changes });
+const session = (changes = {}) => ({ date: "2026-10-19", limit: 23, queueIds: ["a", "b", "c"], seenIds: ["a", "b", "c"], answered: {}, ...changes });
+
+test("saved Quiz reconciliation removes ineligible active notes without reshuffling or replacing the queue", () => {
+  const state = session({ queueIds: ["a", "phrase", "grammar", "pronunciation", "missing", "mastered", "b", "broken", "c"] });
+  const items = [quizNote("a"), quizNote("b"), quizNote("c"),
+    ...["phrases", "grammar", "pronunciation"].map((category, index) => quizNote(["phrase", "grammar", "pronunciation"][index], { category })),
+    quizNote("mastered", { confidence: 4 }), quizNote("broken", { english: {} }), null];
+  const next = reconcileQuizState(state, items);
+  assert.deepEqual(next.queueIds, ["a", "b", "c"]);
+  assert.equal(next.limit, 23);
+  assert.equal(next.date, state.date);
+  assert.ok(next.seenIds.includes("missing"));
+  assert.equal(reconcileQuizState(next, items), next);
+});
+
+test("completed Quiz outcomes remain history after reclassification, deletion, or mastery", () => {
+  const answered = { a: { correct: true, status: "complete" }, b: { correct: false, revealedAnswer: true }, c: { correct: true } };
+  const next = reconcileQuizState(session({ answered }), [quizNote("a", { category: "grammar", english: "" }), quizNote("c", { confidence: 4 })]);
+  assert.deepEqual(next.queueIds, ["a", "b", "c"]);
+  assert.deepEqual(next.answered, answered);
+  assert.equal(Object.values(next.answered).filter((result) => result.correct).length, 2);
+  const legacy = reconcileQuizState(session({ queueIds: ["a"], answered: { a: { correct: false }, deleted: { correct: true } } }), [quizNote("a")]);
+  assert.deepEqual(legacy.queueIds, ["a", "deleted"]);
+  assert.equal(legacy.answered.deleted.correct, true);
+});
+
+test("pending Quiz outcomes are removed if ineligible, but fixed-target recovery survives a committed mastery update", () => {
+  const pending = { status: "pending", correct: false, answer: "meaning", targetConfidence: 4 };
+  const next = reconcileQuizState(session({ answered: { a: pending, b: pending, c: pending } }),
+    [quizNote("a", { category: "phrases" }), quizNote("c", { confidence: 4 })]);
+  assert.deepEqual(next.queueIds, ["c"]);
+  assert.deepEqual(next.answered, { c: pending });
+  assert.deepEqual(next.seenIds, ["a", "b", "c"]);
+  assert.deepEqual(normalizeQuizState(JSON.parse(JSON.stringify(next)), next.date), next);
+});
+
+test("reconciliation rejects malformed IDs and answers and never repeats active French words", () => {
+  const next = reconcileQuizState(session({ queueIds: [null, "a", "a", "duplicate", "b", "array", "bad", {}], answered: { array: [], b: { status: "pending", targetConfidence: "invalid" }, bad: "invalid" }, seenIds: {} }),
+    [quizNote("a", { french: "école" }), quizNote("duplicate", { french: " E\u0301COLE " }), quizNote("b"), quizNote("array"), quizNote("bad", { confidence: Number.NaN })]);
+  assert.deepEqual(next.queueIds, ["a"]);
+  assert.deepEqual(next.answered, {});
+  assert.ok(next.seenIds.includes("duplicate"));
+  assert.deepEqual(getEligibleVocabulary([null, quizNote("x", { french: {} }), quizNote("y", { english: " " }), quizNote("z", { confidence: -1 })]), []);
+});
+
+test("a reconciled session with only removed questions stays exhausted, not a fresh randomized quiz", () => {
+  const next = reconcileQuizState(session(), [quizNote("a", { category: "phrases" }), quizNote("new")]);
+  assert.deepEqual(next.queueIds, []);
+  assert.deepEqual(next.seenIds, ["a", "b", "c"]);
+  assert.deepEqual(next.answered, {});
 });

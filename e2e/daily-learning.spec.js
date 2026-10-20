@@ -258,13 +258,16 @@ test("an unanswered Quiz waits for learning settings instead of regenerating its
   expect(backend.writes).toEqual([]);
 });
 
-test("successfully loaded empty notes allow normal empty Quiz and Study states", async ({ page, context, baseURL }) => {
+for (const keepHistory of [false, true]) {
+test(`successfully loaded empty notes ${keepHistory ? "retain completed Quiz history" : "allow an empty Quiz without earning completion"} and allow empty Study`, async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   backend.notes = [];
+  if (!keepHistory) backend.saved.quiz_state.answered = {};
   await page.goto("/");
   await openSession(page, "Quiz");
-  await expect(page.getByText("No vocabulary is due today.", { exact: true })).toBeVisible();
-  await expect.poll(() => backend.saved.quiz_state.queueIds).toEqual([]);
+  await expect(page.getByText(keepHistory ? "Today's quiz is complete." : "No vocabulary is due today.", { exact: true })).toBeVisible();
+  await expect.poll(() => backend.saved.quiz_state.queueIds).toEqual(keepHistory ? ["one"] : []);
+  await expect.poll(() => backend.saved.quiz).toBe(keepHistory);
   await openSession(page, "Study");
   await expect(page.getByText("No study cards are due.", { exact: true })).toBeVisible();
   await expect.poll(() => backend.saved.study_state.cycleIds).toEqual([]);
@@ -272,6 +275,7 @@ test("successfully loaded empty notes allow normal empty Quiz and Study states",
   expect(backend.saved.study).toBe(true);
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
+}
 
 test("local storage read failure preserves the saved state and recovers without a write", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL }, { sync: false, failLocalRead: true });

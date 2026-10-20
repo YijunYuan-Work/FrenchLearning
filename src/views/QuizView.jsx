@@ -9,6 +9,9 @@ import {
   getTodayKey,
   isGenderCorrect,
   isMeaningCorrect,
+  isCompletedQuizAnswer,
+  isQuizVocabularyNote,
+  reconcileQuizState,
   MAX_CONFIDENCE,
 } from "../utils/quiz";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -27,19 +30,47 @@ export function QuizView({
 }) {
   const { t } = useLanguage();
   const quizLimit = learningSettings?.quizVocabularyLimit ?? DAILY_QUIZ_LIMIT;
-  const [quizState, setQuizState] = useState(() =>
+  const [rawQuizState, setRawQuizState] = useState(() =>
     savedQuizState ?? createDailyQuizState(items, learningDay, [], quizLimit)
   );
-  const restoredAnswer = Object.values(savedQuizState?.answered ?? {}).find((result) => result?.status === "pending");
+  const restoredAnswer = Object.values(reconcileQuizState(rawQuizState, items).answered).find((result) => result?.status === "pending");
   const [answer, setAnswer] = useState(restoredAnswer?.answer ?? "");
   const [genderAnswer, setGenderAnswer] = useState(restoredAnswer?.genderAnswer ?? "");
-  const [lastResult, setLastResult] = useState(null);
-  const [attemptItem, setAttemptItem] = useState(null);
+  const [resultState, setLastResult] = useState(null);
+  const [attemptState, setAttemptItem] = useState(null);
   const [isSavingAnswer, setIsSavingAnswer] = useState(false);
   const [answerSaveError, setAnswerSaveError] = useState(false);
   const attemptRef = useRef(null);
   const savingRef = useRef(false);
   const mountedRef = useRef(true);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const quizState = useMemo(() => reconcileQuizState(rawQuizState, items), [rawQuizState, items]);
+  const quizStateRef = useRef(quizState);
+  quizStateRef.current = quizState;
+  const isCurrentQuestion = (id) => quizState.queueIds.includes(id) && isQuizVocabularyNote(items.find((item) => item?.id === id));
+  const lastResult = resultState && isCurrentQuestion(resultState.item.id) ? resultState : null;
+  const attemptItem = attemptState && isCurrentQuestion(attemptState.id) ? attemptState : null;
+
+  function setQuizState(update) {
+    const next = typeof update === "function" ? update(quizStateRef.current) : update;
+    const reconciled = reconcileQuizState(next, itemsRef.current);
+    quizStateRef.current = reconciled;
+    setRawQuizState(reconciled);
+  }
+
+  useEffect(() => {
+    if ((attemptState && !attemptItem) || (resultState && !lastResult)) {
+      attemptRef.current = null;
+      savingRef.current = false;
+      setAttemptItem(null);
+      setLastResult(null);
+      setIsSavingAnswer(false);
+      setAnswerSaveError(false);
+      setAnswer("");
+      setGenderAnswer("");
+    }
+  }, [attemptState, attemptItem, resultState, lastResult]);
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
@@ -83,17 +114,6 @@ export function QuizView({
         return createDailyQuizState(items, today, [], quizLimit);
       }
 
-      const existingIds = new Set(items.map((item) => item.id));
-      const nextQueueIds = current.queueIds.filter((id) => existingIds.has(id));
-      const nextSeenIds = currentSeenIds.filter((id) => existingIds.has(id));
-      if (
-        nextQueueIds.length !== current.queueIds.length ||
-        nextSeenIds.length !== currentSeenIds.length ||
-        !current.seenIds
-      ) {
-        return { ...current, queueIds: nextQueueIds, seenIds: nextSeenIds };
-      }
-
       return current;
     });
   }, [items, learningDay, quizLimit]);
@@ -113,10 +133,10 @@ export function QuizView({
   }, [savedQuizState]);
 
   const quizItems = useMemo(() => {
-    const byId = new Map(items.map((item) => [item.id, item]));
+    const byId = new Map(items.filter(isQuizVocabularyNote).map((item) => [item.id, item]));
     return quizState.queueIds
       .map((id) => byId.get(id))
-      .filter(Boolean)
+      .filter(isQuizVocabularyNote)
       .filter(
         (item) =>
           quizState.answered[item.id] ||
@@ -138,9 +158,9 @@ export function QuizView({
     [eligibleItems, seenQuizIds]
   );
 
-  const answeredResults = quizItems
-    .map((item) => quizState.answered[item.id])
-    .filter((result) => result && result.status !== "pending");
+  const answeredResults = quizState.queueIds
+    .map((id) => quizState.answered[id])
+    .filter(isCompletedQuizAnswer);
   const answeredCount = answeredResults.length;
   const currentItem =
     attemptItem ??
@@ -152,13 +172,22 @@ export function QuizView({
     ) ??
     null;
   const correctCount = answeredResults.filter((result) => result.correct).length;
-  const remainingCount = Math.max(quizItems.length - answeredCount, 0);
+  const remainingCount = Math.max(quizState.queueIds.length - answeredCount, 0);
   const isQuizComplete =
-    quizItems.length > 0 && answeredCount >= quizItems.length && !lastResult && !attemptItem && !isSavingAnswer;
+    quizState.queueIds.length > 0 && answeredCount >= quizState.queueIds.length && !lastResult && !attemptItem && !isSavingAnswer;
   const pendingAnswer = quizState.answered[currentItem?.id]?.status === "pending";
   const currentItemNeedsGender =
     currentItem?.partOfSpeech === "noun" && Boolean(currentItem.gender);
   const quizQueueKey = quizState.queueIds.join("|");
+  const previousQuestionRef = useRef(currentItem?.id);
+  const currentAnswer = quizState.answered[currentItem?.id];
+
+  useEffect(() => {
+    if (previousQuestionRef.current === currentItem?.id) return;
+    previousQuestionRef.current = currentItem?.id;
+    setAnswer(currentAnswer?.status === "pending" ? currentAnswer.answer ?? "" : "");
+    setGenderAnswer(currentAnswer?.status === "pending" ? currentAnswer.genderAnswer ?? "" : "");
+  }, [currentItem?.id, currentAnswer]);
 
   useEffect(() => {
     reportedCompletionRef.current = false;
@@ -172,7 +201,7 @@ export function QuizView({
 
   function submitAnswer(event) {
     event.preventDefault();
-    if (!currentItem || lastResult || savingRef.current || pendingAnswer) return;
+    if (!currentItem || !isCurrentQuestion(currentItem.id) || lastResult || savingRef.current || pendingAnswer) return;
 
     const meaningCorrect = isMeaningCorrect(answer, currentItem.english);
     const needsGender =
@@ -218,7 +247,7 @@ export function QuizView({
   }
 
   function showCorrectAnswer() {
-    if (!currentItem || lastResult || savingRef.current || pendingAnswer) return;
+    if (!currentItem || !isCurrentQuestion(currentItem.id) || lastResult || savingRef.current || pendingAnswer) return;
 
     setQuizState((current) => ({
       ...current,
@@ -254,37 +283,53 @@ export function QuizView({
   }
 
   async function saveCorrectAnswer(item, result) {
-    const active = () => mountedRef.current && isCurrentAccount() && learningDay === getTodayKey();
-    if (savingRef.current || !active()) return;
+    const attempt = { item, result };
+    const active = () => mountedRef.current && isCurrentAccount() && learningDay === getTodayKey() && attemptRef.current === attempt;
+    const eligible = () => quizStateRef.current.queueIds.includes(item.id) && isQuizVocabularyNote(itemsRef.current.find((note) => note?.id === item.id));
+    if (savingRef.current || !mountedRef.current || !isCurrentAccount() || learningDay !== getTodayKey() || !eligible()) return;
     savingRef.current = true;
-    attemptRef.current = { item, result };
+    attemptRef.current = attempt;
     setAttemptItem(item);
     setLastResult(null);
     setIsSavingAnswer(true);
     setAnswerSaveError(false);
     const pending = { ...result, correct: false, status: "pending" };
-    const next = { ...quizState, answered: { ...quizState.answered, [item.id]: pending } };
+    const next = { ...quizStateRef.current, answered: { ...quizStateRef.current.answered, [item.id]: pending } };
     setQuizState(next);
     try {
       // The durable fixed target makes a note commit followed by a lost response
       // or a refresh safe to retry, without calculating another increment.
       await onPersistQuizState(next);
-      if (!active()) return;
+      if (!active() || !eligible()) return;
       const saved = await onQuizAnswer(item.id, result.targetConfidence);
-      if (!active()) return;
+      if (!active() || !eligible()) return;
       const completed = { ...result, correct: true, status: "complete", confidence: saved.confidence };
-      const finalState = { ...next, answered: { ...next.answered, [item.id]: completed } };
+      const latest = quizStateRef.current;
+      const finalState = { ...latest, answered: { ...latest.answered, [item.id]: completed } };
       setQuizState(finalState);
       await onPersistQuizState(finalState);
       if (!active()) return;
-      setLastResult({ ...completed, item });
+      if (eligible()) setLastResult({ ...completed, item });
       setAttemptItem(null);
-      attemptRef.current = null;
-    } catch {
-      if (active()) setAnswerSaveError(true);
+      attempt.completed = true;
+    } catch (error) {
+      if (active() && error.code === "QUIZ_ITEM_INELIGIBLE") {
+        setQuizState((current) => {
+          const answered = { ...current.answered };
+          delete answered[item.id];
+          return { ...current, queueIds: current.queueIds.filter((id) => id !== item.id), answered };
+        });
+        setAttemptItem(null);
+        setAnswer("");
+        setGenderAnswer("");
+        attempt.completed = true;
+      } else if (active()) setAnswerSaveError(true);
     } finally {
-      savingRef.current = false;
-      if (mountedRef.current) setIsSavingAnswer(false);
+      if (attemptRef.current === attempt) {
+        savingRef.current = false;
+        if (attempt.completed) attemptRef.current = null;
+        if (mountedRef.current) setIsSavingAnswer(false);
+      }
     }
   }
 
@@ -313,7 +358,7 @@ export function QuizView({
   return (
     <div className="min-w-0">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label={t("todaysQuiz", "Today's quiz")} value={`${answeredCount}/${quizItems.length}`} />
+        <Metric label={t("todaysQuiz", "Today's quiz")} value={`${answeredCount}/${quizState.queueIds.length}`} />
         <Metric label={t("correct", "Correct")} value={correctCount} tone="green" />
         <Metric label={t("remaining", "Remaining")} value={remainingCount} tone="blue" />
         <Metric label={t("dailyGoal", "Daily goal")} value={quizLimit} />
