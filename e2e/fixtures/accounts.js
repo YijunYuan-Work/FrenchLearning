@@ -90,6 +90,12 @@ export async function setupAccounts({ page, context, baseURL }, { sync = true, d
     }
     await route.fulfill({ response, body });
   });
+  // Username login derives its synthetic email separately from the SDK client.
+  await page.route("**/src/api/auth.js*", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.text()).replaceAll("import.meta.env.VITE_SUPABASE_URL", JSON.stringify(origin));
+    await route.fulfill({ response, body });
+  });
   await page.route("**/src/api/dailyLearning.js*", async (route) => {
     const response = await route.fetch();
     const body = (await response.text()).replace(/const dailyLearningSyncEnabled =[\s\S]*?;/,

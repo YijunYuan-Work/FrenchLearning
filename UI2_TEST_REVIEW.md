@@ -46,3 +46,13 @@ Final command outcomes are recorded in [the final audit](UI2_FINAL_AUDIT.md#veri
 - CI still retains local failure traces/screenshots without uploading them as artifacts. This optional FD-22 follow-up is documented; workflow/deployment configuration is deliberately unchanged.
 - Explicit Node test enumeration is currently complete but still requires maintaining the list when adding future test files. There is no confirmed omitted current suite.
 - No broad test-file split or increased browser matrix was introduced. Further extraction should follow actual ownership boundaries, not a file-length quota.
+
+## PR #25 CI Follow-Up
+
+[Actions run 39666738368](https://github.com/YijunYuan-Work/FrenchLearning/actions/runs/39666738368) passed 156 cases but failed the sign-in loading assertion on all three attempts. This was a synthetic configuration defect, not a loading-accessibility regression or an Auth event-ordering repair.
+
+The account fixture supplied a fake URL to `src/lib/supabase.js`, but `src/api/auth.js` independently reads `import.meta.env.VITE_SUPABASE_URL` when deriving the username's Auth email. Secret-free CI has no such value. Reproducing the unmodified test on an isolated Vite server with all Supabase environment values empty produced the identical assertion failure, an `Invalid URL` alert and **zero token requests**. Email construction failed before the gated HTTP request; the immediately completed error transition offered no pending request for the loading assertion to observe. Local environment configuration had masked this incomplete mock.
+
+The fixture now supplies the same synthetic origin to the Auth email-derivation module, retaining the real username helper, Supabase SDK, hook and HTTP/error handling. The test verifies the password-grant POST and synthetic email before checking the original loading status, then checks the failed-login alert, loader removal, idle form, enabled retry and exactly one request. No sleep, timeout increase, application/Auth change or design change.
+
+The formerly failing case passed three consecutive secret-free runs with retries disabled. Lint, all 114 Node tests and production build passed (the existing bundle warning remains). `npm run test:e2e -- --workers=1 --retries=0` passed all **157 cases in 5.3 minutes**, without failures or automatic retries. GitHub CI remains a separate check on the pushed revision.

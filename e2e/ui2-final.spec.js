@@ -48,8 +48,10 @@ test("sign-in selection and failed submission expose accessible state without ch
   await setupAccounts({ page, context, baseURL });
   await context.clearCookies();
   let release;
+  let requestCount = 0;
   const gate = new Promise((resolve) => { release = resolve; });
   await page.route(`${origin}/auth/v1/token**`, async (route) => {
+    requestCount += 1;
     await gate;
     await route.fulfill({ status: 400, json: { msg: "Invalid login credentials", code: "invalid_credentials" } });
   });
@@ -63,11 +65,22 @@ test("sign-in selection and failed submission expose accessible state without ch
   await signIn.click();
   await page.getByLabel("Username", { exact: true }).fill("synthetic-user");
   await page.getByLabel("Password", { exact: true }).fill("synthetic-invalid-password");
+  const tokenRequest = page.waitForRequest(`${origin}/auth/v1/token**`);
   await page.getByRole("button", { name: "Sign in", exact: true }).last().click();
+  const request = await tokenRequest;
+  expect(request.method()).toBe("POST");
+  expect(new URL(request.url()).searchParams.get("grant_type")).toBe("password");
+  expect(request.postDataJSON()).toMatchObject({
+    email: `synthetic-user@${new URL(origin).hostname}`,
+    password: "synthetic-invalid-password",
+  });
   await expect(page.getByRole("status")).toContainText("Loading your French workspace");
   release();
   await expect(page.getByRole("alert")).toContainText("username or password is incorrect");
+  await expect(page.getByRole("status")).toHaveCount(0);
   await expect(page.locator("form")).toHaveAttribute("aria-busy", "false");
+  await expect(page.getByRole("button", { name: "Sign in", exact: true }).last()).toBeEnabled();
+  expect(requestCount).toBe(1);
   await go(page, "简体中文");
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
 });
