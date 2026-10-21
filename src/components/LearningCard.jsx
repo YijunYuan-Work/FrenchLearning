@@ -1,7 +1,8 @@
-import { Check, CheckSquare, Edit3, Square, Trash2 } from "lucide-react";
-import { categories } from "../data/categories";
+import { Check, Edit3, MoreHorizontal, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { conjugationPronouns, partOfSpeechLabel } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
+import { LibraryDialog } from "./LibraryDialog";
 import { RichTextContent } from "./RichTextEditor";
 
 function confidenceLabel(value, t) {
@@ -11,226 +12,316 @@ function confidenceLabel(value, t) {
   return t("confidenceNeedsPractice", "Needs practice");
 }
 
-export function LearningCard({
-  allowConfidenceActions = true,
-  isDeleting = false,
-  isSelected,
+export function EntrySelection({
   item,
-  markReviewed,
-  onDeleteItem,
+  isSelected,
+  isDeleting,
   onToggleSelected,
-  openEditItem,
 }) {
   const { t } = useLanguage();
-  const CategoryIcon = categories[item.category].icon;
-  const isGrammarNote = item.category === "grammar";
-  const isPhraseNote = item.category === "phrases";
-  const hasConjugation =
-    item.partOfSpeech === "verb" &&
-    conjugationPronouns.some((pronoun) => item.conjugation?.[pronoun]);
-  const hasAdjectiveForms =
-    item.partOfSpeech === "adjective" &&
-    Object.values(item.adjectiveForms ?? {}).some(Boolean);
-  const hasGrammarDetails =
-    item.partOfSpeech ||
-    item.ipa ||
-    item.gender ||
-    hasConjugation ||
-    hasAdjectiveForms;
-
+  const label = t(
+    isSelected ? "unselectNote" : "selectNote",
+    isSelected ? "Unselect {word}" : "Select {word}",
+    { word: item.french },
+  );
   return (
-    <article
-      className={`rounded-xl border p-4 transition ${
-        isSelected
-          ? "border-frenchBlue/35 bg-sky/70 shadow-soft"
-          : "border-line bg-paper shadow-soft hover:shadow-lift"
-      }`}
-    >
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
+    <label className="library-checkbox" title={label}>
+      <input
+        type="checkbox"
+        aria-label={label}
+        checked={Boolean(isSelected)}
+        disabled={isDeleting}
+        onChange={() => onToggleSelected(item.id)}
+      />
+      <span aria-hidden="true">{isSelected && <Check size={12} />}</span>
+    </label>
+  );
+}
+
+export function EntryActions({
+  item,
+  isDeleting,
+  openEditItem,
+  onDeleteItem,
+  onToggleSelected,
+  isSelected,
+  allowConfidenceActions = true,
+  markReviewed,
+}) {
+  const { t } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const editLabel = t("editNoteNamed", "Edit {word}", { word: item.french });
+  const deleteLabel = t("deleteNoteNamed", "Delete {word}", {
+    word: item.french,
+  });
+  return (
+    <>
+      <div className="library-entry-actions">
+        <button
+          className="icon-action"
+          aria-label={editLabel}
+          title={editLabel}
+          onClick={() => openEditItem(item)}
+          type="button"
+        >
+          <Edit3 size={16} />
+        </button>
+        <button
+          className="icon-action library-delete-action"
+          disabled={isDeleting}
+          aria-label={deleteLabel}
+          title={deleteLabel}
+          onClick={() => onDeleteItem(item)}
+          type="button"
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+      <button
+        className="icon-action library-entry-more"
+        aria-label={t("noteActions", "Actions for {word}", {
+          word: item.french,
+        })}
+        aria-haspopup="dialog"
+        disabled={isDeleting}
+        onClick={() => setOpen(true)}
+        type="button"
+      >
+        <MoreHorizontal size={20} />
+      </button>
+      {open && (
+        <LibraryDialog title={item.french} onClose={() => setOpen(false)}>
+          <EntryConfidence
+            item={item}
+            isDeleting={isDeleting}
+            allowConfidenceActions={allowConfidenceActions}
+            markReviewed={markReviewed}
+          />
+          <div className="library-action-list">
             <button
-              aria-label={`${isSelected ? "Unselect" : "Select"} ${item.french}`}
-              disabled={isDeleting}
-              className="focus-ring inline-flex size-7 items-center justify-center rounded-lg border border-line bg-white text-frenchBlue disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={() => onToggleSelected(item.id)}
+              onClick={() => {
+                setOpen(false);
+                openEditItem(item);
+              }}
               type="button"
             >
-              {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
+              <Edit3 size={18} />
+              {t("editNote", "Edit note")}
             </button>
-            <span className="inline-flex items-center gap-1 rounded-lg bg-sky px-2 py-1 text-xs font-bold text-frenchBlue">
-              <CategoryIcon size={13} />
-              {t(categories[item.category].labelKey, categories[item.category].label)}
-            </span>
-            <span className="rounded-lg bg-mint px-2 py-1 text-xs font-bold text-sage">
-              {confidenceLabel(item.confidence, t)}
-            </span>
+            {onToggleSelected && (
+              <button
+                disabled={isDeleting}
+                onClick={() => {
+                  onToggleSelected(item.id);
+                  setOpen(false);
+                }}
+                type="button"
+              >
+                <Check size={18} />
+                {isSelected ? t("unselect", "Unselect") : t("select", "Select")}
+              </button>
+            )}
+            <button
+              className="library-delete-action"
+              disabled={isDeleting}
+              onClick={() => {
+                setOpen(false);
+                onDeleteItem(item);
+              }}
+              type="button"
+            >
+              <Trash2 size={18} />
+              {t("delete", "Delete")}
+            </button>
           </div>
-          <h3 className="text-xl font-black leading-snug tracking-[-0.01em]">{item.french}</h3>
-          {item.english && !isPhraseNote && (
-            <p className="mt-1 text-sm font-bold text-slate-600">
-              {item.english}
-            </p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <button
-            aria-label={`Edit ${item.french}`}
-            className="focus-ring inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-white text-slate-600 hover:text-frenchBlue"
-            onClick={() => openEditItem(item)}
-            type="button"
-          >
-            <Edit3 size={16} />
-          </button>
-          <button
-            aria-label={`Delete ${item.french}`}
-            disabled={isDeleting}
-            className="focus-ring inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-frenchRed/25 bg-white text-frenchRed hover:bg-blush disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={() => onDeleteItem(item)}
-            type="button"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      </div>
+        </LibraryDialog>
+      )}
+    </>
+  );
+}
 
-      {isPhraseNote ? (
-        <div className="mt-4 grid gap-3 rounded-xl bg-sky/35 p-3 md:grid-cols-2">
-          <div>
-            <p className="text-xs font-bold text-slate-500">
-              {t("originalFrench", "Original French")}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-slate-800">
-              {item.french}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500">
-              {t("translation", "Translation")}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-slate-800">
-              {item.english}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          {!isGrammarNote && item.example && (
-            <div>
-              <p className="text-xs font-bold text-slate-500">
-                {t("example", "Example")}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-slate-800">
-                {item.example}
-              </p>
-            </div>
-          )}
-          {hasGrammarDetails && (
-            <div>
-              <p className="text-xs font-bold text-slate-500">
-                {t("grammarDetails", "Grammar details")}
-              </p>
-              <div className="mt-1 grid gap-2 text-sm leading-6 text-slate-800">
-                {item.partOfSpeech && (
-                  <p>
-                    <span className="font-semibold">{t("type", "Type")}:</span>{" "}
-                    {partOfSpeechLabel(item.partOfSpeech, t)}
-                  </p>
-                )}
-                {item.ipa && (
-                  <p>
-                    <span className="font-semibold">IPA:</span> {item.ipa}
-                  </p>
-                )}
-                {item.gender && (
-                  <p>
-                    <span className="font-semibold">{t("gender", "Gender")}:</span> {item.gender}
-                  </p>
-                )}
-                {hasConjugation && (
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    {conjugationPronouns.map((pronoun) =>
-                      item.conjugation?.[pronoun] ? (
-                        <div className="flex gap-2" key={pronoun}>
-                          <dt className="font-semibold">{pronoun}</dt>
-                          <dd>{item.conjugation[pronoun]}</dd>
-                        </div>
-                      ) : null
-                    )}
-                  </dl>
-                )}
-                {hasAdjectiveForms && (
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    {[
-                      ["masculine", "masc."],
-                      ["feminine", "fem."],
-                      ["masculinePlural", "masc. pl."],
-                      ["femininePlural", "fem. pl."],
-                    ].map(([field, label]) =>
-                      item.adjectiveForms?.[field] ? (
-                        <div className="flex gap-2" key={field}>
-                          <dt className="font-semibold">{label}</dt>
-                          <dd>{item.adjectiveForms[field]}</dd>
-                        </div>
-                      ) : null
-                    )}
-                  </dl>
-                )}
-              </div>
-            </div>
-          )}
-          {item.notes && (
-            <div className={isGrammarNote ? "md:col-span-2" : ""}>
-              <p className="text-xs font-bold text-slate-500">
-                {isGrammarNote ? t("grammarNote", "Grammar note") : t("notes", "Notes")}
-              </p>
-              {isGrammarNote ? (
-                <RichTextContent html={item.notes} />
-              ) : (
-                <p className="mt-1 whitespace-pre-line text-sm leading-6 text-slate-800">
-                  {item.notes}
-                </p>
-              )}
-            </div>
-          )}
+export function EntryConfidence({
+  item,
+  allowConfidenceActions = true,
+  markReviewed,
+  isDeleting,
+}) {
+  const { t } = useLanguage();
+  return (
+    <div className="library-confidence">
+      <span
+        className="library-meter"
+        role="img"
+        aria-label={t("confidenceValue", "Confidence {value} of 4", {
+          value: item.confidence,
+        })}
+      >
+        {[1, 2, 3, 4].map((step) => (
+          <i
+            key={step}
+            className={step <= item.confidence ? "is-filled" : ""}
+          />
+        ))}
+      </span>
+      <span className="library-confidence-label">
+        {confidenceLabel(item.confidence, t)}
+      </span>
+      {allowConfidenceActions && (
+        <div className="library-confidence-actions">
+          <button
+            disabled={isDeleting}
+            onClick={() => markReviewed(item, -1)}
+            type="button"
+          >
+            {t("needsPractice", "Needs practice")}
+          </button>
+          <button
+            disabled={isDeleting}
+            onClick={() => markReviewed(item, 1)}
+            type="button"
+          >
+            {t("iKnowThis", "I know this")}
+          </button>
         </div>
       )}
+    </div>
+  );
+}
 
-      <div className="mt-4 flex flex-col gap-3 border-t border-line pt-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {(item.tags ?? []).map((tag) => (
-            <span
-              className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600"
-              key={tag}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-        {allowConfidenceActions ? (
-          <div className="flex gap-2">
-            <button
-              className="focus-ring inline-flex h-9 items-center gap-2 rounded-lg border border-frenchRed/25 bg-white px-3 text-xs font-bold text-frenchRed hover:bg-blush"
-              onClick={() => markReviewed(item, -1)}
-              type="button"
-            >
-              {t("needsPractice", "Needs practice")}
-            </button>
-            <button
-              className="focus-ring inline-flex h-9 items-center gap-2 rounded-lg bg-sage px-3 text-xs font-bold text-white hover:bg-sage/90"
-              onClick={() => markReviewed(item, 1)}
-              type="button"
-            >
-              <Check size={15} />
-            {t("iKnowThis", "I know this")}
-            </button>
-          </div>
+export function EntryTags({ item, onTag }) {
+  return (
+    <div className="library-tags">
+      {(item.tags ?? []).map((tag) =>
+        onTag ? (
+          <button key={tag} onClick={() => onTag(tag)} type="button">
+            #{tag}
+          </button>
         ) : (
-          <p className="text-xs font-bold text-slate-500">
-            {t("confidenceChangesInQuiz", "Confidence changes in Quiz or Edit.")}
-          </p>
+          <span key={tag}>#{tag}</span>
+        ),
+      )}
+    </div>
+  );
+}
+
+function WordForms({ item }) {
+  const forms = [
+    ...(item.partOfSpeech === "verb"
+      ? conjugationPronouns.map((key) => [key, item.conjugation?.[key]])
+      : []),
+    ...[
+      ["masculine", "m."],
+      ["feminine", "f."],
+      ["masculinePlural", "m. pl."],
+      ["femininePlural", "f. pl."],
+    ].map(([key, label]) => [label, item.adjectiveForms?.[key]]),
+  ];
+  if (!forms.some(([, value]) => value)) return null;
+  return (
+    <dl className="library-forms">
+      {forms
+        .filter(([, value]) => value)
+        .map(([key, value]) => (
+          <div key={key}>
+            <dt>{key}</dt>
+            <dd lang="fr">{value}</dd>
+          </div>
+        ))}
+    </dl>
+  );
+}
+
+export function LearningCard(props) {
+  const { t } = useLanguage();
+  const { item, isSelected, isDeleting, onTag, index = 0 } = props;
+  const isPhrase = item.category === "phrases";
+  const isPronunciation = item.category === "pronunciation";
+  return (
+    <article
+      className={`library-entry ${isPhrase ? "library-phrase" : isPronunciation ? "library-fiche" : "library-word"}${isSelected ? " is-selected" : ""}${isDeleting ? " is-deleting" : ""}`}
+      data-note-id={item.id}
+    >
+      {isPronunciation ? (
+        <div className="library-fiche-top">
+          <EntrySelection {...props} />
+          <span lang="fr">fiche {index + 1}</span>
+          <EntryActions {...props} />
+        </div>
+      ) : (
+        <EntrySelection {...props} />
+      )}
+      <div className="library-headword">
+        <h3
+          lang="fr"
+          className={item.french.length > (isPhrase ? 40 : 14) ? "is-long" : ""}
+        >
+          {isPhrase && (
+            <span aria-hidden="true" className="library-quote">
+              «
+            </span>
+          )}
+          {item.french}
+        </h3>
+        {!isPhrase && !isPronunciation && (
+          <div className="library-word-meta">
+            {(item.partOfSpeech || item.gender) && (
+              <span>
+                {item.partOfSpeech && partOfSpeechLabel(item.partOfSpeech, t)}
+                {item.gender
+                  ? `${item.partOfSpeech ? " · " : ""}${t(item.gender === "masculine" ? "masculine" : item.gender === "feminine" ? "feminine" : "masculineOrFeminine", item.gender)}`
+                  : ""}
+              </span>
+            )}
+            {item.ipa && <span>{item.ipa}</span>}
+          </div>
         )}
       </div>
+      <div className="library-sense">
+        {item.english && <p className="library-meaning">{item.english}</p>}
+        {isPronunciation && item.ipa && (
+          <p className="library-ipa">{item.ipa}</p>
+        )}
+        {!isPhrase && item.example && (
+          <p className="library-example" lang="fr">
+            {isPronunciation ? item.example : `« ${item.example} »`}
+          </p>
+        )}
+        {!isPhrase && <WordForms item={item} />}
+        {!isPhrase && item.notes && (
+          <p className="library-note">
+            <i lang="fr">N.B.</i> {item.notes}
+          </p>
+        )}
+        <EntryTags item={item} onTag={onTag} />
+      </div>
+      <div className="library-entry-status">
+        <EntryConfidence {...props} />
+        {!isPronunciation && <EntryActions {...props} />}
+      </div>
+    </article>
+  );
+}
+
+export function GrammarArticle({ item, index, ...props }) {
+  return (
+    <article
+      className="library-grammar-reader"
+      key={item.id}
+      data-note-id={item.id}
+    >
+      <div className="library-reader-meta">
+        <span lang="fr">Note {index + 1}</span>
+        <EntryActions {...props} item={item} />
+      </div>
+      <h3 lang="fr" tabIndex={-1}>
+        {item.french}
+      </h3>
+      <div className="library-reader-status">
+        <EntryConfidence {...props} item={item} />
+        <EntryTags item={item} onTag={props.onTag} />
+      </div>
+      <div className="editorial-rule" />
+      <RichTextContent html={item.notes} />
     </article>
   );
 }

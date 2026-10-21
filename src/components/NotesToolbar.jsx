@@ -1,5 +1,7 @@
-import { Search, Tags } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
 import { useLanguage } from "../i18n/LanguageContext";
+import { LibraryDialog } from "./LibraryDialog";
 
 export function NotesToolbar({
   query,
@@ -7,40 +9,147 @@ export function NotesToolbar({
   setQuery,
   setSelectedTag,
   tags,
+  sortOrder,
+  onSortChange,
 }) {
   const { t } = useLanguage();
-
+  const [showFilters, setShowFilters] = useState(false);
+  function filters(inSheet = false) {
+    return (
+      <>
+        {inSheet ? (
+          <fieldset className="library-tag-chips">
+            <legend>{t("tags", "Tags")}</legend>
+            <div>
+              {tags.map((tag) => (
+                <label
+                  className={tag === selectedTag ? "is-active" : ""}
+                  key={tag}
+                >
+                  <input
+                    type="radio"
+                    name="library-tags-sheet"
+                    checked={tag === selectedTag}
+                    onChange={() => setSelectedTag(tag)}
+                  />
+                  <span>
+                    {tag === "all" ? t("allTags", "All tags") : `#${tag}`}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ) : (
+          <label className="library-tag-select">
+            <span>{t("tags", "Tags")}</span>
+            <select
+              aria-label={t("filterByTag", "Filter by tag")}
+              value={selectedTag}
+              onChange={(event) => setSelectedTag(event.target.value)}
+            >
+              {tags.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag === "all" ? t("allTags", "All tags") : `#${tag}`}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {onSortChange && (
+          <fieldset className="library-sort">
+            <legend>{t("sortVocabulary", "Sort vocabulary")}</legend>
+            <div>
+              {[
+                [
+                  "alphabetical",
+                  "sortAlphabetical",
+                  "Alphabetical (A-Z)",
+                  "A – Z",
+                ],
+                ["dateAdded", "sortDateAdded", "Date added (newest)", "Newest"],
+              ].map(([value, key, fallback, short]) => (
+                <label
+                  className={sortOrder === value ? "is-active" : ""}
+                  key={value}
+                >
+                  <input
+                    type="radio"
+                    name={inSheet ? "library-sort-sheet" : "library-sort"}
+                    aria-label={t(key, fallback)}
+                    checked={sortOrder === value}
+                    onChange={() => onSortChange(value)}
+                  />
+                  <span>
+                    {t(
+                      value === "alphabetical" ? "libraryAZ" : "libraryNewest",
+                      short,
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
+      </>
+    );
+  }
   return (
-    <div className="mt-5 flex flex-col gap-3 rounded-xl border border-line bg-white/90 p-3 shadow-soft md:flex-row">
-      <label className="relative flex-1">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-          size={18}
-        />
-        <input
-          className="focus-ring h-11 w-full rounded-lg border border-line bg-white pl-10 pr-3 text-sm shadow-sm"
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={t(
-            "searchPlaceholder",
-            "Search words, phrases, grammar, tags..."
-          )}
-          value={query}
-        />
-      </label>
-      <label className="flex min-w-[210px] items-center gap-2 rounded-lg border border-line bg-white px-3 shadow-sm">
-        <Tags size={17} className="text-slate-500" />
-        <select
-          className="focus-ring h-10 flex-1 bg-transparent text-sm"
-          onChange={(event) => setSelectedTag(event.target.value)}
-          value={selectedTag}
+    <>
+      <div className={`library-toolbar${onSortChange ? " has-sort" : ""}`}>
+        <label className="library-search">
+          <Search size={18} aria-hidden="true" />
+          <span className="sr-only">{t("searchNotes", "Search notes")}</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t(
+              "searchPlaceholder",
+              "Search words, phrases, grammar, tags...",
+            )}
+          />
+        </label>
+        <div className="library-desktop-filters">{filters()}</div>
+        <button
+          className="icon-action library-mobile-filter"
+          aria-label={t("libraryFilters", "Filters & sort")}
+          aria-haspopup="dialog"
+          onClick={() => setShowFilters(true)}
+          type="button"
         >
-          {tags.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag === "all" ? t("allTags", "All tags") : tag}
-            </option>
-          ))}
-        </select>
-      </label>
-    </div>
+          <SlidersHorizontal size={19} />
+          {(selectedTag !== "all" ||
+            (sortOrder && sortOrder !== "alphabetical")) && (
+            <span className="library-filter-dot" />
+          )}
+        </button>
+      </div>
+      {showFilters && (
+        <LibraryDialog
+          title={t("libraryFilters", "Filters & sort")}
+          onClose={() => setShowFilters(false)}
+        >
+          <div className="library-sheet-filters">{filters(true)}</div>
+          <div className="library-sheet-actions">
+            <button
+              className="secondary-action"
+              onClick={() => {
+                setSelectedTag("all");
+                onSortChange?.("alphabetical");
+              }}
+              type="button"
+            >
+              {t("reset", "Reset")}
+            </button>
+            <button
+              className="primary-action"
+              onClick={() => setShowFilters(false)}
+              type="button"
+            >
+              {t("applyFilters", "Apply filters")}
+            </button>
+          </div>
+        </LibraryDialog>
+      )}
+    </>
   );
 }

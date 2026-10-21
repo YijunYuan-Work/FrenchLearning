@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getLearningPreferences } from "./api/preferences";
 import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
+import { LibraryDialog } from "./components/LibraryDialog";
 import { Sidebar } from "./components/Sidebar";
 import { categories } from "./data/categories";
 import { demoNotes, demoUser } from "./data/demoData";
@@ -100,6 +101,9 @@ function Workspace({ isDemoRoute, auth }) {
     handleAuthSubmit, handleSignOut } = auth;
   const [dataError, setDataError] = useState("");
   const confirmingDeletion = useRef(false);
+  const deletionDecision = useRef(null);
+  const [deletePrompt, setDeletePrompt] = useState(null);
+  useEffect(() => () => { deletionDecision.current?.(false); }, []);
   const [learningSettings, setLearningSettings] = useState(defaultLearningSettings);
   const [settingsLoad, setSettingsLoad] = useState({ userId: null, status: "idle", error: "" });
   const [settingsLoadAttempt, setSettingsLoadAttempt] = useState(0);
@@ -345,25 +349,37 @@ function Workspace({ isDemoRoute, auth }) {
   }
 
   async function deleteItem(item) {
-    await confirmDeletion(`Delete "${item.french}"?`, () => notes.deleteOne(item.id));
+    await confirmDeletion(t("deleteSingleConfirm", 'Delete "{word}"?', { word: item.french }), () => notes.deleteOne(item.id));
   }
 
   async function deleteSelected() {
     if (selectedIds.length === 0 || !user) return;
     await confirmDeletion(
-      `Delete ${selectedIds.length} selected note${selectedIds.length === 1 ? "" : "s"}?`,
+      t("deleteSelectionConfirm", "Delete {count} selected notes?", { count: selectedIds.length }),
       notes.deleteSelected,
+      items.filter((item) => selectedIds.includes(item.id)).map((item) => item.french),
     );
   }
 
-  async function confirmDeletion(message, remove) {
+  async function confirmDeletion(message, remove, names = []) {
     if (!user || !isCurrentAccount() || confirmingDeletion.current || notes.isDeleting) return;
     confirmingDeletion.current = true;
     try {
-      if (window.confirm(message)) await remove();
+      const accepted = await new Promise((resolve) => {
+        deletionDecision.current = resolve;
+        setDeletePrompt({ message, names });
+      });
+      if (accepted && isCurrentAccount()) await remove();
     } finally {
       confirmingDeletion.current = false;
     }
+  }
+
+  function decideDeletion(accepted) {
+    const resolve = deletionDecision.current;
+    deletionDecision.current = null;
+    setDeletePrompt(null);
+    resolve?.(accepted);
   }
 
   const ActiveView = viewBySection[activeSection] ?? TodayView;
@@ -476,7 +492,7 @@ function Workspace({ isDemoRoute, auth }) {
   }
 
   return (
-    <div className={`cahier-workspace${activeSection === "review" ? " is-studying" : activeSection === "quiz" ? " is-quizzing" : ""}`} lang={language === "zh" ? "zh-CN" : "en"}>
+    <div className={`cahier-workspace${activeSection === "review" ? " is-studying" : activeSection === "quiz" ? " is-quizzing" : ["vocabulary", "phrases", "grammar", "pronunciation"].includes(activeSection) ? " is-library" : ""}`} lang={language === "zh" ? "zh-CN" : "en"}>
       <Sidebar
         activeSection={activeSection}
         setActiveSection={setActiveSection}
@@ -515,7 +531,7 @@ function Workspace({ isDemoRoute, auth }) {
             </div>
           )}
           {(notes.isDeleting || notes.deletionResult) && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-paper p-3 text-sm" role="status" aria-live="polite">
+            <div className="library-delete-status flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-paper p-3 text-sm" role="status" aria-live="polite">
               <p>{notes.isDeleting
                 ? t("deletingNotes", "Deleting notes...")
                 : t("deleteNotesResult", "Deleted: {deleted}. Failed: {failed}.", notes.deletionResult)}
@@ -575,6 +591,11 @@ function Workspace({ isDemoRoute, auth }) {
         </section>
       </main>
 
+      {deletePrompt && <LibraryDialog title={deletePrompt.message} confirm onClose={() => decideDeletion(false)}>
+        {deletePrompt.names.length > 0 && <p className="library-confirm-list" lang="fr">{deletePrompt.names.slice(0, 4).join(" · ")}{deletePrompt.names.length > 4 ? ` · +${deletePrompt.names.length - 4}` : ""}</p>}
+        <p>{t("deleteNotesWarning", "This permanently removes the selected notes. It cannot be undone.")}</p>
+        <div className="library-sheet-actions"><button className="secondary-action" onClick={() => decideDeletion(false)} type="button">{t("cancel", "Cancel")}</button><button className="primary-action library-danger" aria-label={t("confirmDeletion", "Confirm deletion")} onClick={() => decideDeletion(true)} type="button">{t("delete", "Delete")}</button></div>
+      </LibraryDialog>}
       {editorSession && (
         <EditorModal
           key={editorSession.id}

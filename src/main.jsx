@@ -4,6 +4,7 @@ import App from "./App.jsx";
 import "./index.css";
 import "./study.css";
 import "./quiz.css";
+import "./library.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
