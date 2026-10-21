@@ -431,6 +431,7 @@ function Workspace({ isDemoRoute, auth }) {
     onStartStudy: () => setActiveSection("review"),
     onExitStudy: () => setActiveSection("today"),
     onStartQuiz: () => setActiveSection("quiz"),
+    onExitQuiz: () => setActiveSection("today"),
     onStudyComplete: () => completeTask("study", learningDay),
     onStudyConfidenceChange: notes.setStudyConfidence,
     onStudyStateChange: setDailyStudyState,
@@ -475,7 +476,7 @@ function Workspace({ isDemoRoute, auth }) {
   }
 
   return (
-    <div className={`cahier-workspace${activeSection === "review" ? " is-studying" : ""}`} lang={language === "zh" ? "zh-CN" : "en"}>
+    <div className={`cahier-workspace${activeSection === "review" ? " is-studying" : activeSection === "quiz" ? " is-quizzing" : ""}`} lang={language === "zh" ? "zh-CN" : "en"}>
       <Sidebar
         activeSection={activeSection}
         setActiveSection={setActiveSection}

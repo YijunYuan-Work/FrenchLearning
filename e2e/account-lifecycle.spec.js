@@ -834,15 +834,15 @@ test("demo Quiz reconciles reclassified questions without account or backend wri
   await page.addInitScript(() => { Math.random = () => 0; });
   await page.goto("/#/demo");
   await go(page, "Quiz");
-  const french = await page.locator("form p.text-3xl").innerText();
+  const french = await page.getByTestId("quiz-word").innerText();
   expect(french).toBe("organiser");
   await changeQuizNoteCategory(page, french, "phrases");
   await go(page, "Quiz");
-  await expect(page.locator("form p.text-3xl")).not.toHaveText(french);
-  const nextFrench = await page.locator("form p.text-3xl").innerText();
+  await expect(page.getByTestId("quiz-word")).not.toHaveText(french);
+  const nextFrench = await page.getByTestId("quiz-word").innerText();
   await go(page, "Today");
   await go(page, "Quiz");
-  await expect(page.locator("form p.text-3xl")).toHaveText(nextFrench);
+  await expect(page.getByTestId("quiz-word")).toHaveText(nextFrench);
   expect(backend.accounts[ids.A]).toEqual(originalA);
   expect(backend.writes(ids.A)).toEqual([]);
 });
@@ -1055,6 +1055,9 @@ test("a failed final Quiz write recovers after refresh without increasing confir
   await go(page, "Quiz");
   await answerQuiz(page, "A-meaning-2");
   await expect(page.getByRole("button", { name: "Retry saving answer", exact: true })).toBeVisible();
+  await expect(page.getByText("1/3", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry saving answer", exact: true })).toBeFocused();
+  await expect(page.getByLabel("Your answer", { exact: true })).toHaveValue("A-meaning-2");
   expect(storedNote(backend, "A-2").confidence).toBe(2);
   expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("pending");
   expect(backend.accounts[ids.A].daily.quiz).toBe(false);
@@ -1066,6 +1069,183 @@ test("a failed final Quiz write recovers after refresh without increasing confir
   await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toBeVisible();
   expect(storedNote(backend, "A-2").confidence).toBe(2);
   expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("complete");
+});
+
+test("Quiz notebook keyboard flow preserves real saves, feedback and completion", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  const account = backend.accounts[ids.A];
+  const words = [
+    ["la boulangerie", "bakery", "noun", "feminine", "/bu.lɑ̃.ʒʁi/"],
+    ["souvent", "often", "adverb", "", "/su.vɑ̃/"],
+    ["le rendez-vous", "appointment, meeting", "noun", "masculine", "/ʁɑ̃.de.vu/"],
+    ["l'épanouissement", "fulfilment, blossoming; personal growth and flourishing", "noun", "masculine", "/e.pa.nwis.mɑ̃/"],
+    ["organiser", "to organize", "verb", "", "/ɔʁ.ɡa.ni.ze/"],
+    ["la chaise", "chair", "noun", "feminine", "/ʃɛz/"],
+  ];
+  account.notes = words.map(([french, english, part_of_speech, gender, ipa], index) => ({ id: `A-${index + 1}`, user_id: ids.A, category: "vocabulary", confidence: index === 0 ? 2 : 1, french, english, part_of_speech, gender, ipa }));
+  account.preferences.quiz_vocabulary_limit = 6;
+  account.daily.quiz_state = { date: backend.date, limit: 6, queueIds: account.notes.map((note) => note.id), answered: {}, seenIds: account.notes.map((note) => note.id) };
+  account.notes.push(...Array.from({ length: 12 }, (_, index) => ({ ...account.notes[1], id: `unseen-${index}`, french: `inédit-${index}` })));
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  const shot = async (name) => {
+    await page.evaluate(() => globalThis.document.fonts.ready);
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: testInfo.outputPath(`${name}.png`), animations: "disabled" });
+  };
+  await page.goto("/");
+  await go(page, "Quiz");
+  const answer = page.getByLabel("Your answer", { exact: true });
+  await expect(answer).toBeFocused();
+  await shot("desktop-question");
+  await answer.fill("bakery");
+  await page.getByRole("radio", { name: "Masculine", exact: true }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("radio", { name: "Feminine", exact: true })).toBeChecked();
+  const gate = backend.hold(`${ids.A}:notes:PATCH:A-1`);
+  backend.failures.add(`${ids.A}:notes:PATCH`);
+  await answer.press("Enter");
+  await backend.waitFor(`${ids.A}:notes:PATCH:A-1`);
+  await expect(page.getByRole("status").filter({ hasText: "Saving your answer..." })).toBeVisible();
+  await expect(answer).toBeDisabled();
+  await expect(page.getByText("0/6", { exact: true })).toBeVisible();
+  await shot("desktop-saving");
+  await page.setViewportSize({ width: 370, height: 736 });
+  await shot("mobile-saving");
+  await page.setViewportSize({ width: 1280, height: 800 });
+  gate.resolve();
+  const retry = page.getByRole("button", { name: "Retry saving answer", exact: true });
+  await expect(retry).toBeFocused();
+  await expect(answer).toHaveValue("bakery");
+  await shot("desktop-error");
+  await page.setViewportSize({ width: 370, height: 736 });
+  await shot("mobile-error");
+  await expect(retry).toBeInViewport();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  backend.failures.delete(`${ids.A}:notes:PATCH`);
+  await page.keyboard.press("Enter");
+  const next = page.getByRole("button", { name: "Next word", exact: true });
+  await expect(next).toBeFocused();
+  await expect(page.getByText("Confidence advanced to 3.", { exact: true })).toBeVisible();
+  expect(notePatches(backend, "A-1").map((entry) => entry.body.confidence)).toEqual([3, 3]);
+  await shot("desktop-correct");
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("quiz-word")).toHaveText("souvent");
+  await expect(answer).toBeFocused();
+  await answer.fill("sometimes");
+  await answer.press("Enter");
+  await expect(next).toBeFocused();
+  await page.getByRole("button", { name: "Mark as correct", exact: true }).click();
+  await expect(next).toBeFocused();
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  await next.press("Enter");
+  await expect(answer).toBeFocused();
+  await answer.fill("appointment");
+  await page.getByRole("radio", { name: "Masculine", exact: true }).check();
+  await answer.press("Enter");
+  await next.click();
+  await expect(page.getByTestId("quiz-word")).toHaveText("l'épanouissement");
+  await answer.fill("openness");
+  await page.getByRole("radio", { name: "Masculine", exact: true }).check();
+  await answer.press("Enter");
+  expect(await page.getByTestId("quiz-word").evaluate((element) => element.getBoundingClientRect().height / parseFloat(globalThis.getComputedStyle(element).lineHeight))).toBeLessThan(1.2);
+  await shot("desktop-incorrect-long");
+  await page.setViewportSize({ width: 370, height: 736 });
+  await shot("mobile-incorrect-long");
+  await expect(page.getByRole("button", { name: "Next word", exact: true })).toBeInViewport();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await next.click();
+  await expect(answer).toBeFocused();
+  await answer.fill("to organize");
+  await answer.press("Enter");
+  await next.click();
+  await page.getByRole("button", { name: "Show correct answer", exact: true }).click();
+  await expect(next).toBeFocused();
+  expect(notePatches(backend, "A-6")).toEqual([]);
+  await next.press("Enter");
+  await expect(page.getByRole("heading", { name: "Today's quiz is complete.", exact: true })).toBeFocused();
+  await expect.poll(() => account.daily.quiz).toBe(true);
+  expect(Object.values(account.daily.quiz_state.answered).filter((entry) => entry.correct)).toHaveLength(4);
+  await shot("desktop-complete");
+  await expect(page.getByRole("button", { name: "Start a new quiz", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "简体中文", exact: true }).click();
+  await shot("desktop-complete-chinese");
+  await page.setViewportSize({ width: 370, height: 736 });
+  await shot("mobile-complete-chinese");
+  await page.getByRole("button", { name: "开始新的测验", exact: true }).click();
+  await expect(page.getByTestId("quiz-word")).toContainText("inédit-");
+  await expect.poll(() => account.daily.quiz_state.queueIds.every((id) => id.startsWith("unseen-"))).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("mobile Quiz follows the visible viewport, bilingual controls and reduced motion", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 370, height: 736 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const backend = await setupAccounts({ page, context, baseURL });
+  const account = backend.accounts[ids.A];
+  account.preferences.language = "zh";
+  Object.assign(storedNote(backend, "A-2"), { french: "le rendez-vous", english: "约会，会面", part_of_speech: "noun", gender: "masculine", ipa: "/ʁɑ̃.de.vu/" });
+  await page.goto("/");
+  await go(page, "测验");
+  const answer = page.getByLabel("你的答案", { exact: true });
+  await expect(answer).toBeFocused();
+  await page.evaluate(() => globalThis.document.fonts.ready);
+  await page.screenshot({ path: testInfo.outputPath("mobile-question-chinese.png") });
+  await page.evaluate(() => {
+    Object.defineProperties(globalThis.visualViewport, { height: { configurable: true, value: 452 }, offsetTop: { configurable: true, value: 0 } });
+    globalThis.visualViewport.dispatchEvent(new Event("resize"));
+  });
+  await expect(page.locator(".quiz-page")).toHaveAttribute("data-keyboard", "true");
+  await answer.fill("约会");
+  await page.getByRole("radio", { name: "阳性", exact: true }).check();
+  await answer.focus();
+  const check = page.getByRole("button", { name: "检查答案", exact: true });
+  const bounds = await check.boundingBox();
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(452);
+  await page.evaluate(() => globalThis.document.fonts.ready);
+  await page.screenshot({ path: testInfo.outputPath("mobile-keyboard-chinese.png"), clip: { x: 0, y: 0, width: 370, height: 452 } });
+  await check.click();
+  const next = page.getByRole("button", { name: "下一个词", exact: true });
+  await expect(next).toBeFocused();
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  await page.evaluate(() => {
+    Object.defineProperty(globalThis.visualViewport, "height", { configurable: true, value: 736 });
+    globalThis.visualViewport.dispatchEvent(new Event("resize"));
+  });
+  await page.screenshot({ path: testInfo.outputPath("mobile-correct-chinese.png") });
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect.poll(() => page.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+  }
+  expect(await page.locator(".quiz-feedback").evaluate((element) => globalThis.getComputedStyle(element).animationName)).toBe("none");
+  await page.setViewportSize({ width: 370, height: 736 });
+  await next.click();
+  await expect(answer).toBeFocused();
+  await page.getByRole("button", { name: "返回今日", exact: true }).click();
+  await expect(page.locator(".today-page")).toBeVisible();
+  await go(page, "测验");
+  await expect(page.getByTestId("quiz-word")).toHaveText("A-word-3");
+  await page.getByRole("button", { name: "显示正确答案", exact: true }).click();
+  await page.getByRole("button", { name: "下一个词", exact: true }).click();
+  await expect(page.getByRole("button", { name: "开始新的测验", exact: true })).toBeDisabled();
+  expect(notePatches(backend, "A-2")).toHaveLength(1);
+});
+
+test("the maximum configured Quiz fits its complete segmented ledger on a narrow phone", async ({ page, context, baseURL }) => {
+  await page.setViewportSize({ width: 320, height: 736 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  const account = backend.accounts[ids.A];
+  account.notes = Array.from({ length: 200 }, (_, index) => ({ ...account.notes[0], id: `word-${index}`, french: `mot-${index}` }));
+  account.preferences.quiz_vocabulary_limit = 200;
+  account.daily.quiz_state = { date: backend.date, limit: 200, queueIds: account.notes.map((note) => note.id), answered: {}, seenIds: account.notes.map((note) => note.id) };
+  await page.goto("/");
+  await go(page, "Quiz");
+  await expect(page.getByText("0/200", { exact: true })).toBeVisible();
+  await expect(page.locator(".quiz-segments > span")).toHaveCount(200);
+  const last = await page.locator(".quiz-segments > span").last().boundingBox();
+  expect(last.width).toBeGreaterThan(0);
+  expect(last.x + last.width).toBeLessThanOrEqual(300);
 });
 
 test("a pending intent in local daily storage survives a committed note response failure", async ({ page, context, baseURL }) => {
@@ -1092,7 +1272,7 @@ test("a correct demo Quiz answer changes only disposable demo confidence", async
   await page.goto("/#/demo");
   const storage = await page.evaluate(() => ({ ...localStorage }));
   await go(page, "Quiz");
-  const question = page.locator("form p.text-3xl");
+  const question = page.getByTestId("quiz-word");
   const french = await question.textContent();
   const note = await page.evaluate(async (french) => {
     const { demoNotes } = await import("/src/data/demoData.js");
@@ -1101,7 +1281,7 @@ test("a correct demo Quiz answer changes only disposable demo confidence", async
     return { ...note, acceptedAnswer: getAcceptedMeanings(note.english)[0] };
   }, french);
   await page.getByLabel("Your answer", { exact: true }).fill(note.acceptedAnswer);
-  if (note.partOfSpeech === "noun" && note.gender) await page.getByRole("combobox", { name: "Gender", exact: true }).selectOption(note.gender);
+  if (note.partOfSpeech === "noun" && note.gender) await page.getByRole("radio", { name: new RegExp(`^${note.gender}$`, "i") }).check();
   await page.getByRole("button", { name: "Check answer", exact: true }).click();
   await expect(page.getByText(`Confidence advanced to ${Math.min(4, note.confidence + 1)}.`, { exact: true })).toBeVisible();
   expect(backend.accounts).toEqual(original);
