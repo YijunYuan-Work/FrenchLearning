@@ -72,10 +72,10 @@ export function RichTextEditor({ label, onChange, placeholder, t, value }) {
   }
 
   return (
-    <div className="grid gap-1 text-sm font-bold md:col-span-2">
+    <div className="editor-rich-field grid gap-1 text-sm font-bold md:col-span-2">
       <span id={labelId}>{label}</span>
-      <div className="rounded-xl border border-line bg-white shadow-sm">
-        <div className="flex flex-wrap gap-1 border-b border-line bg-sky/35 p-2">
+      <div className="editor-rich-frame rounded-xl border border-line bg-white shadow-sm">
+        <div className="editor-rich-toolbar flex flex-wrap gap-1 border-b border-line bg-sky/35 p-2" role="toolbar" aria-label={label}>
           {toolbarButtons.map((button) => {
             const Icon = button.icon;
             return (
@@ -100,6 +100,7 @@ export function RichTextEditor({ label, onChange, placeholder, t, value }) {
         </div>
         <div
           aria-labelledby={labelId}
+          aria-multiline="true"
           className="rich-text-editor focus-ring min-h-56 rounded-b-xl px-3 py-2 font-normal outline-none"
           contentEditable
           data-placeholder={placeholder}

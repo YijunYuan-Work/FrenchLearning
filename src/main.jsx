@@ -5,6 +5,7 @@ import "./index.css";
 import "./study.css";
 import "./quiz.css";
 import "./library.css";
+import "./editor.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>

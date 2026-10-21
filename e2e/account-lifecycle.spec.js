@@ -59,7 +59,7 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
   const failedCreates = new Set();
   const failedDeletes = new Set();
   const lostDeleteResponses = new Set();
-  const transport = { failCompletedQuiz: false, aiError: null, aiStatus: 429, aiRaw: undefined, failNextCreate: false };
+  const transport = { failCompletedQuiz: false, aiError: null, aiStatus: 429, aiRaw: undefined, failNextCreate: false, aiResult: null };
 
   if (ignoreAiCancellation) {
     // Keep real Auth, request and response handling, but simulate a transport
@@ -186,7 +186,7 @@ async function setupAccounts({ page, context, baseURL }, { sync = true, delayIni
     if (resource === "ai") {
       if (transport.aiRaw !== undefined) return route.fulfill({ status: transport.aiStatus, contentType: "text/html", body: transport.aiRaw });
       if (transport.aiError) return route.fulfill({ status: transport.aiStatus, json: transport.aiError });
-      return route.fulfill({ json: {
+      return route.fulfill({ json: transport.aiResult ?? {
         category: "vocabulary", word: body.word, english: body.language === "zh" ? "中文释义" : "AI meaning",
         partOfSpeech: "verb", tags: ["AI topic"], notes: body.language === "zh" ? "中文笔记" : "AI notes",
         ipa: "/test/", example: "AI example", conjugation: { je: "AI form" },
@@ -234,6 +234,200 @@ async function go(page, name) {
   await page.getByRole("button", { name, exact: true }).or(page.getByRole("checkbox", { name, exact: true })).click();
   if (name.startsWith("Delete ") || name === "Retry failed deletions") await page.getByRole("alertdialog").getByRole("button", { name: "Confirm deletion", exact: true }).click();
 }
+
+async function editorCapture(page, testInfo, name) {
+  await page.evaluate(() => globalThis.document.fonts.ready);
+  if (!name.includes("long-form")) await page.locator(".editor-scroll-body").evaluate((el) => { el.scrollTop = 0; });
+  await page.mouse.move(0, 0);
+  await page.screenshot({ path: testInfo.outputPath(`${name}.png`) });
+  await page.getByRole("dialog").screenshot({ path: testInfo.outputPath(`detail-${name}.png`) });
+}
+
+test("editor notebook layout creates and edits every category with conditional fields and cursor insertion", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  const editor = await openDraft(page, "boulangerie");
+  await editor.getByLabel("English", { exact: true }).fill("bakery");
+  await editor.getByLabel("Word type", { exact: true }).selectOption("noun");
+  await editor.getByRole("radio", { name: "Feminine", exact: true }).check();
+  await editorCapture(page, testInfo, "desktop-vocabulary");
+  const french = editor.getByLabel("French", { exact: true });
+  await french.fill("cafe");
+  await french.press("End");
+  await french.press("Shift+ArrowLeft");
+  await editor.getByRole("button", { name: "é", exact: true }).click();
+  await expect(french).toHaveValue("café");
+  await expect(french).toBeFocused();
+  expect(await editor.locator(".french-character-rows button").count()).toBe(45);
+  await go(page, "Save note");
+  await expect(editor).toHaveCount(0);
+  await go(page, "Edit café");
+  await expect(editor.getByRole("radio", { name: "Feminine", exact: true })).toBeChecked();
+  await editor.getByLabel("French", { exact: true }).fill("organiser");
+  await editor.getByLabel("English", { exact: true }).fill("to organize");
+  await editor.getByLabel("IPA pronunciation", { exact: true }).fill("/ɔʁ.ɡa.ni.ze/");
+  await editor.getByLabel("Word type", { exact: true }).selectOption("verb");
+  for (const [pronoun, value] of Object.entries({ je: "organise", tu: "organises", "il/elle": "organise", nous: "organisons", vous: "organisez", "ils/elles": "organisent" })) await editor.getByLabel(pronoun, { exact: true }).fill(value);
+  await editor.getByLabel("Example", { exact: true }).fill("Je dois organiser mes notes de français.");
+  await editor.getByLabel("Notes", { exact: true }).fill("Regular -er verb.");
+  await editor.getByLabel("Tags", { exact: true }).fill("work, verbs");
+  await editor.getByRole("radio", { name: "Learning", exact: true }).check();
+  await editorCapture(page, testInfo, "desktop-verb");
+  await go(page, "Save note");
+  await expect(editor).toHaveCount(0);
+  expect(storedNote(backend, "saved-café")).toMatchObject({ french: "organiser", conjugation: { vous: "organisez" }, confidence: 2 });
+
+  for (const [category, label, title, meaning] of [
+    ["phrases", "Phrases", "Il ne faut pas vendre la peau de l’ours avant de l’avoir tué.", "Don't count your chickens before they hatch."],
+    ["grammar", "Grammar", "Le subjonctif après « il faut que »", ""],
+    ["pronunciation", "Pronunciation Rules", "Le R français", "A French uvular consonant."],
+  ]) {
+    await go(page, "Add note");
+    await editor.getByRole("radio", { name: label, exact: true }).check();
+    const titleInput = editor.getByRole("textbox", { name: category === "grammar" ? "Title" : category === "phrases" ? "Original French" : "French", exact: true });
+    await titleInput.fill(title);
+    if (category === "grammar") {
+      const rich = editor.getByRole("textbox", { name: "Grammar note", exact: true });
+      await rich.fill("Il faut que is always followed by the subjunctive.");
+      await rich.press("ControlOrMeta+a");
+      await editor.getByRole("button", { name: "Bold", exact: true }).click();
+      await expect(rich.locator("b,strong")).toContainText("Il faut que");
+      await rich.press("ControlOrMeta+a");
+      await rich.evaluate((element) => {
+        const clipboardData = new globalThis.DataTransfer();
+        clipboardData.setData("text/html", '<p><strong>Il faut que</strong> is always followed by the subjunctive, because it expresses necessity rather than a fact.</p><p><em>Il faut que tu viennes demain.</em></p><ol><li>Take the ils/elles form of the present tense.</li><li>Drop -ent.</li><li>Add -e, -es, -e, -ions, -iez, -ent.</li></ol>');
+        element.dispatchEvent(new globalThis.ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true }));
+      });
+      await rich.press("ArrowRight");
+    } else {
+      await editor.getByLabel(category === "phrases" ? "Translation" : "English", { exact: true }).fill(meaning);
+      if (category === "pronunciation") await editor.getByLabel("IPA pronunciation", { exact: true }).fill("/ʁ/");
+    }
+    await editor.getByLabel("Tags", { exact: true }).fill(category === "phrases" ? "proverb" : category === "grammar" ? "subjonctif" : "sounds");
+    await go(page, "Save note");
+    await expect(editor).toHaveCount(0);
+    await go(page, label);
+    await go(page, `Edit ${title}`);
+    await expect(titleInput).toHaveValue(title);
+    if (category === "grammar") await expect(editor.locator(".rich-text-editor b,.rich-text-editor strong")).toContainText("Il faut que");
+    await editorCapture(page, testInfo, `desktop-${category}`);
+    await editor.getByLabel("Tags", { exact: true }).fill("review");
+    await go(page, "Save note");
+    await expect(editor).toHaveCount(0);
+    expect(backend.accounts[ids.A].notes.find((note) => note.french === title)).toMatchObject({ category, tags: ["review"] });
+  }
+  expect(aiRequests(backend)).toHaveLength(0);
+});
+
+test("editor AI and Save feedback reflect real requests and keep manual edits, failures and retries safe", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "Add note");
+  const editor = page.getByRole("dialog");
+  await expect(editor.getByRole("button", { name: "Auto-fill", exact: true })).toBeDisabled();
+  await go(page, "Save note");
+  await expect(editor.getByRole("textbox", { name: "French", exact: true })).toHaveAttribute("aria-invalid", "true");
+  await editorCapture(page, testInfo, "desktop-validation");
+  await editor.getByLabel("French", { exact: true }).fill("chaleureux");
+  const gate = backend.hold(`${ids.A}:ai:POST`);
+  backend.transport.aiResult = { category: "vocabulary", word: "chaleureux", english: "warm, welcoming", partOfSpeech: "adjective", ipa: "/ʃa.lø.ʁø/", tags: ["people"], example: "Ils nous ont réservé un accueil chaleureux.", notes: "Used for a welcome or a friendly person.", adjectiveForms: { masculine: "chaleureux", feminine: "chaleureuse", masculinePlural: "chaleureux", femininePlural: "chaleureuses" } };
+  await go(page, "Auto-fill");
+  await backend.waitFor(`${ids.A}:ai:POST`);
+  await editorCapture(page, testInfo, "desktop-ai-loading");
+  await editor.getByLabel("Notes", { exact: true }).fill("My own explanation.");
+  gate.resolve();
+  await expect(editor.getByRole("status")).toContainText("Auto-filled.");
+  await expect(editor.getByLabel("Notes", { exact: true })).toHaveValue("My own explanation.");
+  await expect(editor.getByLabel("Feminine plural", { exact: true })).toHaveValue("chaleureuses");
+  await editorCapture(page, testInfo, "desktop-ai-success");
+  await expect(editor.locator(".is-autofilled")).toHaveCount(0);
+  await editorCapture(page, testInfo, "desktop-adjective");
+  backend.transport.aiError = { code: "OPENAI_TIMEOUT", error: "AI auto-fill timed out. Please try again." };
+  await go(page, "Auto-fill");
+  await expect(editor.getByRole("alert")).toContainText("timed out");
+  await editorCapture(page, testInfo, "desktop-ai-error");
+  expect(aiRequests(backend)).toHaveLength(2);
+  backend.transport.aiError = null;
+  await go(page, "Retry auto-fill");
+  await expect(editor.getByRole("status")).toContainText("Auto-filled.");
+  expect(aiRequests(backend)).toHaveLength(3);
+  backend.transport.failNextCreate = true;
+  const saveGate = backend.hold(`${ids.A}:notes:POST`);
+  await go(page, "Save note");
+  await backend.waitFor(`${ids.A}:notes:POST`);
+  await expect(editor).toHaveAttribute("aria-busy", "true");
+  await editorCapture(page, testInfo, "desktop-save-pending");
+  saveGate.resolve();
+  await expect(editor.getByRole("alert")).toContainText("Note save failed");
+  await editorCapture(page, testInfo, "desktop-save-failure");
+  await go(page, "Save note");
+  await expect(editor).toHaveCount(0);
+  expect(backend.accounts[ids.A].notes.filter((note) => note.french === "chaleureux")).toHaveLength(1);
+});
+
+test("mobile editor keeps its footer in a reduced visual viewport, scrolls long forms, and restores focus", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 370, height: 736 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "More");
+  await page.getByRole("button", { name: "简体中文", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "关闭", exact: true }).click();
+  const trigger = page.getByRole("button", { name: "添加笔记", exact: true });
+  await trigger.click();
+  const editor = page.getByRole("dialog");
+  const french = editor.getByLabel("法语", { exact: true });
+  await expect(french).toBeFocused();
+  await french.fill("chaleureu");
+  // Browser-emulated keyboard geometry, not a drawn keyboard or production fake.
+  await page.evaluate(() => {
+    Object.defineProperty(globalThis.visualViewport, "height", { configurable: true, value: 472 });
+    globalThis.visualViewport.dispatchEvent(new Event("resize"));
+  });
+  const footer = editor.locator(".editor-footer");
+  const bounds = await footer.boundingBox();
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(473);
+  await expect(editor.getByRole("button", { name: "保存笔记", exact: true })).toBeVisible();
+  await editorCapture(page, testInfo, "mobile-keyboard-chinese");
+  await french.fill("cafe");
+  await french.press("End");
+  await french.press("Shift+ArrowLeft");
+  await editor.getByRole("button", { name: "é", exact: true }).click();
+  await expect(french).toHaveValue("café");
+  await expect(french).toBeFocused();
+  await french.fill("organiser");
+  await page.evaluate(() => {
+    delete globalThis.visualViewport.height;
+    globalThis.visualViewport.dispatchEvent(new Event("resize"));
+  });
+  await editor.getByLabel("词性", { exact: true }).selectOption("verb");
+  await editor.getByLabel("ils/elles", { exact: true }).fill("organisent");
+  await editorCapture(page, testInfo, "mobile-long-form-chinese");
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 736 });
+    expect(await editor.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    const header = await editor.locator(".editor-header").boundingBox();
+    const actions = await footer.boundingBox();
+    expect(header.y).toBeGreaterThanOrEqual(0);
+    expect(actions.y + actions.height).toBeLessThanOrEqual(737);
+  }
+  await page.setViewportSize({ width: 370, height: 736 });
+  await editor.locator(".editor-scroll-body").evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  const cancel = editor.getByRole("button", { name: "取消", exact: true });
+  await cancel.focus();
+  await cancel.press("Tab");
+  await expect(editor.getByRole("button", { name: "保存笔记", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(editor.getByRole("button", { name: "关闭编辑器", exact: true })).toBeFocused();
+  expect(await editor.evaluate((el) => globalThis.getComputedStyle(el).animationName)).toBe("none");
+  await page.keyboard.press("Escape");
+  await expect(editor).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  expect(backend.writes(ids.A).filter((entry) => entry.resource === "notes")).toHaveLength(0);
+});
 
 test("late initial Auth and account A hydration cannot replace account B", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { delayInitialSession: true });
@@ -682,7 +876,7 @@ async function changeQuizNoteCategory(page, french, category) {
   await go(page, "Vocabulary");
   await go(page, `Edit ${french}`);
   const editor = page.getByRole("dialog");
-  await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption(category);
+  await editor.locator(`input[name="editor-category"][value="${category}"]`).check();
   if (category === "grammar") await editor.getByRole("textbox", { name: "Grammar note", exact: true }).fill("A grammar explanation.");
   await go(page, "Save note");
   await expect(editor).toHaveCount(0);
@@ -779,7 +973,7 @@ test("a Quiz answer queued behind a category save is rejected before its confide
   await go(page, "Vocabulary");
   await go(page, "Edit A-word-2");
   const editor = page.getByRole("dialog");
-  await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("phrases");
+  await editor.locator('input[name="editor-category"][value="phrases"]').check();
   await go(page, "Save note");
   await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
   await go(page, "Close editor");
@@ -967,7 +1161,7 @@ for (const confidenceFirst of [true, false]) {
     expect(patches.find((entry) => entry.body.english)?.body).toEqual({ english: "newer edited meaning" });
     expect(patches.find((entry) => entry.body.confidence)?.body).toEqual({ confidence: 2, last_reviewed: "Today" });
     await page.getByRole("button", { name: "Edit A-word-2", exact: true }).click();
-    await expect(page.getByRole("dialog").getByRole("combobox", { name: "Confidence", exact: true })).toHaveValue("2");
+    await expect(page.getByRole("dialog").locator('input[name="editor-confidence"][value="2"]')).toBeChecked();
     await expect(page.getByRole("dialog").getByLabel("English", { exact: true })).toHaveValue("newer edited meaning");
     await page.getByRole("button", { name: "Close editor", exact: true }).click();
     if (confidenceFirst) {
@@ -1743,7 +1937,7 @@ test("manual field edits during autofill survive in both the form and saved note
   await editor.getByLabel("Notes", { exact: true }).fill("my own explanation");
   await editor.getByLabel("Tags", { exact: true }).fill("school, work");
   await editor.getByLabel("je", { exact: true }).fill("my conjugation");
-  await editor.getByRole("combobox", { name: "Confidence", exact: true }).selectOption("3");
+  await editor.locator('input[name="editor-confidence"][value="3"]').check();
   gate.resolve();
   await expect(editor.getByText("Auto-filled. Review the details before saving.", { exact: true })).toBeVisible();
   await expect(editor.getByLabel("English", { exact: true })).toHaveValue("my meaning");
@@ -1773,8 +1967,8 @@ for (const change of ["word", "category", "language"]) {
       await editor.getByLabel("French", { exact: true }).fill("merci");
       await editor.getByLabel("French", { exact: true }).fill("bonjour");
     } else if (change === "category") {
-      await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("grammar");
-      await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("vocabulary");
+      await editor.locator('input[name="editor-category"][value="grammar"]').check();
+      await editor.locator('input[name="editor-category"][value="vocabulary"]').check();
     } else {
       await page.getByRole("button", { name: "简体中文", exact: true }).evaluate((button) => button.click());
       await page.getByRole("button", { name: "English", exact: true }).evaluate((button) => button.click());
@@ -2058,7 +2252,7 @@ for (const demo of [false, true]) {
     await go(page, "Save note");
     await expect(editor.getByText(/already exists in this category/)).toBeVisible();
     await expect(editor.getByLabel("English", { exact: true })).toHaveValue("duplicate draft");
-    await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("phrases");
+    await editor.locator('input[name="editor-category"][value="phrases"]').check();
     await editor.getByRole("textbox", { name: "Translation", exact: true }).fill("   ");
     await go(page, "Save note");
     await expect(editor.getByText("Enter a meaning or translation, not just spaces.", { exact: true })).toBeVisible();
@@ -2066,7 +2260,7 @@ for (const demo of [false, true]) {
     await go(page, "Save note");
     await expect(editor).toHaveCount(0);
     await go(page, "Add note");
-    await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("grammar");
+    await editor.locator('input[name="editor-category"][value="grammar"]').check();
     await editor.getByRole("textbox", { name: "Title", exact: true }).fill("Grammar integrity");
     await go(page, "Save note");
     await expect(editor.getByText("Enter the grammar rule or explanation, not just empty formatting.", { exact: true })).toBeVisible();
@@ -2087,7 +2281,7 @@ test("grammar paste is safe and preserves spacing, lists, tables and entities af
   await page.goto("/");
   await go(page, "Add note");
   const editor = page.getByRole("dialog");
-  await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("grammar");
+  await editor.locator('input[name="editor-category"][value="grammar"]').check();
   await editor.getByRole("textbox", { name: "Title", exact: true }).fill("Pasted grammar");
   const rich = editor.getByRole("textbox", { name: "Grammar note", exact: true });
   await rich.focus();
@@ -2135,7 +2329,7 @@ test("malformed legacy rows are isolated without mutating stored data or crashin
   await expect(page.getByRole("heading", { name: "réparer", exact: true })).toBeVisible();
   await go(page, "Edit réparer");
   const editor = page.getByRole("dialog");
-  await expect(editor.getByRole("combobox", { name: "Confidence", exact: true })).toHaveValue("1");
+  await expect(editor.locator('input[name="editor-confidence"][value="1"]')).toBeChecked();
   await expect(editor.getByRole("textbox", { name: "Tags", exact: true })).toHaveValue("");
   await go(page, "Cancel");
   await go(page, "Study");
