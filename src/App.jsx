@@ -101,6 +101,7 @@ function Workspace({ isDemoRoute, auth }) {
   const { t, language, languagePreferenceStatus, retryLanguagePreference } = useLanguage();
   const { user, loading: authLoading, error: authError, isCurrentAccount, updateUser: setUser,
     handleAuthSubmit, handleSignOut } = auth;
+  const [authSubmissionStarted, setAuthSubmissionStarted] = useState(false);
   const [dataError, setDataError] = useState("");
   const confirmingDeletion = useRef(false);
   const deletionDecision = useRef(null);
@@ -454,7 +455,7 @@ function Workspace({ isDemoRoute, auth }) {
     return <SetupPage />;
   }
 
-  if (authLoading && !user) {
+  if (authLoading && !user && !authSubmissionStarted) {
     return (
       <div className="grid min-h-screen place-items-center bg-cloud/80 px-4 text-ink">
         <div className="app-card p-5 font-semibold" role="status">
@@ -469,7 +470,11 @@ function Workspace({ isDemoRoute, auth }) {
       <SignInPage
         error={authError ? getFriendlyAuthError({ message: authError }) : ""}
         isLoading={authLoading}
-        onAuthSubmit={handleAuthSubmit}
+        onAuthSubmit={(values) => {
+          // Initial hydration uses the workspace loader; submissions keep the draft mounted.
+          setAuthSubmissionStarted(true);
+          return handleAuthSubmit(values);
+        }}
       />
     );
   }

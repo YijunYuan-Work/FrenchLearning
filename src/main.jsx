@@ -7,6 +7,7 @@ import "./quiz.css";
 import "./library.css";
 import "./editor.css";
 import "./bureau.css";
+import "./auth.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
