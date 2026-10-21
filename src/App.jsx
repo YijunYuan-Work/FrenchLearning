@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { getLearningPreferences } from "./api/preferences";
 import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
 import { LibraryDialog } from "./components/LibraryDialog";
 import { Sidebar } from "./components/Sidebar";
+import { ViewBoundary } from "./components/ViewBoundary";
 import { categories } from "./data/categories";
 import { demoNotes, demoUser } from "./data/demoData";
 import { hasSupabaseConfig } from "./lib/supabase";
@@ -19,15 +20,7 @@ import { SignInPage } from "./pages/SignInPage";
 import { assertNoDuplicateNote, normalizeNoteInput } from "./utils/noteIntegrity";
 import { getTodayKey, MAX_CONFIDENCE } from "./utils/quiz";
 import { shouldDelayLearningMount } from "./utils/studyState";
-import { GrammarView } from "./views/GrammarView";
-import { ImportView } from "./views/ImportView";
-import { PhrasesView } from "./views/PhrasesView";
-import { SettingsView } from "./views/SettingsView";
-import { PronunciationView } from "./views/PronunciationView";
-import { QuizView } from "./views/QuizView";
-import { ReviewView } from "./views/ReviewView";
 import { TodayView } from "./views/TodayView";
-import { VocabularyView } from "./views/VocabularyView";
 import { createEmptyWordDetails, normalizeWordDetails } from "./data/wordFields";
 import { createDailyProgress } from "./utils/dailyProgress";
 import { defaultLearningSettings } from "./utils/learningSettings";
@@ -42,6 +35,15 @@ const emptyForm = {
   confidence: 1,
   ...createEmptyWordDetails(),
 };
+
+const GrammarView = lazy(() => import("./views/GrammarView").then((module) => ({ default: module.GrammarView })));
+const ImportView = lazy(() => import("./views/ImportView").then((module) => ({ default: module.ImportView })));
+const PhrasesView = lazy(() => import("./views/PhrasesView").then((module) => ({ default: module.PhrasesView })));
+const SettingsView = lazy(() => import("./views/SettingsView").then((module) => ({ default: module.SettingsView })));
+const PronunciationView = lazy(() => import("./views/PronunciationView").then((module) => ({ default: module.PronunciationView })));
+const QuizView = lazy(() => import("./views/QuizView").then((module) => ({ default: module.QuizView })));
+const ReviewView = lazy(() => import("./views/ReviewView").then((module) => ({ default: module.ReviewView })));
+const VocabularyView = lazy(() => import("./views/VocabularyView").then((module) => ({ default: module.VocabularyView })));
 
 const viewBySection = {
   today: TodayView,
@@ -204,11 +206,6 @@ function Workspace({ isDemoRoute, auth }) {
     setSelectedTag("all");
   }, [selectedTag, tags]);
 
-  const weakItems = useMemo(
-    () => items.filter((item) => item.confidence <= 2),
-    [items]
-  );
-
   const filteredItems = useMemo(() => {
     const searchable = query.trim().toLowerCase();
     return items.filter((item) => {
@@ -239,18 +236,6 @@ function Workspace({ isDemoRoute, auth }) {
       return matchesSection && matchesTag && haystack.includes(searchable);
     });
   }, [activeSection, items, query, selectedTag]);
-
-  const stats = useMemo(() => {
-    const confidenceTotal = items.reduce((sum, item) => sum + item.confidence, 0);
-    return {
-      total: items.length,
-      weak: weakItems.length,
-      tags: tags.length - 1,
-      average: items.length
-        ? Math.round((confidenceTotal / (items.length * 4)) * 100)
-        : 0,
-    };
-  }, [items, tags.length, weakItems.length]);
 
   const visibleDailyProgress = isDemoRoute
     ? (demoDailyProgress.date === learningDay ? demoDailyProgress : createDailyProgress(learningDay))
@@ -459,9 +444,7 @@ function Workspace({ isDemoRoute, auth }) {
     selectedIds,
     setQuery,
     setSelectedTag,
-    stats,
     tags,
-    weakItems,
     savedQuizState: dailyQuizState,
     savedStudyState: dailyStudyState,
     user,
@@ -474,7 +457,7 @@ function Workspace({ isDemoRoute, auth }) {
   if (authLoading && !user) {
     return (
       <div className="grid min-h-screen place-items-center bg-cloud/80 px-4 text-ink">
-        <div className="app-card p-5 font-semibold">
+        <div className="app-card p-5 font-semibold" role="status">
           {t("loadingWorkspace", "Loading your French workspace...")}
         </div>
       </div>
@@ -526,7 +509,7 @@ function Workspace({ isDemoRoute, auth }) {
             </div>
           )}
           {(dataError || authError) && (
-            <div className="rounded-xl border border-frenchRed/25 bg-blush p-3 text-sm font-medium text-frenchRed">
+            <div className="rounded-xl border border-frenchRed/25 bg-blush p-3 text-sm font-medium text-frenchRed" role="alert">
               {dataError || authError}
             </div>
           )}
@@ -586,7 +569,11 @@ function Workspace({ isDemoRoute, auth }) {
                 : t("loadingLearningState", "Loading your saved learning session...")}
             </div>
           ) : (
-            <ActiveView key={["quiz", "review"].includes(activeSection) ? `${activeSection}:${learningDay}` : activeSection} {...viewProps} />
+            <ViewBoundary key={activeSection} message={t("viewLoadFailed", "This page could not be opened. Check your connection and reload the page to try again.")} reloadLabel={t("reloadPage", "Reload page")}>
+              <Suspense fallback={<p className="view-loading" role="status">{t("viewLoading", "Opening page...")}</p>}>
+                <ActiveView key={["quiz", "review"].includes(activeSection) ? `${activeSection}:${learningDay}` : activeSection} {...viewProps} />
+              </Suspense>
+            </ViewBoundary>
           )}
         </section>
       </main>

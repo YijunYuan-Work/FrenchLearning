@@ -122,6 +122,11 @@ export function EditorModal({
     const focusableSelector =
       'button, [href], input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
     previousFocusRef.current = document.activeElement;
+    // A focus trap alone does not hide the workspace from assistive technology.
+    const siblings = Array.from(overlayRef.current.parentElement.children)
+      .filter((element) => element !== overlayRef.current)
+      .map((element) => ({ element, inert: element.inert }));
+    siblings.forEach(({ element }) => { element.inert = true; });
 
     function focusInitialControl() {
       frenchInputRef.current?.focus();
@@ -158,6 +163,7 @@ export function EditorModal({
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      siblings.forEach(({ element, inert }) => { element.inert = inert; });
       previousFocusRef.current?.focus?.();
     };
   }, []);

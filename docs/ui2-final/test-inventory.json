@@ -1,0 +1,32 @@
+{
+  "beforeCount": 153,
+  "afterSplitCount": 153,
+  "identicalExpandedTitles": true,
+  "finalCount": 157,
+  "addedFinalAuditCases": 4,
+  "beforeFiles": {
+    "account-lifecycle.spec.js": 112,
+    "daily-learning.spec.js": 24,
+    "demo-isolation.spec.js": 5,
+    "demo.spec.js": 5,
+    "study.spec.js": 4,
+    "today-shell.spec.js": 3
+  },
+  "afterSplitFiles": {
+    "account-lifecycle.spec.js": 107,
+    "bureau.spec.js": 5,
+    "daily-learning.spec.js": 24,
+    "demo-isolation.spec.js": 5,
+    "demo.spec.js": 5,
+    "study.spec.js": 4,
+    "today-shell.spec.js": 3
+  },
+  "movedCases": [
+    "import editorial steps expose actual previews, run counts and recovery states in both modes",
+    "bureau layouts remain usable in English and Chinese across mobile tablet and desktop",
+    "settings sections discard independently, retain confirmed saves, and recover from failures",
+    "settings quota uses real entitlement, shows loading and recovers explicitly",
+    "settings password validation and retry preserve other section drafts"
+  ],
+  "notes": "Five Bureau test bodies moved without edits. Shared fixture URL matching accepts Vite HMR query strings. The Demo deletion case waits for a visible article before counting lazy-loaded rows. Four final-audit regressions are additional, not replacements. Final count is corroborated by the full-run command output."
+}

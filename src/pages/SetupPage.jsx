@@ -9,7 +9,7 @@ export function SetupPage() {
       <div className="fixed right-4 top-4">
         <LanguageToggle />
       </div>
-      <section className="app-card w-full max-w-2xl p-6">
+      <section className="app-card min-w-0 w-full max-w-2xl p-6">
         <p className="text-sm font-bold text-frenchRed">
           {t("setupRequired", "Supabase setup required")}
         </p>

@@ -2,9 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face { font-family: "Instrument Sans"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("/fonts/instrument-sans.ttf") format("truetype"); }
-@font-face { font-family: "Newsreader"; font-style: normal; font-weight: 400 500; font-display: swap; src: url("/fonts/newsreader.ttf") format("truetype"); }
-@font-face { font-family: "Newsreader"; font-style: italic; font-weight: 400 500; font-display: swap; src: url("/fonts/newsreader-italic.ttf") format("truetype"); }
+@font-face { font-family: "Instrument Sans"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("/fonts/instrument-sans.woff2") format("woff2"); }
+@font-face { font-family: "Newsreader"; font-style: normal; font-weight: 400 500; font-display: swap; src: url("/fonts/newsreader.woff2") format("woff2"); }
+@font-face { font-family: "Newsreader"; font-style: italic; font-weight: 400 500; font-display: swap; src: url("/fonts/newsreader-italic.woff2") format("woff2"); }
 
 :root {
   --paper: #EFE9DF;
@@ -83,10 +83,6 @@ p {
   @apply rounded-[10px] border border-rule bg-sheet shadow-soft;
 }
 
-.soft-panel {
-  @apply rounded-[10px] border border-rule bg-sheetBright shadow-soft;
-}
-
 /* Compatibility surface for the sign-in page until its own design phase. */
 .mesh-panel { background: var(--sheet); }
 
@@ -118,6 +114,8 @@ p {
 .cahier-workspace { min-height: 100vh; padding-left: var(--sidebar-width); padding-bottom: calc(84px + env(safe-area-inset-bottom)); background: var(--paper); }
 .cahier-main { min-width: 0; max-width: 1160px; margin: 0 auto; padding: 0 var(--page-padding); }
 .cahier-content { display: grid; gap: 20px; padding-bottom: 40px; }
+.view-loading, .view-load-error { min-height: 180px; padding-block: 24px; color: var(--ink-2); font-size: 14px; }
+.view-load-error button { margin-top: 16px; }
 .cahier-header { padding-top: 10px; }
 .cahier-header-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 44px; }
 .cahier-header-actions { display: flex; align-items: center; gap: 10px; }
@@ -304,33 +302,6 @@ p {
   .today-task { grid-template-columns: 48px minmax(0, 1fr) auto; }
   .today-task-arrow { display: none; }
   .today-task-status { max-width: 140px; }
-}
-
-.numeric {
-  font-variant-numeric: tabular-nums;
-}
-
-.flip-scene {
-  perspective: 1400px;
-}
-
-.flip-card {
-  display: grid;
-  transform-style: preserve-3d;
-  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.flip-card.is-flipped {
-  transform: rotateY(180deg);
-}
-
-.flip-card-face {
-  backface-visibility: hidden;
-  grid-area: 1 / 1;
-}
-
-.flip-card-back {
-  transform: rotateY(180deg);
 }
 
 .rich-text-editor:empty::before {

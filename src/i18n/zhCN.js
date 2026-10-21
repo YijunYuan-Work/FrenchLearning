@@ -1,4 +1,7 @@
 export const zhCN = {
+  viewLoading: "正在打开页面……",
+  viewLoadFailed: "无法打开此页面。请检查网络连接并重新加载页面后重试。",
+  reloadPage: "重新加载页面",
   bureau: "工作台",
   autofill: "AI 自动填充",
   importMode: "导入模式",

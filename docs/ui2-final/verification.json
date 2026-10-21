@@ -1,0 +1,63 @@
+{
+  "branch": "codex/ui2-final-audit",
+  "base": "ef8597e1a07441fc06baa4dfd38239e761ec721c",
+  "check": {
+    "command": "npm run check",
+    "exitCode": 0,
+    "lint": "passed",
+    "unitPassed": 114,
+    "unitFailed": 0,
+    "unitSkipped": 0,
+    "build": "passed",
+    "buildWarning": "Initial JavaScript chunk remains larger than 500 kB"
+  },
+  "fullE2ERuns": [
+    {
+      "workers": 1,
+      "automaticRetries": 0,
+      "passed": 155,
+      "failed": 1,
+      "minutesReported": 5.8,
+      "finding": "Demo deletion test counted zero articles while the new lazy view still displayed Opening page...",
+      "action": "Wait for a visible article before taking the existing count; retain backend and storage assertions"
+    },
+    {
+      "workers": 2,
+      "automaticRetries": 0,
+      "passed": 156,
+      "failed": 1,
+      "minutesReported": 4.0,
+      "finding": "AI connection case timed out opening Add note on a blank page; trace console reported net::ERR_NO_BUFFER_SPACE loading /src/App.jsx before any AI operation",
+      "action": "No source or timeout change; rerun complete suite alone with one worker"
+    },
+    {
+      "command": "npm run test:e2e -- --workers=1 --retries=0",
+      "exitCode": 0,
+      "workers": 1,
+      "automaticRetries": 0,
+      "passed": 157,
+      "failed": 0,
+      "skipped": 0,
+      "minutesReported": 8.1,
+      "warning": "account-lifecycle.spec.js reported slow at 5.4 minutes"
+    }
+  ],
+  "runtime": {
+    "mainSignupLanguageViewportCases": 120,
+    "setupLanguageViewportCases": 10,
+    "productionViewNavigations": 18,
+    "coldProductionSamples": 6,
+    "normalFlowConsolePageErrors": 0,
+    "finalMeasuredDocumentOverflowCases": 0
+  },
+  "protectedPathsChanged": [],
+  "productionDatabaseOrDeploymentChanges": false,
+  "paidAICalls": 0,
+  "limits": [
+    "Synthetic local services do not establish live RLS or provider behavior",
+    "Chromium emulation does not replace physical keyboards or assistive technology",
+    "Google font CSS was blocked during controlled payload and geometry probes",
+    "One clean serial rerun does not establish the absence of environment flakiness",
+    "GitHub CI and reviewer approval remain separate gates"
+  ]
+}
