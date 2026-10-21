@@ -57,10 +57,10 @@ test("sign-in selection and failed submission expose accessible state without ch
   });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Sign in to your workspace.", exact: true })).toBeVisible();
-  const signIn = page.getByRole("button", { name: "Sign in", exact: true }).first();
-  await expect(signIn).toHaveAttribute("aria-pressed", "true");
-  await go(page, "Sign up");
-  await expect(signIn).toHaveAttribute("aria-pressed", "false");
+  const signIn = page.getByRole("tab", { name: "Sign in", exact: true });
+  await expect(signIn).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: "Create account", exact: true }).click();
+  await expect(signIn).toHaveAttribute("aria-selected", "false");
   await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("autocomplete", "new-password");
   await signIn.click();
   await page.getByLabel("Username", { exact: true }).fill("synthetic-user");
@@ -74,11 +74,17 @@ test("sign-in selection and failed submission expose accessible state without ch
     email: `synthetic-user@${new URL(origin).hostname}`,
     password: "synthetic-invalid-password",
   });
-  await expect(page.getByRole("status")).toContainText("Loading your French workspace");
+  await expect(page.getByRole("status")).toContainText("Signing in");
+  await expect(page.locator("form")).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByLabel("Username", { exact: true })).toHaveValue("synthetic-user");
+  await expect(page.getByLabel("Password", { exact: true })).toHaveJSProperty("readOnly", true);
+  await expect(signIn).toBeDisabled();
   release();
   await expect(page.getByRole("alert")).toContainText("username or password is incorrect");
   await expect(page.getByRole("status")).toHaveCount(0);
   await expect(page.locator("form")).toHaveAttribute("aria-busy", "false");
+  await expect(page.getByLabel("Password", { exact: true })).toBeFocused();
+  await expect(page.getByLabel("Password", { exact: true })).toHaveValue("synthetic-invalid-password");
   await expect(page.getByRole("button", { name: "Sign in", exact: true }).last()).toBeEnabled();
   expect(requestCount).toBe(1);
   await go(page, "简体中文");
