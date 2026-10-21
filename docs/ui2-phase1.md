@@ -17,26 +17,21 @@ No hooks, API/service modules, learning utilities, database/schema, deployment c
 
 ## Visual Verification
 
-Reference sources reviewed: `Cahier Sidebar.dc.html`, `Stage 2 - I Today.dc.html`, `Stage 2 - IV System.dc.html`, `Stage 3 - IX Components.dc.html` and the standalone notebook reference.
+Visual authority: the approved Sidebar, Today, System and Components documents
+in the design-reference directory. The retained [desktop overview](ui2-final/design-comparison-1.jpg)
+and [Chinese mobile overview](ui2-final/mobile-zh.jpg) show the completed shell
+and Today alongside later UI 2.0 work.
 
-Captures use Chromium, device scale factor 1. The reference is on the left and the implementation on the right:
+The original Phase 1 captures used DPR 1, 1280 x 800 desktop and 370 x 736 mobile
+content regions. The prototype phone bezel/status bar was excluded without
+rescaling. Actual Demo counts and the local learning date were retained rather
+than fabricated to match the source. Geometry was checked across both languages.
 
-![Desktop comparison](ui2-phase1/comparison-desktop.png)
-
-Both desktop regions are 1280 x 800 CSS/pixel dimensions. The reference's surrounding presentation canvas was excluded. Both show one completed goal. The implementation uses real Demo availability (12 study cards / 7 quiz words), rather than the prototype's 24 / 18, and the real local learning date.
-
-![Mobile Chinese comparison](ui2-phase1/comparison-mobile.png)
-
-Both mobile content regions are 370 x 736 CSS/pixel dimensions. The source's 390 x 800 mock phone was cropped to exclude its 10px bezel and simulated 44px status bar. There is no image rescaling. Device chrome and the prototype's rounded outer frame are intentionally not recreated in the web app.
-
-Additional captured states:
-
-- [Tablet rail](ui2-phase1/implementation-tablet.png), 820 x 900.
-- [Completed plan](ui2-phase1/implementation-complete.png), 1280 x 800.
-- [Pending notes](ui2-phase1/today-notes-loading.png), [failed notes with Retry](ui2-phase1/today-notes-error.png), [failed daily hydration](ui2-phase1/today-progress-error.png), and [empty notebook](ui2-phase1/today-empty.png), 1280 x 720 fixture viewports. These fixtures use the real application hooks with mocked HTTP, not production accounts.
-- [Measured layout, colors and console observations](ui2-phase1/observations.json).
-
-The full views and focused header comparison were visually inspected. Earlier passes corrected excess sidebar row height, a wrapping Pronunciation label, heading optical sizing, mobile vertical offset, full-width next-task emphasis and sheet focus restoration. Final comparisons have no outstanding blocking Phase 1 layout or interaction findings.
+The original per-state captures and raw observations are consolidated into the
+final review evidence. Historical files remain recoverable from Git at cleanup
+baseline `2e9f111`; the readiness, empty/error and recovery contracts below and
+in the tests remain unchanged. Earlier visual passes corrected sidebar density,
+heading wrapping, mobile offset, next-task emphasis and sheet focus restoration.
 
 ## Fidelity Notes and Limitations
 

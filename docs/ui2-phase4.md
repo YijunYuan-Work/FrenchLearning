@@ -25,43 +25,25 @@ Search remains the existing application-wide query, including meanings, tags, mo
 
 ## Visual Evidence
 
-Sources: `Stage 3 - V Vocabulary.dc.html` and `Stage 3 - VI Notes.dc.html`, supported by Components, System and the Editor integration boundary. Each combined image places the rendered approved source on the left and React implementation on the right, without resizing either image.
+Sources: `Stage 3 - V Vocabulary.dc.html` and `Stage 3 - VI Notes.dc.html`.
+The retained [desktop overviews](../UI2_FINAL_AUDIT.md#visual-and-accessibility-review)
+cover all four libraries; [English](ui2-final/mobile-en.jpg) and
+[Chinese](ui2-final/mobile-zh.jpg) overviews retain the mobile presentation.
 
-Desktop page captures are 1280 x 900, except empty/no-results at 1280 x 800. Source canvas controls are excluded. Confirmation and the selection-bar comparison are component crops because the source positions those controls relative to its entire long mock frame, whereas the real application positions them relative to the viewport. Full selection mode is also included.
+![Partial deletion keeps failed notes available for retry](ui2-phase4/comparison-desktop-delete-partial.png)
 
-![Vocabulary desktop](ui2-phase4/comparison-desktop-vocabulary.png)
-![Desktop selection](ui2-phase4/comparison-desktop-selection.png)
-![Selection toolbar](ui2-phase4/comparison-desktop-selection-bar.png)
-![Delete confirmation](ui2-phase4/comparison-desktop-confirm.png)
-![Phrases and long translation](ui2-phase4/comparison-desktop-phrases.png)
-![Grammar reader](ui2-phase4/comparison-desktop-grammar.png)
-![Pronunciation](ui2-phase4/comparison-desktop-pronunciation.png)
-![New account](ui2-phase4/comparison-desktop-empty.png)
-![No results](ui2-phase4/comparison-desktop-no-results.png)
+This source-left/React-right capture comes from the authenticated hooks with
+mocked HTTP, not invented UI state. Its records intentionally differ from the
+static example: two of three notes are deleted and the failed note stays selected.
+Original page captures were 1280 x 900 at DPR 1; mobile content was 370 x 736
+after excluding prototype phone chrome. Selection/action crops were component
+views, not substitutes for full-page review.
 
-Full-entry crops ensure long content is reviewed beyond the first viewport:
-
-![Long phrase and full translation](ui2-phase4/comparison-long-phrase.png)
-![Full grammar article](ui2-phase4/comparison-long-grammar.png)
-
-Mobile captures are 370 x 736, DPR 1. The source's 390 x 800 mock phone is cropped by its 10px bezel and simulated 44px status bar; neither is recreated by the application.
-
-![Chinese vocabulary](ui2-phase4/comparison-mobile-vocabulary-chinese.png)
-![Mobile selection](ui2-phase4/comparison-mobile-selection.png)
-![Chinese filter sheet](ui2-phase4/comparison-mobile-filters-chinese.png)
-![Entry actions](ui2-phase4/comparison-mobile-actions.png)
-![Chinese phrases and long content](ui2-phase4/comparison-mobile-phrases-chinese.png)
-![Chinese grammar contents](ui2-phase4/comparison-mobile-grammar-contents-chinese.png)
-![Mobile grammar reader](ui2-phase4/comparison-mobile-grammar-reader.png)
-![Mobile pronunciation](ui2-phase4/comparison-mobile-pronunciation.png)
-
-Deletion pending, partial failure and recovery are captured from the real authenticated hooks against the existing mocked HTTP backend, not an invented UI state:
-
-![Deletion pending](ui2-phase4/comparison-desktop-delete-pending.png)
-![Partial deletion](ui2-phase4/comparison-desktop-delete-partial.png)
-![Recovered deletion](ui2-phase4/desktop-delete-recovered.png)
-
-[Runtime measurements](ui2-phase4/runtime.json) cover both languages, all four sections, and widths 320, 390, 768, 900, 1024, 1280 and 1440. All 56 combinations have no document overflow or clipped measured headings/meanings/rich text/pagination. Capture contexts recorded no console or page errors.
+Historical geometry checks covered 56 bilingual combinations at 320, 390, 768,
+900, 1024, 1280 and 1440px, with no recorded document overflow, clipped measured
+content or app console/page errors. Repetitive reader/filter/selection captures
+and raw runtime records were consolidated; Git baseline `2e9f111` retains them.
+Behavioral decisions, mutation tests and acceptance limits remain below.
 
 ## Fidelity Decisions
 

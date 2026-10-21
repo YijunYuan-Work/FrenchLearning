@@ -20,51 +20,25 @@ No changes to import hooks/parsers/results utilities, note mutation hooks, API s
 
 ## Visual Evidence
 
-Primary source: `FrenchLearning UI 2.0 directions/Stage 3 - VIII Import Settings.dc.html`, supported by Components IX, System IV, and the existing Phase 4/5 implementation.
+Source: `Stage 3 - VIII Import Settings.dc.html`, supported by Components IX
+and System IV. Normal desktop layouts are in the [final overview](ui2-final/design-comparison-2.jpg);
+[English](ui2-final/mobile-en.jpg) and [Chinese](ui2-final/mobile-zh.jpg) overview
+sheets cover mobile. Two distinct recovery examples remain:
 
-Source-left / React-right comparisons use DPR 1 without resampling. Desktop halves are 1280px wide with their natural page heights; extra white space is the comparison canvas, not the product. Focused crops retain readable table/form typography. Mobile source crops exclude the phone bezel, status bar and home area; source content is 370 x 736. Viewport screenshots supplement full-page captures because a fixed bottom navigation can appear inside a full-page image at the capture's current scroll position.
+![Cancelled/incomplete import with remaining-row recovery](ui2-phase6/comparison-import-partial.png)
+![Settings save failure with retained independent drafts](ui2-phase6/comparison-settings-failure.png)
 
-### Import
+Comparisons show source left and React right, DPR 1, without resampling.
+Desktop halves are 1280px wide with natural heights; source mobile content was
+370 x 736 excluding device chrome. Extra comparison-canvas space is not app UI.
+Original runtime checks covered both pages, EN/ZH and five widths; reduced
+viewport checks used 370 x 452 rather than an invented keyboard height.
 
-![Initial](ui2-phase6/comparison-import-initial.png)
-![Phrases](ui2-phase6/comparison-import-phrases.png)
-![Preview](ui2-phase6/comparison-import-preview.png)
-![Malformed CSV](ui2-phase6/comparison-import-malformed.png)
-![Running](ui2-phase6/comparison-import-running.png)
-![Cancellation requested](ui2-phase6/comparison-import-cancelling.png)
-![Partial batch](ui2-phase6/comparison-import-partial.png)
-![Resume](ui2-phase6/comparison-import-resume.png)
-![Failures](ui2-phase6/comparison-import-failures.png)
-![Retry](ui2-phase6/comparison-import-retry.png)
-![Completed](ui2-phase6/comparison-import-complete.png)
-
-### Settings
-
-![Desktop](ui2-phase6/comparison-settings-desktop.png)
-![Dirty](ui2-phase6/comparison-settings-dirty.png)
-![Validation](ui2-phase6/comparison-settings-validation.png)
-![Saving](ui2-phase6/comparison-settings-saving.png)
-![Failure](ui2-phase6/comparison-settings-failure.png)
-![Saved](ui2-phase6/comparison-settings-saved.png)
-![Quota loading](ui2-phase6/comparison-quota-loading.png)
-
-[Subscriber entitlement](ui2-phase6/phase6-quota-subscriber.png), [quota failure and retry](ui2-phase6/phase6-quota-failure.png), and [password validation](ui2-phase6/phase6-password-validation.png) retain the actual HTTP-backed states that have no equivalent static prototype scenario.
-
-### Mobile And Detail
-
-![Mobile import running in Chinese](ui2-phase6/comparison-mobile-import-running-zh.png)
-![Mobile import results in English](ui2-phase6/comparison-mobile-import-results-en.png)
-![Mobile dirty settings in Chinese](ui2-phase6/comparison-mobile-settings-zh.png)
-![English import preview](ui2-phase6/phase6-viewport-import-en-370.png)
-![Chinese import preview](ui2-phase6/phase6-viewport-import-zh-370.png)
-![English settings](ui2-phase6/phase6-viewport-settings-en-370.png)
-![Chinese settings](ui2-phase6/phase6-viewport-settings-zh-370.png)
-![Keyboard-reduced English viewport](ui2-phase6/phase6-settings-keyboard-en.png)
-![Keyboard-reduced Chinese viewport](ui2-phase6/phase6-settings-keyboard-zh.png)
-![Form detail](ui2-phase6/focused-settings-desktop.png)
-![Preview detail](ui2-phase6/focused-import-preview.png)
-
-[Runtime geometry](ui2-phase6/runtime.json) covers both pages in English and Chinese at 320, 370, 390, 768 and 1280 CSS pixels. It includes document width, stepper bounds and text/control collision checks. The keyboard check emulates a 370 x 452 visible viewport, not a physical OS keyboard.
+Repeated preview/progress/retry/complete and clean/dirty/saving/saved variations,
+detail crops and raw geometry/console reports were consolidated. Full historical
+evidence remains available at cleanup baseline `2e9f111`. The independent
+draft, entitlement, batch-count and recovery contracts remain in this document
+and the existing tests.
 
 ## Fidelity Decisions And Limits
 
@@ -85,7 +59,7 @@ Final verification:
 - `npm run check`: passed, including lint, all 114 unit tests and the production build. The existing 784.80 kB JavaScript chunk warning remains a warning, not a failure.
 - `npm run test:e2e -- --workers=1 --retries=0`: all 153 tests passed in 4.1 minutes, with zero failures and zero automatic retries.
 - A subsequent responsive-only run passed and exported the same test's geometry attachment as `runtime.json` through Playwright's JSON reporter. No application/test code changed after the full run.
-- Additional Demo-only EN/ZH checks at all five widths passed with reduced motion, no console/page errors, password inputs effectively disabled through their fieldset, quota refresh disabled and import preview unable to start a write. [Console and restriction evidence](ui2-phase6/demo-console.json) records zero unexpected external requests. The existing Google Fonts stylesheet was fulfilled locally; production local fonts were retained. An initial probe measured before layout/fonts settled and another read the input's own disabled property instead of effective fieldset state; both harness assumptions were corrected without application changes.
+- Additional Demo-only EN/ZH checks at all five widths passed with reduced motion, no console/page errors, password inputs effectively disabled through their fieldset, quota refresh disabled and import preview unable to start a write. The historical console probe recorded zero unexpected external requests (raw report recoverable at cleanup baseline `2e9f111`). The existing Google Fonts stylesheet was fulfilled locally; production local fonts were retained. An initial probe measured before layout/fonts settled and another read the input's own disabled property instead of effective fieldset state; both harness assumptions were corrected without application changes.
 - Protected API/hooks/utils/services/schema/dependency/configuration paths have no diff from the base. `git diff --check` passed.
 
 Initial focused testing exposed a mock Auth error-format mismatch, which was corrected. An initial full run was intentionally stopped after tablet visual inspection found label/stepper overlap; the responsive grid was corrected and the added collision assertion passed before restarting the complete suite. These are not hidden automatic retries.

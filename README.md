@@ -142,7 +142,9 @@ npm run test:e2e
 
 GitHub Actions runs both commands for pull requests and pushes to `main`.
 
-See [the UI 2.0 final audit](UI2_FINAL_AUDIT.md) for measured loading improvements, visual evidence and remaining design gaps, and [the test review](UI2_TEST_REVIEW.md) for coverage and verification limits. Authentication/setup screens still need an approved notebook-style design; this audit deliberately does not invent one.
+See [the UI 2.0 final audit](UI2_FINAL_AUDIT.md) for measured loading improvements and representative visual evidence, and [the test review](UI2_TEST_REVIEW.md) for coverage and verification limits. The approved [authentication and setup implementation](docs/ui2-auth.md) completes the notebook-style public entry experience.
+
+For deeper review, start with the [daily persistence contract](docs/daily-learning-persistence.md), [note integrity and rich-text safety](docs/note-integrity-and-rich-text.md), and [approved design sources](<FrenchLearning UI 2.0 directions/>). Phase-by-phase implementation notes remain in `docs/`; their visual evidence is curated rather than a full screenshot archive.
 
 ## Security And Usage Limits
 

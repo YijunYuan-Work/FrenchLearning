@@ -20,26 +20,21 @@ No learning utilities, hooks, API/service modules, authentication, database/sche
 
 ## Visual Evidence
 
-Source: `Stage 2 - III Quiz.dc.html`, checked alongside System, Components and Study references. Each combined image places the approved source left and React implementation right. Screenshots use DPR 1 and are not resized in the comparison files.
+Visual authority: `Stage 2 - III Quiz.dc.html`. The [final desktop overview](ui2-final/design-comparison-1.jpg)
+and [Chinese mobile overview](ui2-final/mobile-zh.jpg) retain the normal Quiz
+composition. This failure-state comparison adds a distinct persistence contract:
 
-Desktop content regions are 1280 x 800; prototype canvas controls are excluded.
+![Failed answer save with retained draft and retry](ui2-phase3/comparison-desktop-error.png)
 
-![Desktop question](ui2-phase3/comparison-desktop-question.png)
-![Correct feedback](ui2-phase3/comparison-desktop-correct.png)
-![Saving](ui2-phase3/comparison-desktop-saving.png)
-![Save failure](ui2-phase3/comparison-desktop-error.png)
-![Long word and incorrect feedback](ui2-phase3/comparison-desktop-incorrect-long.png)
-![Completion](ui2-phase3/comparison-desktop-complete.png)
+Source is left and React right, DPR 1, 1280 x 800 desktop regions without canvas
+controls. Original mobile checks used 370 x 736 content and a 370 x 452 reduced
+viewport, excluding the prototype's illustrated keyboard. They verify geometry,
+not a physical OS keyboard. Repetitive question/saving/completion captures were
+consolidated; full historical evidence remains at cleanup baseline `2e9f111`.
 
-Mobile content is 370 x 736, excluding the source phone's bezel and simulated status bar. The keyboard comparison uses the source's 370 x 452 application region, excluding its illustrated keyboard. Chromium's visible viewport is simulated at the same height in the implementation test, not hard-coded in app CSS.
-
-![Chinese keyboard-visible question](ui2-phase3/comparison-mobile-keyboard-chinese.png)
-![Mobile long-answer feedback](ui2-phase3/comparison-mobile-incorrect-long.png)
-![Chinese completion](ui2-phase3/comparison-mobile-complete-chinese.png)
-
-Additional actual states: [mobile question](ui2-phase3/mobile-question-chinese.png), [Chinese correct feedback](ui2-phase3/mobile-correct-chinese.png), [mobile saving](ui2-phase3/mobile-saving.png), [mobile retry](ui2-phase3/mobile-error.png), [desktop Chinese completion](ui2-phase3/desktop-complete-chinese.png).
-
-Visual review corrected result-page label spacing on mobile, the desktop long-word size boundary, full-pill pointer targets and the keyboard-visible composition. Combined images were opened and reviewed after the corrections.
+Review corrected result-label spacing, long-word sizing, full-pill hit targets
+and keyboard-visible composition. Meaningful state/content differences remain
+explicit below rather than hidden by pixel matching.
 
 ## Fidelity Notes
 

@@ -1,6 +1,8 @@
 # UI 2.0 Test Review
 
-Baseline: `ef8597e1` (`UI_2.0`, Phase 6). This review preserves behavioral contracts, not an arbitrary test-count target.
+Current cleanup baseline: `2e9f111` on `UI_2.0`, including approved Auth/Setup PR #26. Its [verification record](docs/ui2-auth.md#verification) reports 114 Node tests and 162 serial Chromium cases passing. No tests or application behavior are changed by repository cleanup.
+
+The Phase 7 review below starts at `ef8597e1` (Phase 6) and preserves behavioral contracts, historical run outcomes and limitations, not an arbitrary test-count target. Counts and loading behavior in those historical sections describe that revision.
 
 ## Inventory And Decisions
 
@@ -31,7 +33,7 @@ Similar-looking cases were not deleted where their contracts differ: failed read
 
 The fixture's explicit request gates make asynchronous ordering deterministic. Existing short waits around visual transitions and screenshots are presentation-specific, not replacements for mutation assertions. Some tests inspect CSS classes or the visual viewport because those are the actual approved layout/hidden-face contracts; backend correctness cases also inspect stored values and request ledgers.
 
-During development, a focused run exposed one HMR interception miss and two incorrect new-test assumptions: Playwright role queries can still enumerate inert DOM, and the existing Auth flow replaces the form with its loading card. The fixture URLs and assertions were corrected to check real focus blocking and the actual accessible loading state. The subsequent five-case focused run passed.
+During Phase 7 development, a focused run exposed one HMR interception miss and two incorrect new-test assumptions: Playwright role queries can still enumerate inert DOM, and Auth at that revision replaced the form with its loading card. The fixture URLs and assertions were corrected to check real focus blocking and the actual accessible loading state. The subsequent five-case focused run passed. The later approved [Auth implementation](docs/ui2-auth.md) keeps submission feedback inline and the draft mounted; the corresponding test now checks that actual behavior while preserving request/error assertions.
 
 The first complete 156-case run exposed the Demo deletion test's immediate `count()` during lazy loading (its snapshot showed `Opening page...`, not an empty notebook). It is corrected by waiting for the first article to be visible before taking the count. This is recorded as a test timing defect revealed by the loading change, not silently labelled an entirely green first run.
 

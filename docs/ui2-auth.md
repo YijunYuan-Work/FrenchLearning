@@ -36,44 +36,34 @@ was changed.
 
 ## Visual Evidence
 
-Fresh browser renders of the approved documents are in `ui2-auth/reference/`;
-the React screenshots are in `ui2-auth/implementation/`. Combined images below
-show reference on the left and implementation on the right.
+The retained combined captures place approved source left and React right.
+Individual reference/app duplicates and raw inspection diagnostics were removed
+during pre-release cleanup; their original versions remain at Git baseline
+`2e9f111`. The approved HTML source files are retained unchanged.
 
-| State | Combined Comparison |
+| State | Comparison |
 | --- | --- |
-| Desktop Sign In, 1440 x 900 | [Comparison](ui2-auth/comparison/desktop-in.png) |
-| Desktop Create Account, Chinese | [Comparison](ui2-auth/comparison/desktop-up-zh.png) |
-| Invalid credentials, focused password | [Form comparison](ui2-auth/comparison/form-invalid.png) |
-| Actual pending Sign In | [Form comparison](ui2-auth/comparison/form-pending.png) |
-| Signup validation | [Form comparison](ui2-auth/comparison/form-validation.png) |
-| Connection failure and manual retry | [Form comparison](ui2-auth/comparison/form-network.png) |
-| Mobile Sign In, 390 x 844 | [Comparison](ui2-auth/comparison/mobile-390.png) |
-| Mobile signup validation, Chinese, 375 x 812 | [Comparison](ui2-auth/comparison/mobile-375-zh.png) |
-| Mobile Sign In, Chinese, 320 x 568 | [Comparison](ui2-auth/comparison/mobile-320-zh.png) |
-| Reduced viewport and password focus, 320px | [Comparison](ui2-auth/comparison/mobile-320-focus.png) |
-| Setup desktop, 1200 x 760 | [Comparison](ui2-auth/comparison/setup-desktop.png) |
-| Setup mobile, Chinese, 375 x 812 | [Comparison](ui2-auth/comparison/setup-mobile.png) |
+| Desktop Sign In, 1440 x 900 | [Desktop](ui2-auth/comparison/desktop-in.png) |
+| Desktop Create Account, Chinese | [Chinese signup](ui2-auth/comparison/desktop-up-zh.png) |
+| Connection failure and manual retry | [Recovery](ui2-auth/comparison/form-network.png) |
+| Mobile Sign In, 390 x 844 | [English mobile](ui2-auth/comparison/mobile-390.png) |
+| Mobile signup validation, 375 x 812 | [Chinese mobile](ui2-auth/comparison/mobile-375-zh.png) |
+| Setup, 1200 x 760 | [Desktop setup](ui2-auth/comparison/setup-desktop.png) |
+| Setup, Chinese, 375 x 812 | [Mobile setup](ui2-auth/comparison/setup-mobile.png) |
 
-All captures use DPR 1. Desktop source frames include a one-pixel border; form
-gallery widths are approximately 433px versus the implementation's 440px.
-Mobile source images contain decorative phone/status-bar/keyboard chrome, which
-is intentionally absent in the real website. The focus comparison demonstrates
-native scrolling in a reduced viewport, not a pixel-identical fake OS keyboard.
-The implementation permits native document scrolling instead of the prototype's
-fixed-height clipping. Additional 768/1024/1280px captures and runtime geometry
-are included. `ui2-auth/runtime.json` records viewport, overflow, input state,
-document language, and page errors.
+Captures use DPR 1. Source frame borders can add one raster pixel; gallery form
+content is about 433px versus 440px in the app. Prototype phone/status-bar/keyboard
+chrome is intentionally absent from the website, which uses native scrolling and
+safe-area padding instead of fixed-height clipping. Original checks also covered
+320/768/1024/1280px, input focus, reduced motion and console errors; physical OS
+keyboard acceptance remains separate.
 
-Initial comparison findings corrected: desktop title wrapping, form spacing,
-untranslated contents labels, focused invalid-field colors, and inherited code
-font size. Final typography uses the existing bundled Newsreader/Instrument
-Sans and CJK fallbacks; code uses a system monospace instead of adding JetBrains
-Mono. Zero tracking follows repository guidance, so the large French headword
-is slightly wider than the prototype. The fixed desktop form title is 39px to
-retain its approved line break without negative tracking. No actionable
-layout, overlap, missing-control, or state-presentation mismatch remains in the
-reviewed captures.
+Review corrected title wrapping, form spacing, translated contents, focused error
+colors and inherited code size. Existing Newsreader/Instrument Sans and CJK
+fallbacks remain; code uses system monospace rather than adding JetBrains Mono.
+Zero tracking makes the headword slightly wider, and the fixed 39px desktop title
+retains the approved line break without negative tracking. These are deliberate
+fidelity boundaries, not claims of pixel parity.
 
 ## Verification
 
