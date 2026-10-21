@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
 import { Brand } from "./Brand";
 
-const libraryChapters = { vocabulary: ["04", "mots", "Vocabulary"], phrases: ["05", "expressions", "Phrases"], grammar: ["06", "grammaire", "Grammar"], pronunciation: ["07", "phonétique", "Pronunciation"] };
+const libraryChapters = { vocabulary: ["04", "mots", "Vocabulary"], phrases: ["05", "expressions", "Phrases"], grammar: ["06", "grammaire", "Grammar"], pronunciation: ["07", "phonétique", "Pronunciation"], import: ["08", "CSV", "Import"], settings: ["09", "réglages", "Settings"] };
 
 export function AppHeader({ activeSection, openNewItem, pageTitle, learningDay }) {
   const { language, t } = useLanguage();
@@ -14,8 +14,8 @@ export function AppHeader({ activeSection, openNewItem, pageTitle, learningDay }
   return (
     <header className={`cahier-header${chapter ? " library-header" : ""}`}>
       <div className="cahier-header-row">
-        <div className="cahier-mobile-brand">{chapter ? <div className="library-mobile-heading"><p className="eyebrow">{t("notebook", "Notebook")} · {chapter[0]}</p><h2 aria-label={pageTitle} className="editorial-title">{heading}</h2></div> : <Brand compact />}</div>
-        <p className="eyebrow cahier-workspace-label">{chapter ? `${t("notebook", "Notebook")} · ${chapter[0]}` : t("personalWorkspace", "Personal French workspace")}</p>
+        <div className="cahier-mobile-brand">{chapter ? <div className="library-mobile-heading"><p className="eyebrow">{["import", "settings"].includes(activeSection) ? t("bureau", "Bureau") : t("notebook", "Notebook")} · {chapter[0]}</p><h2 aria-label={pageTitle} className="editorial-title">{heading}</h2></div> : <Brand compact />}</div>
+        <p className="eyebrow cahier-workspace-label">{chapter ? `${["import", "settings"].includes(activeSection) ? t("bureau", "Bureau") : t("notebook", "Notebook")} · ${chapter[0]}` : t("personalWorkspace", "Personal French workspace")}</p>
         <div className="cahier-header-actions">
           <time dateTime={learningDay} lang={language === "zh" ? "zh-CN" : "fr"}>{dateLabel}</time>
           <button
