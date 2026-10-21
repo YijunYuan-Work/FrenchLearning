@@ -1,12 +1,4 @@
-import {
-  CheckCircle2,
-  KeyRound,
-  RefreshCw,
-  Save,
-  ShieldCheck,
-  SlidersHorizontal,
-  UserRound,
-} from "lucide-react";
+import { CheckCircle2, CircleAlert, Info, KeyRound, LoaderCircle, LockKeyhole, Minus, Plus, RefreshCw, Save } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   changeUserPassword,
@@ -52,6 +44,9 @@ export function SettingsView({
   const [recoveryEmail, setRecoveryEmail] = useState(() =>
     getProfileRecoveryEmail(user)
   );
+  const [confirmedProfile, setConfirmedProfile] = useState(() => ({ displayName: getDisplayName(user), recoveryEmail: getProfileRecoveryEmail(user) }));
+  const [confirmedSettings, setConfirmedSettings] = useState(() => normalizeLearningSettings(learningSettings));
+  const [activeSection, setActiveSection] = useState("profile");
   const [profileMessage, setProfileMessage] = useState("");
   const [profileError, setProfileError] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
@@ -90,10 +85,13 @@ export function SettingsView({
     }
   }, [isCurrentAccount, isDemo, user?.id]);
 
+  const savedDisplayName = getDisplayName(user);
+  const savedRecoveryEmail = getProfileRecoveryEmail(user);
   useEffect(() => {
-    setDisplayName(getDisplayName(user));
-    setRecoveryEmail(getProfileRecoveryEmail(user));
-  }, [user]);
+    setDisplayName(savedDisplayName);
+    setRecoveryEmail(savedRecoveryEmail);
+    setConfirmedProfile({ displayName: savedDisplayName, recoveryEmail: savedRecoveryEmail });
+  }, [savedDisplayName, savedRecoveryEmail]);
 
   useEffect(() => {
     loadQuotaStatus();
@@ -101,11 +99,12 @@ export function SettingsView({
 
   useEffect(() => {
     setSettingsForm(normalizeLearningSettings(learningSettings));
+    setConfirmedSettings(normalizeLearningSettings(learningSettings));
   }, [learningSettings]);
 
   async function handleProfileSubmit(event) {
     event.preventDefault();
-    if (!isCurrentAccount()) return;
+    if (isSavingProfile || !isCurrentAccount()) return;
     setProfileError("");
     setProfileMessage("");
 
@@ -133,6 +132,9 @@ export function SettingsView({
           }
         : await updateUserProfile({ displayName, recoveryEmail, userId: user.id, isCurrentAccount });
       if (!isCurrentAccount()) return;
+      setConfirmedProfile({ displayName: getDisplayName(updatedUser), recoveryEmail: getProfileRecoveryEmail(updatedUser) });
+      setDisplayName(getDisplayName(updatedUser));
+      setRecoveryEmail(getProfileRecoveryEmail(updatedUser));
       onUserUpdated(updatedUser);
       setProfileMessage(t("profileSaved", "Profile updated."));
     } catch (error) {
@@ -144,7 +146,7 @@ export function SettingsView({
 
   async function handlePasswordSubmit(event) {
     event.preventDefault();
-    if (isDemo || !isCurrentAccount()) return;
+    if (isDemo || isChangingPassword || !isCurrentAccount()) return;
     setPasswordError("");
     setPasswordMessage("");
 
@@ -202,7 +204,7 @@ export function SettingsView({
 
   async function handleLearningSettingsSubmit(event) {
     event.preventDefault();
-    if (!isCurrentAccount()) return;
+    if (isSavingSettings || !isCurrentAccount()) return;
     setSettingsError("");
     setSettingsMessage("");
     setIsSavingSettings(true);
@@ -212,6 +214,8 @@ export function SettingsView({
         ? normalizeLearningSettings(settingsForm)
         : await updateLearningPreferences(user.id, settingsForm);
       if (!isCurrentAccount()) return;
+      setConfirmedSettings(savedSettings);
+      setSettingsForm(savedSettings);
       onLearningSettingsUpdated(savedSettings);
       setSettingsMessage(t("settingsSaved", "Learning settings updated."));
     } catch (error) {
@@ -228,368 +232,138 @@ export function SettingsView({
     }));
   }
 
-  const isSubscriber = quotaStatus?.subscriptionTier === "subscriber";
-  const usagePercent = quotaStatus
-    ? Math.min(100, Math.round((quotaStatus.used / quotaStatus.limit) * 100))
-    : 0;
   const settingLimits = getLearningSettingLimits();
+  const profileDirty = displayName !== confirmedProfile.displayName || recoveryEmail !== confirmedProfile.recoveryEmail;
+  const settingsDirty = Object.keys(settingLimits).some((key) => String(settingsForm[key]) !== String(confirmedSettings[key]));
+  const passwordDirty = Object.values(passwordForm).some(Boolean);
+  const sections = [
+    ["profile", "i.", t("profileTitle", "Profile details")],
+    ["learning", "ii.", t("settingsLearning", "Learning")],
+    ["quota", "iii.", t("autofill", "AI auto-fill")],
+    ["password", "iv.", t("password", "Password")],
+  ];
+  const settingFields = [
+    ["quizVocabularyLimit", t("settingsQuizVocabulary", "Quiz vocabulary questions")],
+    ["studyVocabularyLimit", t("settingsStudyVocabulary", "Study vocabulary cards")],
+    ["studyGrammarLimit", t("settingsStudyGrammar", "Study grammar cards")],
+    ["studyPhraseLimit", t("settingsStudyPhrases", "Study short phrase cards")],
+  ];
+
+  function discardProfile() {
+    setDisplayName(confirmedProfile.displayName);
+    setRecoveryEmail(confirmedProfile.recoveryEmail);
+    setProfileMessage("");
+    setProfileError("");
+  }
+  function navigateSection(id) {
+    setActiveSection(id);
+    const heading = document.getElementById(`settings-${id}-heading`);
+    heading?.scrollIntoView({ block: "start", behavior: "instant" });
+    heading?.focus({ preventScroll: true });
+  }
+  function feedback(error, message, dirty, pending) {
+    return <div className={`settings-feedback${error ? " is-error" : message ? " is-success" : ""}`} role={error ? "alert" : "status"}>
+      {error ? <><CircleAlert size={16} aria-hidden="true" />{error}</>
+        : pending ? <><LoaderCircle className="bureau-spin" size={16} aria-hidden="true" />{t("working", "Working...")}</>
+          : message ? <><CheckCircle2 size={16} aria-hidden="true" />{message}</>
+            : dirty ? t("settingsUnsaved", "Unsaved changes") : null}
+    </div>;
+  }
+  const discardLabel = t("settingsDiscard", "Discard changes");
 
   return (
-    <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-      {isDemo && (
-        <p className="rounded-xl bg-sky p-3 text-sm text-slate-700 xl:col-span-2" role="status">
-          {t("demoTemporaryChanges", "Demo changes are temporary and reset when you reload.")}
-        </p>
-      )}
-      <section className="app-card p-5">
-        <div className="mb-5 flex items-start gap-3">
-          <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-frenchBlue text-white">
-            <UserRound size={20} />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-frenchRed">
-              {t("profileAccount", "Account")}
-            </p>
-            <h3 className="text-xl font-black">
-              {t("profileTitle", "Profile details")}
-            </h3>
-          </div>
-        </div>
-
-        <form className="grid gap-4" onSubmit={handleProfileSubmit}>
-          <label className="grid gap-1 text-sm font-bold">
-            {t("profileLoginUsername", "Login username")}
-            <input
-              className="h-11 rounded-lg border border-line bg-slate-50 px-3 font-normal text-slate-600 shadow-sm"
-              readOnly
-              value={getLoginUsername(user)}
-            />
-            <span className="text-xs font-normal text-slate-500">
-              {t(
-                "profileLoginUsernameCopy",
-                "Used to sign in and cannot be changed."
-              )}
-            </span>
-          </label>
-
-          <label className="grid gap-1 text-sm font-bold">
-            {t("profileDisplayName", "Display name")}
-            <input
-              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-              onChange={(event) => setDisplayName(event.target.value)}
-              value={displayName}
-            />
-          </label>
-
-          <label className="grid gap-1 text-sm font-bold">
-            {t("recoveryEmailOptional", "Recovery email optional")}
-            <input
-              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-              onChange={(event) => setRecoveryEmail(event.target.value)}
-              placeholder="john@example.com"
-              type="email"
-              value={recoveryEmail}
-            />
-            <span className="text-xs font-normal text-slate-500">
-              {t(
-                "profileRecoveryEmailCopy",
-                "Leave blank if you do not want a recovery email yet."
-              )}
-            </span>
-          </label>
-
-          {profileError && (
-            <p className="rounded-xl bg-blush p-3 text-sm font-bold text-frenchRed">
-              {profileError}
-            </p>
-          )}
-          {profileMessage && (
-            <p className="inline-flex items-center gap-2 rounded-xl bg-mint p-3 text-sm font-bold text-sage">
-              <CheckCircle2 size={17} />
-              {profileMessage}
-            </p>
-          )}
-
-          <button
-            className="primary-action h-11 justify-center"
-            disabled={isSavingProfile}
-            type="submit"
-          >
-            {isSavingProfile
-              ? t("working", "Working...")
-              : t("profileSaveChanges", "Save profile")}
-          </button>
-        </form>
-      </section>
-
-      <aside className="grid content-start gap-5">
-        <section className="app-card p-5">
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-mint text-sage">
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-frenchRed">
-                  {t("profileSubscription", "Subscription")}
-                </p>
-                <h3 className="text-xl font-black">
-                  {isDemo
-                    ? t("demoMode", "Demo")
-                    : !quotaStatus
-                    ? t("profileQuotaLoading", "Loading...")
-                    : isSubscriber
-                      ? t("profileSubscriber", "Subscriber")
-                      : t("profileFreePlan", "Free plan")}
-                </h3>
-              </div>
+    <div className="bureau-settings">
+      {isDemo && <p className="bureau-notice" role="status"><Info size={16} aria-hidden="true" />{t("demoTemporaryChanges", "Demo changes are temporary and reset when you reload.")}</p>}
+      <div className="settings-layout">
+        <nav className="settings-nav" aria-label={t("settingsSections", "Settings sections")}>
+          {sections.map(([id, numeral, label]) => <button className="focus-ring" key={id} aria-current={activeSection === id ? "location" : undefined} onClick={() => navigateSection(id)} type="button"><i aria-hidden="true">{numeral}</i>{label}</button>)}
+        </nav>
+        <div className="settings-sections">
+          <form className="settings-section" aria-labelledby="settings-profile-heading" onSubmit={handleProfileSubmit} noValidate>
+            <SettingsHeading id="profile" numeral="i." title={t("profileTitle", "Profile details")} meta={t("profileAccount", "Account")} />
+            <fieldset disabled={isSavingProfile} className="settings-profile-fields">
+              <label className="settings-field">
+                <span>{t("profileLoginUsername", "Login username")}</span>
+                <span className="settings-field-control"><span className="settings-identity"><LockKeyhole size={14} aria-hidden="true" /><input aria-label={t("profileLoginUsername", "Login username")} readOnly value={getLoginUsername(user)} /></span>
+                  <small>{t("profileLoginUsernameCopy", "Used to sign in and cannot be changed.")}</small></span>
+              </label>
+              <label className="settings-field">
+                <span>{t("profileDisplayName", "Display name")}</span>
+                <input className="focus-ring" aria-label={t("profileDisplayName", "Display name")} aria-invalid={Boolean(profileError && !displayName.trim())} value={displayName} onChange={(event) => { setDisplayName(event.target.value); setProfileMessage(""); setProfileError(""); }} autoComplete="nickname" />
+              </label>
+              <label className="settings-field">
+                <span>{t("recoveryEmailOptional", "Recovery email optional")}</span>
+                <span className="settings-field-control"><input className="focus-ring" aria-label={t("recoveryEmailOptional", "Recovery email optional")} aria-invalid={Boolean(profileError && !isValidOptionalEmail(recoveryEmail))} type="email" value={recoveryEmail} onChange={(event) => { setRecoveryEmail(event.target.value); setProfileMessage(""); setProfileError(""); }} autoComplete="email" placeholder="john@example.com" />
+                  <small>{t("profileRecoveryEmailCopy", "Leave blank if you do not want a recovery email yet.")}</small></span>
+              </label>
+            </fieldset>
+            <div className="settings-actions">
+              {feedback(profileError, profileMessage, profileDirty, isSavingProfile)}
+              {profileDirty && <button className="settings-discard focus-ring" disabled={isSavingProfile} onClick={discardProfile} type="button">{discardLabel}</button>}
+              <button className="primary-action" disabled={isSavingProfile || !profileDirty} type="submit"><Save size={16} aria-hidden="true" />{isSavingProfile ? t("working", "Working...") : t("profileSaveChanges", "Save profile")}</button>
             </div>
-            <button
-              className="focus-ring grid size-10 shrink-0 place-items-center rounded-lg border border-line bg-white text-slate-600 shadow-sm hover:text-frenchBlue"
-              disabled={isDemo || isLoadingQuota}
-              onClick={loadQuotaStatus}
-              title={t("profileRefreshQuota", "Refresh quota")}
-              type="button"
-            >
-              <RefreshCw size={17} />
-            </button>
-          </div>
+          </form>
 
-          {isDemo ? (
-            <p className="text-sm text-slate-600">
-              {t("demoAiUnavailable", "AI auto-fill is unavailable in the public demo.")}
-            </p>
-          ) : quotaError ? (
-            <p className="rounded-xl bg-blush p-3 text-sm font-bold text-frenchRed">
-              {quotaError}
-            </p>
-          ) : (
-            <div>
-              <p className="text-sm font-semibold text-slate-600">
-                {t("profileAutofillRemaining", "Auto-fill remaining today")}
-              </p>
-              <p className="mt-2 text-4xl font-black tracking-[-0.01em]">
-                {quotaStatus
-                  ? `${quotaStatus.remaining}/${quotaStatus.limit}`
-                  : t("profileQuotaLoading", "Loading...")}
-              </p>
-              <div className="mt-4 h-2 rounded-full bg-sky">
-                <div
-                  className="h-2 rounded-full bg-frenchBlue"
-                  style={{ width: `${usagePercent}%` }}
-                />
-              </div>
-              {quotaStatus && (
-                <p className="mt-2 text-sm font-semibold text-slate-600">
-                  {t("profileAutofillUsed", "{used} used today.", {
-                    used: quotaStatus.used,
-                  })}
-                </p>
-              )}
+          <form className="settings-section" aria-labelledby="settings-learning-heading" onSubmit={handleLearningSettingsSubmit}>
+            <SettingsHeading id="learning" numeral="ii." title={t("settingsDailyAmounts", "Daily quiz and study amounts")} meta={t("settingsLearning", "Learning")} />
+            <p>{t("settingsDailyAmountsCopy", "These limits control how many cards are pulled into each new quiz or study cycle.")}</p>
+            <fieldset className="settings-limits" disabled={isSavingSettings}>
+              {settingFields.map(([key, label]) => {
+                const { min, max } = settingLimits[key];
+                const value = settingsForm[key];
+                const invalid = value === "" || !Number.isInteger(Number(value)) || Number(value) < min || Number(value) > max;
+                return <div className="settings-limit" key={key}>
+                  <div><label htmlFor={`setting-${key}`}>{label}</label><small id={`range-${key}`}>{t("settingsRange", "Range {min}–{max}", { min, max })}</small></div>
+                  <div className="settings-stepper">
+                    <button className="focus-ring" type="button" title={t("settingsDecrease", "Decrease {label}", { label })} aria-label={t("settingsDecrease", "Decrease {label}", { label })} disabled={Number(value) <= min} onClick={() => { updateSettingsField(key, Math.max(min, Math.min(max, Number(value) - 1))); setSettingsMessage(""); }}><Minus size={16} aria-hidden="true" /></button>
+                    <input className="focus-ring" id={`setting-${key}`} aria-describedby={`range-${key}`} aria-invalid={invalid} type="number" inputMode="numeric" step={1} required min={min} max={max} value={value} onChange={(event) => { updateSettingsField(key, event.target.value); setSettingsMessage(""); setSettingsError(""); }} />
+                    <button className="focus-ring" type="button" title={t("settingsIncrease", "Increase {label}", { label })} aria-label={t("settingsIncrease", "Increase {label}", { label })} disabled={Number(value) >= max} onClick={() => { updateSettingsField(key, Math.max(min, Math.min(max, Number(value) + 1))); setSettingsMessage(""); }}><Plus size={16} aria-hidden="true" /></button>
+                  </div>
+                </div>;
+              })}
+            </fieldset>
+            <div className="settings-actions">
+              {feedback(settingsError, settingsMessage, settingsDirty, isSavingSettings)}
+              {settingsDirty && <button className="settings-discard focus-ring" type="button" disabled={isSavingSettings} onClick={() => { setSettingsForm(confirmedSettings); setSettingsMessage(""); setSettingsError(""); }}>{discardLabel}</button>}
+              <button className="primary-action" disabled={isSavingSettings || !settingsDirty} type="submit"><Save size={16} aria-hidden="true" />{isSavingSettings ? t("working", "Working...") : t("settingsSaveLearning", "Save learning settings")}</button>
             </div>
-          )}
-        </section>
-      </aside>
+          </form>
 
-      <section className="app-card p-5 xl:col-span-2">
-        <div className="mb-5 flex items-start gap-3">
-          <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-sky text-frenchBlue">
-            <SlidersHorizontal size={20} />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-frenchRed">
-              {t("settingsLearning", "Learning")}
-            </p>
-            <h3 className="text-xl font-black">
-              {t("settingsDailyAmounts", "Daily quiz and study amounts")}
-            </h3>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              {t(
-                "settingsDailyAmountsCopy",
-                "These limits control how many cards are pulled into each new quiz or study cycle."
-              )}
-            </p>
-          </div>
+          <section className="settings-section" aria-labelledby="settings-quota-heading">
+            <SettingsHeading id="quota" numeral="iii." title={t("autofill", "AI auto-fill")} meta={`${t("profileSubscription", "Subscription")} · ${isDemo ? t("demoMode", "Demo") : quotaStatus ? quotaStatus.subscriptionTier === "subscriber" ? t("profileSubscriber", "Subscriber") : t("profileFreePlan", "Free plan") : t("profileQuotaLoading", "Loading...")}`}>
+              <button className="settings-refresh focus-ring" aria-label={t("profileRefreshQuota", "Refresh quota")} title={t("profileRefreshQuota", "Refresh quota")} disabled={isDemo || isLoadingQuota} onClick={loadQuotaStatus} type="button"><RefreshCw size={17} className={isLoadingQuota ? "bureau-spin" : ""} aria-hidden="true" /></button>
+            </SettingsHeading>
+            {isDemo ? <p className="settings-quota-demo">{t("demoAiUnavailable", "AI auto-fill is unavailable in the public demo.")}</p>
+              : quotaError ? <div className="bureau-feedback is-error" role="alert"><CircleAlert size={18} aria-hidden="true" /><span>{quotaError}</span><button className="secondary-action" disabled={isLoadingQuota} onClick={loadQuotaStatus} type="button">{t("retryLoad", "Retry")}</button></div>
+                : <div className="settings-quota" role="status" aria-busy={isLoadingQuota}>
+                  <p className="settings-quota-number">{quotaStatus ? quotaStatus.remaining : "–"}<span>/ {quotaStatus ? quotaStatus.limit : "–"}</span></p>
+                  <div><p>{t("profileAutofillRemaining", "Auto-fill remaining today")}</p>
+                    <div className="settings-quota-ticks" aria-hidden="true">{Array.from({ length: 10 }, (_, index) => <span key={index} className={!isLoadingQuota && quotaStatus && index >= Math.ceil(quotaStatus.used / quotaStatus.limit * 10) ? "is-remaining" : ""} />)}</div>
+                    <p className="settings-quota-used">{isLoadingQuota || !quotaStatus ? t("profileQuotaLoading", "Loading...") : t("profileAutofillUsed", "{used} used today.", { used: quotaStatus.used })}</p>
+                  </div>
+                </div>}
+          </section>
+
+          <form className="settings-section" aria-labelledby="settings-password-heading" onSubmit={handlePasswordSubmit}>
+            <SettingsHeading id="password" numeral="iv." title={t("profileChangePassword", "Change password")} meta={t("password", "Password")} />
+            {isDemo && <p>{t("demoPasswordUnavailable", "Password changes are unavailable in the public demo.")}</p>}
+            <fieldset className="settings-password-fields" disabled={isDemo || isChangingPassword}>
+              {[["currentPassword", t("profileCurrentPassword", "Current password")], ["newPassword", t("profileNewPassword", "New password")], ["confirmPassword", t("profileConfirmPassword", "Confirm new password")]].map(([key, label]) => <label key={key}>{label}
+                <input className="focus-ring" type="password" value={passwordForm[key]} autoComplete={key === "currentPassword" ? "current-password" : "new-password"} onChange={(event) => { setPasswordForm((current) => ({ ...current, [key]: event.target.value })); setPasswordMessage(""); setPasswordError(""); }} />
+              </label>)}
+            </fieldset>
+            <div className="settings-actions">
+              {feedback(passwordError, passwordMessage, passwordDirty, isChangingPassword)}
+              {passwordDirty && <button className="settings-discard focus-ring" type="button" disabled={isChangingPassword} onClick={() => { setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" }); setPasswordError(""); setPasswordMessage(""); }}>{discardLabel}</button>}
+              <button className="primary-action" disabled={isDemo || isChangingPassword} type="submit"><KeyRound size={16} aria-hidden="true" />{isChangingPassword ? t("working", "Working...") : t("profileUpdatePassword", "Update password")}</button>
+            </div>
+          </form>
         </div>
-
-        <form
-          className="grid gap-4 md:grid-cols-2"
-          onSubmit={handleLearningSettingsSubmit}
-        >
-          <label className="grid gap-1 text-sm font-bold">
-            {t("settingsQuizVocabulary", "Quiz vocabulary questions")}
-            <input
-              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-              max={settingLimits.quizVocabularyLimit.max}
-              min={settingLimits.quizVocabularyLimit.min}
-              onChange={(event) =>
-                updateSettingsField("quizVocabularyLimit", event.target.value)
-              }
-              type="number"
-              value={settingsForm.quizVocabularyLimit}
-            />
-          </label>
-
-          <label className="grid gap-1 text-sm font-bold">
-            {t("settingsStudyVocabulary", "Study vocabulary cards")}
-            <input
-              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-              max={settingLimits.studyVocabularyLimit.max}
-              min={settingLimits.studyVocabularyLimit.min}
-              onChange={(event) =>
-                updateSettingsField("studyVocabularyLimit", event.target.value)
-              }
-              type="number"
-              value={settingsForm.studyVocabularyLimit}
-            />
-          </label>
-
-          <label className="grid gap-1 text-sm font-bold">
-            {t("settingsStudyGrammar", "Study grammar cards")}
-            <input
-              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-              max={settingLimits.studyGrammarLimit.max}
-              min={settingLimits.studyGrammarLimit.min}
-              onChange={(event) =>
-                updateSettingsField("studyGrammarLimit", event.target.value)
-              }
-              type="number"
-              value={settingsForm.studyGrammarLimit}
-            />
-          </label>
-
-          <label className="grid gap-1 text-sm font-bold">
-            {t("settingsStudyPhrases", "Study short phrase cards")}
-            <input
-              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-              max={settingLimits.studyPhraseLimit.max}
-              min={settingLimits.studyPhraseLimit.min}
-              onChange={(event) =>
-                updateSettingsField("studyPhraseLimit", event.target.value)
-              }
-              type="number"
-              value={settingsForm.studyPhraseLimit}
-            />
-          </label>
-
-          {settingsError && (
-            <p className="rounded-xl bg-blush p-3 text-sm font-bold text-frenchRed md:col-span-2">
-              {settingsError}
-            </p>
-          )}
-          {settingsMessage && (
-            <p className="inline-flex items-center gap-2 rounded-xl bg-mint p-3 text-sm font-bold text-sage md:col-span-2">
-              <CheckCircle2 size={17} />
-              {settingsMessage}
-            </p>
-          )}
-
-          <button
-            className="primary-action h-11 justify-center md:col-span-2 md:w-fit"
-            disabled={isSavingSettings}
-            type="submit"
-          >
-            <Save size={17} />
-            {isSavingSettings
-              ? t("working", "Working...")
-              : t("settingsSaveLearning", "Save learning settings")}
-          </button>
-        </form>
-      </section>
-
-      <section className="app-card p-5 xl:col-span-2">
-        <div className="mb-5 flex items-start gap-3">
-          <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-butter text-brass">
-            <KeyRound size={20} />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-frenchRed">
-              {t("password", "Password")}
-            </p>
-            <h3 className="text-xl font-black">
-              {t("profileChangePassword", "Change password")}
-            </h3>
-          </div>
-        </div>
-
-        {isDemo && (
-          <p className="mb-4 text-sm text-slate-600">
-            {t("demoPasswordUnavailable", "Password changes are unavailable in the public demo.")}
-          </p>
-        )}
-        <form className="grid gap-4 md:grid-cols-3" onSubmit={handlePasswordSubmit}>
-          <label className="grid gap-1 text-sm font-bold">
-            {t("profileCurrentPassword", "Current password")}
-            <input
-              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-              disabled={isDemo}
-              onChange={(event) =>
-                setPasswordForm((current) => ({
-                  ...current,
-                  currentPassword: event.target.value,
-                }))
-              }
-              type="password"
-              value={passwordForm.currentPassword}
-            />
-          </label>
-
-          <label className="grid gap-1 text-sm font-bold">
-            {t("profileNewPassword", "New password")}
-            <input
-              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-              disabled={isDemo}
-              onChange={(event) =>
-                setPasswordForm((current) => ({
-                  ...current,
-                  newPassword: event.target.value,
-                }))
-              }
-              type="password"
-              value={passwordForm.newPassword}
-            />
-          </label>
-
-          <label className="grid gap-1 text-sm font-bold">
-            {t("profileConfirmPassword", "Confirm new password")}
-            <input
-              className="focus-ring h-11 rounded-lg border border-line bg-white px-3 font-normal shadow-sm"
-              disabled={isDemo}
-              onChange={(event) =>
-                setPasswordForm((current) => ({
-                  ...current,
-                  confirmPassword: event.target.value,
-                }))
-              }
-              type="password"
-              value={passwordForm.confirmPassword}
-            />
-          </label>
-
-          {passwordError && (
-            <p className="rounded-xl bg-blush p-3 text-sm font-bold text-frenchRed md:col-span-3">
-              {passwordError}
-            </p>
-          )}
-          {passwordMessage && (
-            <p className="inline-flex items-center gap-2 rounded-xl bg-mint p-3 text-sm font-bold text-sage md:col-span-3">
-              <CheckCircle2 size={17} />
-              {passwordMessage}
-            </p>
-          )}
-
-          <button
-            className="primary-action h-11 justify-center md:col-span-3 md:w-fit"
-            disabled={isDemo || isChangingPassword}
-            type="submit"
-          >
-            <KeyRound size={17} />
-            {isChangingPassword
-              ? t("working", "Working...")
-              : t("profileUpdatePassword", "Update password")}
-          </button>
-        </form>
-      </section>
+      </div>
     </div>
   );
+}
+
+function SettingsHeading({ id, numeral, title, meta, children }) {
+  return <div className="settings-heading"><span aria-hidden="true">{numeral}</span><h3 id={`settings-${id}-heading`} tabIndex={-1}>{title}</h3><small>{meta}</small>{children}</div>;
 }

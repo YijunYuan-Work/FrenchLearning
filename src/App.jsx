@@ -492,7 +492,7 @@ function Workspace({ isDemoRoute, auth }) {
   }
 
   return (
-    <div className={`cahier-workspace${activeSection === "review" ? " is-studying" : activeSection === "quiz" ? " is-quizzing" : ["vocabulary", "phrases", "grammar", "pronunciation"].includes(activeSection) ? " is-library" : ""}`} lang={language === "zh" ? "zh-CN" : "en"}>
+    <div className={`cahier-workspace${activeSection === "review" ? " is-studying" : activeSection === "quiz" ? " is-quizzing" : ["vocabulary", "phrases", "grammar", "pronunciation"].includes(activeSection) ? " is-library" : ["import", "settings"].includes(activeSection) ? " is-bureau" : ""}`} lang={language === "zh" ? "zh-CN" : "en"}>
       <Sidebar
         activeSection={activeSection}
         setActiveSection={setActiveSection}
