@@ -1,4 +1,4 @@
-import { Loader2, Sparkles, X } from "lucide-react";
+import { Check, CircleAlert, Loader2, Sparkles, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { categoryOptions } from "../data/categories";
 import {
@@ -14,9 +14,12 @@ import { mergeVocabularyAutofill } from "../utils/editorAutofill";
 import { FrenchCharacterKeyboard } from "./FrenchCharacterKeyboard";
 import { RichTextEditor } from "./RichTextEditor";
 
-const inputClass =
-  "focus-ring h-10 rounded-lg border border-line bg-white px-3 font-normal shadow-sm";
-const labelClass = "grid gap-1 text-sm font-bold";
+const inputClass = "editor-input";
+const labelClass = "editor-field";
+
+function SectionHeading({ numeral, children }) {
+  return <h3 className="editor-section-heading"><i aria-hidden="true">{numeral}.</i><span>{children}</span></h3>;
+}
 
 export function EditorModal({
   error,
@@ -46,6 +49,7 @@ export function EditorModal({
     : isPhraseNote
       ? t("phraseFrenchPlaceholder", "e.g. À bientôt !")
       : "e.g. boulangerie, parler, heureux";
+  const overlayRef = useRef(null);
   const modalRef = useRef(null);
   const onCloseRef = useRef(onClose);
   const previousFocusRef = useRef(null);
@@ -53,11 +57,12 @@ export function EditorModal({
   const autoFillRequestRef = useRef(null);
   const contextRef = useRef({ form, language });
   contextRef.current = { form, language };
+  const [invalidFields, setInvalidFields] = useState({});
+  const [highlightedFields, setHighlightedFields] = useState([]);
   const [autoFillState, setAutoFillState] = useState({
     status: "idle",
     message: "",
   });
-
   useEffect(() => {
     onCloseRef.current = closeEditor;
   });
@@ -71,7 +76,36 @@ export function EditorModal({
     };
   }, [language, userId]);
 
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const overlay = overlayRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function updateViewport() {
+      overlay.style.setProperty("--editor-viewport-height", `${viewport?.height ?? window.innerHeight}px`);
+      overlay.style.setProperty("--editor-viewport-top", `${viewport?.offsetTop ?? 0}px`);
+    }
+    updateViewport();
+    viewport?.addEventListener("resize", updateViewport);
+    viewport?.addEventListener("scroll", updateViewport);
+    window.addEventListener("resize", updateViewport);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      viewport?.removeEventListener("resize", updateViewport);
+      viewport?.removeEventListener("scroll", updateViewport);
+      window.removeEventListener("resize", updateViewport);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!highlightedFields.length) return;
+    const timer = setTimeout(() => setHighlightedFields([]), 650);
+    return () => clearTimeout(timer);
+  }, [highlightedFields]);
+
   function invalidateAutoFill() {
+    setHighlightedFields([]);
     const request = autoFillRequestRef.current;
     autoFillRequestRef.current = null;
     request?.controller.abort();
@@ -103,7 +137,7 @@ export function EditorModal({
       if (event.key !== "Tab" || !modal) return;
 
       const focusable = Array.from(modal.querySelectorAll(focusableSelector)).filter(
-        (element) => !element.disabled && element.offsetParent !== null
+        (element) => !element.matches(":disabled") && !element.closest("[inert]") && element.offsetParent !== null
       );
       if (focusable.length === 0) return;
 
@@ -131,6 +165,8 @@ export function EditorModal({
   function updateField(field, value) {
     if (isSaving) return;
     onChange?.();
+    setInvalidFields((current) => ({ ...current, [field]: false }));
+    setHighlightedFields((current) => current.filter((key) => key !== field));
     if (field === "french" || field === "category") invalidateAutoFill();
     else autoFillRequestRef.current?.editedFields.add(field);
     setForm((current) => ({ ...current, [field]: value }));
@@ -187,6 +223,7 @@ export function EditorModal({
     const isActive = () => autoFillRequestRef.current === request && !controller.signal.aborted &&
       isCurrentAccount() && contextRef.current.language === request.language &&
       contextRef.current.form.french === request.french && contextRef.current.form.category === request.category;
+    setHighlightedFields([]);
     setAutoFillState({
       status: "loading",
       message: t("autoFillLoading", "Asking AI to build the vocabulary note..."),
@@ -197,6 +234,11 @@ export function EditorModal({
         userId, isCurrentAccount, signal: controller.signal,
       });
       if (!isActive()) return;
+      // Presentation only: the authoritative merge below still owns all form updates.
+      const draft = contextRef.current.form;
+      const merged = mergeVocabularyAutofill(draft, result, request.editedFields);
+      setHighlightedFields(Object.keys(merged).filter((key) =>
+        JSON.stringify(merged[key]) !== JSON.stringify(draft[key])));
       setForm((current) => !controller.signal.aborted && isCurrentAccount() && contextRef.current.language === request.language &&
         current.french === request.french && current.category === request.category
         ? mergeVocabularyAutofill(current, result, request.editedFields) : current);
@@ -226,297 +268,189 @@ export function EditorModal({
     onSave(event);
   }
 
+  const isVocabulary = form.category === "vocabulary";
+  const frenchInvalid = invalidFields.french && !form.french.trim();
+  const meaningInvalid = invalidFields.english && !form.english.trim();
+  const flash = (field) => highlightedFields.includes(field) ? " is-autofilled" : "";
+  const confidenceChoices = [
+    ["1", t("confidenceNeedsPractice", "Needs practice")],
+    ["2", t("confidenceLearning", "Learning")],
+    ["3", t("confidenceFamiliar", "Familiar")],
+    ["4", t("confidenceStrong", "Strong")],
+  ];
+  const FrenchControl = isPhraseNote ? "textarea" : "input";
+  const essentials = (
+    <section className="editor-essentials">
+      <SectionHeading numeral="I">{t("editorEssentials", "L’essentiel")}</SectionHeading>
+      <div className={labelClass + flash("french")}>
+        <div className="editor-field-heading">
+          <label htmlFor={frenchInputId}>{titleLabel}<span className="editor-required" aria-hidden="true"> *</span></label>
+          {isVocabulary && (
+            <button className="editor-autofill" disabled={isDemo || isSaving || autoFillState.status === "loading" || !form.french.trim()}
+              onClick={handleAutoFill} type="button" title={isDemo ? t("demoAiUnavailable", "AI auto-fill is unavailable in the public demo.") : undefined}>
+              {autoFillState.status === "loading" ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+              {t("autoFill", "Auto-fill")}
+            </button>
+          )}
+        </div>
+        <FrenchControl className="editor-writing-line" id={frenchInputId} ref={frenchInputRef} required aria-label={titleLabel}
+          aria-invalid={frenchInvalid || undefined} aria-describedby={frenchInvalid ? `${frenchInputId}-error` : undefined}
+          onInvalid={(event) => {
+            event.preventDefault();
+            setInvalidFields((current) => ({ ...current, french: true }));
+            modalRef.current?.querySelector(":invalid")?.focus();
+          }}
+          onChange={(event) => updateField("french", event.target.value)} placeholder={titlePlaceholder} value={form.french} />
+        {frenchInvalid && <span className="editor-field-error" id={`${frenchInputId}-error`} role="alert">{t("editorTitleRequired", "Enter a French word or title.")}</span>}
+      </div>
+      <FrenchCharacterKeyboard onInsert={insertFrenchCharacter} />
+      {!isGrammarNote && (
+        <label className={labelClass + flash("english")}>
+          <span>{isPhraseNote ? t("translation", "Translation") : t("english", "English")}<span className="editor-required" aria-hidden="true"> *</span></span>
+          {isPhraseNote ? (
+            <textarea className={inputClass} required rows={3} aria-label={t("translation", "Translation")} onChange={(event) => updateField("english", event.target.value)} value={form.english} />
+          ) : (
+            <input className={inputClass} required aria-label={t("english", "English")} aria-invalid={meaningInvalid || undefined}
+              aria-describedby={meaningInvalid ? `${frenchInputId}-meaning-error` : undefined}
+              onInvalid={(event) => {
+                event.preventDefault();
+                setInvalidFields((current) => ({ ...current, english: true }));
+                modalRef.current?.querySelector(":invalid")?.focus();
+              }}
+              onChange={(event) => updateField("english", event.target.value)} value={form.english} />
+          )}
+          {meaningInvalid && <span className="editor-field-error" id={`${frenchInputId}-meaning-error`} role="alert">{t("editorMeaningRequired", "Enter a meaning.")}</span>}
+        </label>
+      )}
+      {(isVocabulary || form.category === "pronunciation") && (
+        <label className={labelClass + flash("ipa")}>{t("ipaPronunciation", "IPA pronunciation")}
+          <input className={inputClass} aria-label={t("ipaPronunciation", "IPA pronunciation")} onChange={(event) => updateField("ipa", event.target.value)} placeholder="e.g. /bu.lɑ̃.ʒʁi/" value={form.ipa ?? ""} />
+        </label>
+      )}
+      {isDemo && isVocabulary && <p className="editor-demo-notice">{t("demoAiUnavailable", "AI auto-fill is unavailable in the public demo.")}</p>}
+    </section>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/45 p-4 backdrop-blur-sm">
-      <form
-        aria-labelledby="editor-modal-title"
-        aria-modal="true"
-        className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-xl bg-paper p-5 shadow-lift"
-        aria-busy={isSaving}
-        onSubmit={handleSubmit}
-        ref={modalRef}
-        role="dialog"
-      >
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-xl font-black tracking-[-0.01em]" id="editor-modal-title">{title}</h2>
-          <button
-            aria-label={t("closeEditor", "Close editor")}
-            className="focus-ring grid size-9 place-items-center rounded-lg border border-line bg-white"
-            onClick={closeEditor}
-            type="button"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <fieldset className="grid min-w-0 gap-4 md:grid-cols-2" disabled={isSaving} inert={isSaving}>
-          {error && (
-            <p className="rounded-xl bg-blush px-3 py-2 text-sm font-bold text-frenchRed md:col-span-2">
-              {error}
-            </p>
-          )}
-
-          <label className={labelClass}>
-            {t("section", "Section")}
-            <select
-              className={inputClass}
-              onChange={(event) => updateField("category", event.target.value)}
-              value={form.category}
-            >
-              {categoryOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {t(option.labelKey, option.label)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={labelClass}>
-            {t("confidence", "Confidence")}
-            <select
-              className={inputClass}
-              onChange={(event) =>
-                updateField("confidence", event.target.value)
-              }
-              value={form.confidence}
-            >
-              <option value="1">{t("confidenceNeedsPractice", "Needs practice")}</option>
-              <option value="2">{t("confidenceLearning", "Learning")}</option>
-              <option value="3">{t("confidenceFamiliar", "Familiar")}</option>
-              <option value="4">{t("confidenceStrong", "Strong")}</option>
-            </select>
-          </label>
-          <div className={`${labelClass} ${usesSimpleFullWidthForm ? "md:col-span-2" : ""}`}>
-            <span className="flex items-center justify-between gap-3">
-              <label htmlFor={frenchInputId}>{titleLabel}</label>
-              {form.category === "vocabulary" && (
-                <button
-                  className="focus-ring inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-frenchBlue/25 bg-white px-3 text-xs font-bold text-frenchBlue hover:bg-sky/60 disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={
-                    isDemo || isSaving || autoFillState.status === "loading" || !form.french.trim()
-                  }
-                  onClick={handleAutoFill}
-                  type="button"
-                >
-                  {autoFillState.status === "loading" ? (
-                    <Loader2 className="animate-spin" size={14} />
-                  ) : (
-                    <Sparkles size={14} />
-                  )}
-                  {t("autoFill", "Auto-fill")}
-                </button>
-              )}
-            </span>
-            <input
-              className={inputClass}
-              id={frenchInputId}
-              onChange={(event) => updateField("french", event.target.value)}
-              placeholder={titlePlaceholder}
-              ref={frenchInputRef}
-              required
-              value={form.french}
-            />
+    <div className="cahier-editor-overlay" ref={overlayRef}>
+      <form aria-labelledby="editor-modal-title" aria-modal="true" className="cahier-editor" aria-busy={isSaving}
+        onSubmit={handleSubmit} ref={modalRef} role="dialog">
+        <header className="editor-header">
+          <div className="editor-heading">
+            <div><p className="editor-annotation" lang="fr">{form.id ? "Modifier la note" : "Nouvelle note"}</p>
+              <h2 id="editor-modal-title">{title}</h2></div>
+            <button aria-label={t("closeEditor", "Close editor")} className="icon-action editor-close" onClick={closeEditor} type="button"><X size={20} /></button>
           </div>
-          {isDemo && form.category === "vocabulary" && (
-            <p className="text-sm text-slate-600 md:col-span-2">
-              {t("demoAiUnavailable", "AI auto-fill is unavailable in the public demo.")}
-            </p>
-          )}
-          {!usesSimpleFullWidthForm && (
-            <>
-              <label className={labelClass}>
-                {t("english", "English")}
-                <input
-                  className={inputClass}
-                  onChange={(event) => updateField("english", event.target.value)}
-                  required
-                  value={form.english}
-                />
+          <fieldset className="editor-categories" disabled={isSaving}>
+            <legend className="sr-only">{t("section", "Section")}</legend>
+            {categoryOptions.map((option, index) => (
+              <label key={option.value} className={form.category === option.value ? "is-active" : ""}>
+                <input type="radio" name="editor-category" aria-label={t(option.labelKey, option.label)} value={option.value} checked={form.category === option.value}
+                  onChange={() => updateField("category", option.value)} />
+                <i aria-hidden="true">{["i", "ii", "iii", "iv"][index]}</i>
+                <span>{option.value === "pronunciation" ? t("editorPronunciation", "Pronunciation") : t(option.labelKey, option.label)}</span>
               </label>
-              <div className="md:col-span-2">
-                <FrenchCharacterKeyboard onInsert={insertFrenchCharacter} />
-              </div>
-            </>
-          )}
-          {isPhraseNote && (
-            <>
-              <label className={`${labelClass} md:col-span-2`}>
-                {t("translation", "Translation")}
-                <textarea
-                  className="focus-ring min-h-20 rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
-                  onChange={(event) => updateField("english", event.target.value)}
-                  required
-                  value={form.english}
-                />
-              </label>
-              <div className="md:col-span-2">
-                <FrenchCharacterKeyboard onInsert={insertFrenchCharacter} />
-              </div>
-            </>
-          )}
-          {isGrammarNote && (
-            <div className="md:col-span-2">
-              <FrenchCharacterKeyboard onInsert={insertFrenchCharacter} />
+            ))}
+          </fieldset>
+        </header>
+
+        <div className="editor-scroll-body">
+          <fieldset className="editor-fields" disabled={isSaving} inert={isSaving}>
+            <div className={isVocabulary ? "editor-vocabulary-grid" : "editor-full-width"}>
+              {essentials}
+              {isVocabulary && (
+                <section className="editor-grammar-details">
+                  <SectionHeading numeral="II">{t("editorGrammarDetails", "Grammaire")}</SectionHeading>
+                  <label className={labelClass + flash("partOfSpeech")}>{t("wordType", "Word type")}
+                    <select className={inputClass} aria-label={t("wordType", "Word type")} onChange={(event) => updateField("partOfSpeech", event.target.value)} value={form.partOfSpeech ?? ""}>
+                      {partOfSpeechOptions.map((option) => <option key={option.value} value={option.value}>{t(option.labelKey, option.label)}</option>)}
+                    </select>
+                  </label>
+                  {form.partOfSpeech === "noun" && (
+                    <fieldset className={"editor-gender" + flash("gender")}>
+                      <legend>{t("gender", "Gender")}</legend>
+                      <div>{genderOptions.map((option, index) => (
+                        <label key={option.value} className={(form.gender ?? "") === option.value ? "is-active" : ""}>
+                          <input type="radio" name="editor-gender" aria-label={t(option.labelKey, option.label)} value={option.value} checked={(form.gender ?? "") === option.value} onChange={() => updateField("gender", option.value)} />
+                          <span aria-hidden="true">{["—", "le", "la", "le/la"][index]}</span><span>{language === "zh" ? t(option.labelKey, option.label) : ["Unknown", "Masc.", "Fem.", "Both"][index]}</span>
+                        </label>
+                      ))}</div>
+                    </fieldset>
+                  )}
+                  {form.partOfSpeech === "verb" && (
+                    <fieldset className={"editor-morphology" + flash("conjugation")}>
+                      <legend>{t("presentTenseConjugation", "Present tense conjugation")}</legend>
+                      <div>{conjugationPronouns.map((pronoun) => (
+                        <label key={pronoun}><span>{pronoun}</span><input className="editor-form-line" aria-label={pronoun} onChange={(event) => updateConjugation(pronoun, event.target.value)} value={form.conjugation?.[pronoun] ?? ""} /></label>
+                      ))}</div>
+                    </fieldset>
+                  )}
+                  {form.partOfSpeech === "adjective" && (
+                    <fieldset className={"editor-morphology editor-adjective" + flash("adjectiveForms")}>
+                      <legend>{t("adjectiveForms", "Adjective forms")}</legend>
+                      <div>{[
+                        ["masculine", t("masculine", "Masculine")], ["feminine", t("feminine", "Feminine")],
+                        ["masculinePlural", t("masculinePlural", "Masculine plural")], ["femininePlural", t("femininePlural", "Feminine plural")],
+                      ].map(([field, label]) => (
+                        <label key={field} title={label}><span>{language === "zh" ? label : { masculine: "M.", feminine: "F.", masculinePlural: "M. pl.", femininePlural: "F. pl." }[field]}</span><input className="editor-form-line" aria-label={label} onChange={(event) => updateAdjectiveForm(field, event.target.value)} value={form.adjectiveForms?.[field] ?? ""} /></label>
+                      ))}</div>
+                    </fieldset>
+                  )}
+                </section>
+              )}
             </div>
-          )}
-          {form.category === "vocabulary" && (
-            <>
-              <label className={`${labelClass} md:col-span-2`}>
-                {t("wordType", "Word type")}
-                <select
-                  className={inputClass}
-                  onChange={(event) =>
-                    updateField("partOfSpeech", event.target.value)
-                  }
-                  value={form.partOfSpeech ?? ""}
-                >
-                  {partOfSpeechOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {t(option.labelKey, option.label)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className={`${labelClass} md:col-span-2`}>
-                {t("ipaPronunciation", "IPA pronunciation")}
-                <input
-                  className={inputClass}
-                  onChange={(event) => updateField("ipa", event.target.value)}
-                  placeholder="e.g. /bu.lɑ̃.ʒʁi/"
-                  value={form.ipa ?? ""}
-                />
-              </label>
-
-              {form.partOfSpeech === "noun" && (
-                <label className={`${labelClass} md:col-span-2`}>
-                  {t("gender", "Gender")}
-                  <select
-                    className={inputClass}
-                    onChange={(event) => updateField("gender", event.target.value)}
-                    value={form.gender ?? ""}
-                  >
-                    {genderOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {t(option.labelKey, option.label)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-
-              {form.partOfSpeech === "verb" && (
-                <div className="grid gap-3 rounded-xl border border-line bg-sky/35 p-3 md:col-span-2">
-                  <p className="text-sm font-black">
-                    {t("presentTenseConjugation", "Present tense conjugation")}
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {conjugationPronouns.map((pronoun) => (
-                      <label className={labelClass} key={pronoun}>
-                        {pronoun}
-                        <input
-                          className={inputClass}
-                          onChange={(event) =>
-                            updateConjugation(pronoun, event.target.value)
-                          }
-                          value={form.conjugation?.[pronoun] ?? ""}
-                        />
+            {isGrammarNote && <section className="editor-grammar-content">
+              <SectionHeading numeral="II">{t("grammarNote", "Grammar note")}</SectionHeading>
+              <RichTextEditor label={t("grammarNote", "Grammar note")} onChange={(value) => updateField("notes", value)}
+                placeholder={t("grammarNotePlaceholder", "Paste or write the grammar rule here.")} t={t} value={form.notes} />
+            </section>}
+            <section className="editor-context">
+              <SectionHeading numeral={isVocabulary || isGrammarNote ? "III" : "II"}>{t("editorContext", "Contexte")}</SectionHeading>
+              <div className="editor-context-grid">
+                {!usesSimpleFullWidthForm && <div className="editor-context-notes">
+                  <label className={labelClass + flash("example")}>{t("example", "Example")}
+                    <textarea className={inputClass + " editor-example"} aria-label={t("example", "Example")} rows={3} onChange={(event) => updateField("example", event.target.value)} value={form.example} />
+                  </label>
+                  <label className={labelClass + flash("notes")}>{t("notes", "Notes")}
+                    <textarea className={inputClass} aria-label={t("notes", "Notes")} rows={3} onChange={(event) => updateField("notes", event.target.value)} value={form.notes} />
+                  </label>
+                </div>}
+                <div className="editor-context-options">
+                  <label className={labelClass + flash("tags")}>{t("tags", "Tags")}
+                    <input className={inputClass} aria-label={t("tags", "Tags")} onChange={(event) => updateField("tags", event.target.value)} placeholder="food, travel, A1" value={form.tags} />
+                  </label>
+                  <fieldset className="editor-confidence">
+                    <legend>{t("confidence", "Confidence")}</legend>
+                    <div>{confidenceChoices.map(([value, label]) => (
+                      <label key={value} className={String(form.confidence) === value ? "is-active" : ""}>
+                        <input type="radio" name="editor-confidence" value={value} checked={String(form.confidence) === value} onChange={() => updateField("confidence", value)} />
+                        <span className="editor-confidence-ticks" aria-hidden="true">{[1, 2, 3, 4].map((tick) => <i className={tick <= Number(value) ? "is-filled" : ""} key={tick} />)}</span>
+                        <span>{label}</span>
                       </label>
-                    ))}
-                  </div>
+                    ))}</div>
+                  </fieldset>
                 </div>
-              )}
-
-              {form.partOfSpeech === "adjective" && (
-                <div className="grid gap-3 rounded-xl border border-line bg-sky/35 p-3 md:col-span-2">
-                  <p className="text-sm font-black">
-                    {t("adjectiveForms", "Adjective forms")}
-                  </p>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {[
-                      ["masculine", t("masculine", "Masculine")],
-                      ["feminine", t("feminine", "Feminine")],
-                      ["masculinePlural", t("masculinePlural", "Masculine plural")],
-                      ["femininePlural", t("femininePlural", "Feminine plural")],
-                    ].map(([field, label]) => (
-                      <label className={labelClass} key={field}>
-                        {label}
-                        <input
-                          className={inputClass}
-                          onChange={(event) =>
-                            updateAdjectiveForm(field, event.target.value)
-                          }
-                          value={form.adjectiveForms?.[field] ?? ""}
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-          {autoFillState.message && (
-            <p
-              className={`rounded-xl px-3 py-2 text-sm font-semibold md:col-span-2 ${
-                autoFillState.status === "error"
-                  ? "bg-blush text-frenchRed"
-                  : autoFillState.status === "success"
-                    ? "bg-mint text-sage"
-                    : "bg-sky text-frenchBlue"
-              }`}
-            >
-              {autoFillState.message}
-            </p>
-          )}
-          <label className={`${labelClass} md:col-span-2`}>
-            {t("tags", "Tags")}
-            <input
-              className={inputClass}
-              onChange={(event) => updateField("tags", event.target.value)}
-              placeholder="food, travel, A1"
-              value={form.tags}
-            />
-          </label>
-          {!usesSimpleFullWidthForm && (
-            <label className={`${labelClass} md:col-span-2`}>
-              {t("example", "Example")}
-              <textarea
-                className="focus-ring min-h-20 rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
-                onChange={(event) => updateField("example", event.target.value)}
-                value={form.example}
-              />
-            </label>
-          )}
-          {!isPhraseNote && (
-            isGrammarNote ? (
-              <RichTextEditor
-                label={t("grammarNote", "Grammar note")}
-                onChange={(value) => updateField("notes", value)}
-                placeholder={t("grammarNotePlaceholder", "Paste or write the grammar rule here.")}
-                t={t}
-                value={form.notes}
-              />
-            ) : (
-              <label className={`${labelClass} md:col-span-2`}>
-                {t("notes", "Notes")}
-                <textarea
-                  className="focus-ring min-h-24 rounded-lg border border-line bg-white px-3 py-2 font-normal shadow-sm"
-                  onChange={(event) => updateField("notes", event.target.value)}
-                  value={form.notes}
-                />
-              </label>
-            )
-          )}
-        </fieldset>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <button className="secondary-action h-10" onClick={closeEditor} type="button">
-            {isSaving ? t("close", "Close") : t("cancel", "Cancel")}
-          </button>
-          <button className="primary-action h-10" disabled={isSaving} type="submit">
-            {isSaving && <Loader2 className="animate-spin" size={16} />}
-            {isSaving ? t("savingNote", "Saving note...") : t("saveNote", "Save note")}
-          </button>
+              </div>
+            </section>
+          </fieldset>
         </div>
+        <footer className="editor-footer">
+          <div data-status={isSaving ? "saving" : autoFillState.status} className={"editor-feedback" + (error || autoFillState.status === "error" ? " is-error" : "")}>
+            {isSaving ? <p role="status"><Loader2 className="animate-spin" size={16} /><span>{t("savingNote", "Saving note...")}</span></p> : error ? <p role="alert"><CircleAlert size={16} /><span>{error}</span></p> :
+              autoFillState.message ? <p role={autoFillState.status === "error" ? "alert" : "status"}>
+                {autoFillState.status === "loading" ? <Loader2 className="animate-spin" size={16} /> : autoFillState.status === "error" ? <CircleAlert size={16} /> : <Check size={16} />}
+                <span>{autoFillState.message}</span>
+              </p> : null}
+            {autoFillState.status === "error" && !isSaving && <button className="editor-retry" onClick={handleAutoFill} type="button">{t("editorRetryAutoFill", "Retry auto-fill")}</button>}
+          </div>
+          <div className="editor-actions">
+            <button className="secondary-action" onClick={closeEditor} type="button">{isSaving ? t("close", "Close") : t("cancel", "Cancel")}</button>
+            <button className="primary-action" aria-label={isSaving ? t("savingNote", "Saving note...") : t("saveNote", "Save note")} disabled={isSaving} type="submit">
+              {isSaving && <Loader2 className="animate-spin" size={16} />}
+              {isSaving ? t("savingNote", "Saving note...") : error ? t("editorSaveAgain", "Save again") : t("saveNote", "Save note")}
+            </button>
+          </div>
+        </footer>
       </form>
     </div>
   );

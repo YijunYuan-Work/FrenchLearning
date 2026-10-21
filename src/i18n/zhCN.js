@@ -1,4 +1,13 @@
 export const zhCN = {
+  editorEssentials: "基本信息",
+  editorPronunciation: "发音规则",
+  editorGrammarDetails: "语法信息",
+  editorContext: "语境",
+  editorTitleRequired: "请输入法语单词或标题。",
+  editorMeaningRequired: "请输入释义。",
+  editorRetryAutoFill: "重试自动填充",
+  editorSaveAgain: "重新保存",
+  insertCharacter: "插入",
   noteValidationfrench: "请输入法语单词、短语或标题，不能只包含空格。",
   noteValidationenglish: "请输入释义或翻译，不能只包含空格。",
   noteValidationgrammarNotes: "请输入语法规则或说明，不能只包含空白格式。",
