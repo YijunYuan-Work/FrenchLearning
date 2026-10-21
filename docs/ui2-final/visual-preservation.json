@@ -1,0 +1,278 @@
+[
+  {
+    "image": "editor-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 44,
+    "fractionChanged": 3.8194444444444444e-05
+  },
+  {
+    "image": "editor-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "editor-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "editor-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "grammar-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "grammar-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "grammar-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "grammar-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "import-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "import-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "import-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "import-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "login-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "login-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "login-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "login-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "phrases-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "phrases-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "phrases-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "phrases-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "pronunciation-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "pronunciation-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "pronunciation-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "pronunciation-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "quiz-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "quiz-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 13,
+    "fractionChanged": 3.7037037037037037e-05
+  },
+  {
+    "image": "quiz-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "quiz-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "settings-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "settings-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "settings-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "settings-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "signup-en.png",
+    "sameDimensions": true,
+    "changedPixels": 15,
+    "fractionChanged": 1.3020833333333334e-05
+  },
+  {
+    "image": "signup-zh.png",
+    "sameDimensions": true,
+    "changedPixels": 15,
+    "fractionChanged": 1.3020833333333334e-05
+  },
+  {
+    "image": "study-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 5121,
+    "fractionChanged": 0.0044453125
+  },
+  {
+    "image": "study-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 1945,
+    "fractionChanged": 0.005541310541310541
+  },
+  {
+    "image": "study-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 5121,
+    "fractionChanged": 0.0044453125
+  },
+  {
+    "image": "study-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 1936,
+    "fractionChanged": 0.005515669515669516
+  },
+  {
+    "image": "today-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "today-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "today-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "today-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "vocabulary-en-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "vocabulary-en-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "vocabulary-zh-1280.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  },
+  {
+    "image": "vocabulary-zh-390.png",
+    "sameDimensions": true,
+    "changedPixels": 0,
+    "fractionChanged": 0.0
+  }
+]

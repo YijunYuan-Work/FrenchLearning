@@ -86,9 +86,11 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
           </p>
         </div>
 
-        <form className="grid gap-4" onSubmit={handleSubmit}>
+        <form className="grid gap-4" onSubmit={handleSubmit} aria-busy={isLoading}>
           <div className="grid grid-cols-2 rounded-full bg-sky/75 p-1">
             <button
+              aria-pressed={mode === "sign-in"}
+              disabled={isLoading}
               className={`focus-ring h-10 cursor-pointer rounded-full text-sm font-medium ${
                 mode === "sign-in"
                   ? "bg-white text-frenchBlue shadow-sm"
@@ -100,6 +102,8 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
               {t("signIn", "Sign in")}
             </button>
             <button
+              aria-pressed={mode === "sign-up"}
+              disabled={isLoading}
               className={`focus-ring h-10 cursor-pointer rounded-full text-sm font-medium ${
                 mode === "sign-up"
                   ? "bg-white text-frenchBlue shadow-sm"
@@ -118,6 +122,7 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
               className="focus-ring h-11 rounded-md border border-[#a8c3de] bg-white px-3 font-light shadow-sm"
               onChange={(event) => setUsername(event.target.value)}
               placeholder="john"
+              autoComplete="username"
               required
               value={username}
             />
@@ -131,6 +136,7 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="john@example.com"
                 type="email"
+                autoComplete="email"
                 value={email}
               />
               <span className="text-xs font-light text-inkMute">
@@ -150,12 +156,13 @@ export function SignInPage({ error, isLoading, onAuthSubmit }) {
               placeholder={t("passwordPlaceholder", "At least 6 characters")}
               required
               type="password"
+              autoComplete={isSignUp ? "new-password" : "current-password"}
               value={password}
             />
           </label>
 
           {error && (
-            <p className="rounded-xl bg-blush p-3 text-sm font-medium text-frenchRed">
+            <p className="rounded-xl bg-blush p-3 text-sm font-medium text-frenchRed" role="alert">
               {error}
             </p>
           )}

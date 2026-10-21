@@ -6,6 +6,8 @@ The project began as a replacement for a Google Doc that had grown too long to n
 
 ## The Learning Loop
 
+The UI 2.0 workspace follows **Le Cahier · Bois**: an editorial notebook with quiet paper surfaces, bilingual reading layouts, focused flashcards, and compact learning controls. Desktop navigation and mobile sheets keep the same notes and daily practice within reach.
+
 French Desk is built around a simple cycle:
 
 1. Capture a vocabulary word, phrase, grammar rule, or pronunciation note.
@@ -33,10 +35,10 @@ Default sessions contain up to 50 vocabulary quiz questions and up to 50 vocabul
 
 The public demo uses disposable sample notes. Note edits, profile details, language, learning settings, and practice progress stay in memory and reset when the page reloads. It works without an account and stays separate from any existing login. Password changes, AI auto-fill, and file imports are unavailable in the demo.
 
-After starting the app, open:
+Try the [hosted demo](https://french-learning-theta.vercel.app/#/demo), or after starting the app locally, open:
 
 ```text
-https://french-learning-theta.vercel.app/#/demo
+http://127.0.0.1:5173/#/demo
 ```
 
 The same `/#/demo` path can be appended to a deployed URL for portfolio previews.
@@ -46,6 +48,14 @@ The same `/#/demo` path can be appended to a deployed URL for portfolio previews
 The frontend is a React 19 single-page application built with Vite and Tailwind CSS. Supabase provides authentication, Postgres storage, row-level security, and optional cloud persistence for daily learning state.
 
 Vocabulary auto-fill runs through a Vercel serverless function so the OpenAI API key never reaches the browser. The function authenticates the user, checks their daily allowance, validates the French entry with Wiktionary, requests structured vocabulary data from OpenAI, and returns the result to the editor for review before it is saved.
+
+Secondary learning/library/import/settings views load on demand; Today and the editor remain available in the initial shell. Local variable fonts use WOFF2 with their original character coverage and OFL licenses. Chinese uses the existing Noto font stylesheet with system fallbacks.
+
+### Persistence And Language
+
+Notes, language and learning settings are stored per account in Supabase. Daily goals and Quiz/Study sessions use account/day-keyed localStorage by default, so resume is limited to the same browser and origin. `VITE_ENABLE_DAILY_LEARNING_SYNC=true` enables optional Supabase synchronization when the daily-state table is installed. Read/write failures are surfaced with recovery controls; [persistence limits](docs/daily-learning-persistence.md) explain multi-device conflicts.
+
+Learning goals reset on the user's local calendar day; AI allowance resets on the UTC day. Switching interface language does not translate existing user-authored notes. Recovery email is profile metadata only; email-based password recovery is not implemented. Sign-in cookies are browser-session cookies, not a promise of indefinite login after a browser restart.
 
 ## Import Formats
 
@@ -124,12 +134,15 @@ npm run lint
 npm run test
 npm run build
 npm run check
+npx playwright install chromium
 npm run test:e2e
 ```
 
-`npm run check` runs ESLint, the focused Node tests, and a production build. `npm run test:e2e` runs the Playwright critical-flow suite against the public demo using Chromium; it does not require Supabase credentials or call AI services.
+`npm run check` runs ESLint, the Node utility/API tests, and a production build. Playwright covers Demo flows and synthetic authenticated accounts, including account switching, failure recovery, imports, quizzes, editor safety and responsive accessibility. Tests intercept services; they need no production credentials or paid AI calls. This does not establish live RLS, email delivery or provider availability.
 
 GitHub Actions runs both commands for pull requests and pushes to `main`.
+
+See [the UI 2.0 final audit](UI2_FINAL_AUDIT.md) for measured loading improvements, visual evidence and remaining design gaps, and [the test review](UI2_TEST_REVIEW.md) for coverage and verification limits. Authentication/setup screens still need an approved notebook-style design; this audit deliberately does not invent one.
 
 ## Security And Usage Limits
 
