@@ -46,6 +46,27 @@ The stack is React 19, Vite 6, Tailwind CSS, Lucide icons, Supabase and a Vercel
 | `supabase/` | Schema, RLS policies and quota security patch |
 | `e2e/` | Browser regressions with synthetic services |
 
+## Quality Assurance & Test Automation
+
+French Desk is also a QA automation portfolio: tests focus on data ownership,
+recoverability and observable outcomes, not only successful navigation.
+
+- **Playwright browser automation** exercises functional and regression workflows,
+  including negative paths, boundary inputs, keyboard interaction and responsive layouts.
+- **Node.js unit and API tests** check domain rules and the actual Auto-fill handler
+  with mocked upstream services, including validation, timeouts and quota-attempt semantics.
+- **Data-driven testing** reuses scenarios across CSV modes, confidence boundaries,
+  languages and viewport sizes instead of duplicating test logic.
+- **Failure injection and async testing** control delayed requests, out-of-order
+  responses and post-commit failures, asserting both UI feedback and mocked persisted data.
+- **Isolated fixtures and CI** provide synthetic accounts, request ledgers and
+  per-test browser contexts; GitHub Actions runs lint, Node tests, build and Chromium tests.
+
+Explore three representative scenarios: [cross-account async isolation](docs/TESTING.md#cross-account-async-isolation),
+[Quiz persistence and recovery](docs/TESTING.md#quiz-persistence-and-recovery), and
+[CSV import failure recovery](docs/TESTING.md#csv-import-failure-recovery).
+Browser backends are primarily mocked; these tests do not establish live Supabase/RLS correctness.
+
 ## Run Locally
 
 Use Node.js 22 (the CI version) and npm.
@@ -82,7 +103,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-`check` runs lint, Node utility/API tests and a production build. The individual commands are `npm run lint`, `npm run test` and `npm run build`. GitHub PR CI also runs Playwright with intercepted services, without production credentials or paid AI calls. These checks do not certify live RLS, email delivery, provider availability or physical-device accessibility.
+`check` runs lint, Node utility/API tests and a production build. The individual commands are `npm run lint`, `npm run test` and `npm run build`. See the [testing guide](docs/TESTING.md#running-and-debugging) for focused runs, fixture design, CI behavior and verification limits.
 
 ## Security and Limits
 
