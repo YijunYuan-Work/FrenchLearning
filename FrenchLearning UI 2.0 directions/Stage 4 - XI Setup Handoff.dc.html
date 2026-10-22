@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap">
+<style>
+body{margin:0;background:#E4E0D8;font-family:'Instrument Sans','Noto Sans SC',system-ui,sans-serif;color:#2A241C;-webkit-font-smoothing:antialiased}
+a{color:#3F6670;text-decoration:underline;text-underline-offset:3px}
+a:hover{color:#8A5F32}
+:focus-visible{outline:2px solid #3F6670;outline-offset:2px}
+</style>
+</helmet>
+
+<section style="padding:56px 56px 8px;display:flex;flex-direction:column;gap:18px;width:1540px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:20px">
+    <span style="font:500 12px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F6656;white-space:nowrap">French Desk · UI 2.0 · Final stage · Le Cahier · Bois</span>
+    <nav style="display:flex;gap:6px;font-size:14px;flex-wrap:wrap;justify-content:flex-end">
+      <a href="Stage 3 - V Vocabulary.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">V–IX · Application</a>
+      <a href="Stage 4 - X Authentication.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">X. Authentication</a>
+      <a href="Stage 4 - XI Setup Handoff.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;background:#2A241C;color:#EFE9DF;text-decoration:none">XI. Setup &amp; handoff</a>
+    </nav>
+  </div>
+  <div style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #2A241C;padding-bottom:16px">
+    <h1 style="margin:0;font:400 64px/1 'Newsreader',serif;letter-spacing:-.02em">Chapitre <span style="font-style:italic">XI</span> — Setup &amp; handoff</h1>
+    <span style="font:italic 400 22px/1 'Newsreader',serif;color:#6F6656">avant de commencer</span>
+  </div>
+</section>
+
+<section style="padding:32px 56px 40px;display:flex;flex-direction:column;gap:18px;width:1540px">
+  <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #2A241C;padding-bottom:10px"><span style="font:italic 400 26px 'Newsreader',serif;color:#3F6670">XI.1</span><span style="font:400 30px/1 'Newsreader',serif;white-space:nowrap">Setup page</span><span style="font-size:13px;color:#6F6656">Developer-facing. Same strings and instructions as SetupPage.jsx — only the presentation changes.</span></div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <sc-for list="{{ setups }}" as="sp" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:baseline;gap:10px"><span style="font:500 12px/1 'JetBrains Mono',monospace;padding:4px 7px;border-radius:4px;background:#2A241C;color:#EFE9DF">{{ sp.id }}</span><span style="font-size:14px;font-weight:600">{{ sp.title }}</span></div>
+        <div lang="{{ sp.htmlLang }}" style="width:{{ sp.w }};height:{{ sp.h }};border-radius:{{ sp.r }};overflow:hidden;box-shadow:{{ sp.frame }};background:#EFE9DF;display:flex;flex-direction:column;margin:{{ sp.m }}">
+          <header style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:{{ sp.headPad }}">
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <div aria-hidden="true" style="display:flex;gap:3px"><span style="width:12px;height:3px;background:#23408E"></span><span style="width:12px;height:3px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #DDD3C3"></span><span style="width:12px;height:3px;background:#B43A2E"></span></div>
+              <span style="font:italic 500 22px/1 'Newsreader',serif;white-space:nowrap">French Desk</span>
+            </div>
+            <div role="group" aria-label="{{ sp.t.langAria }}" style="display:grid;grid-template-columns:1fr 1fr;width:112px;border:1px solid #CDBFA9;border-radius:999px;padding:3px;font-size:13px;font-weight:500;flex-shrink:0">
+              <button type="button" lang="en" aria-label="English" aria-pressed="{{ sp.enP }}" onClick="{{ sp.toEn }}" style="height:{{ sp.tH }};border:0;border-radius:999px;background:{{ sp.enBg }};color:{{ sp.enFg }};cursor:pointer;font:inherit">EN</button>
+              <button type="button" lang="zh-CN" aria-label="简体中文" aria-pressed="{{ sp.zhP }}" onClick="{{ sp.toZh }}" style="height:{{ sp.tH }};border:0;border-radius:999px;background:{{ sp.zhBg }};color:{{ sp.zhFg }};cursor:pointer;font:500 13px 'Noto Sans SC',sans-serif">中文</button>
+            </div>
+          </header>
+          <main style="flex:1;min-height:0;overflow-y:auto;padding:{{ sp.mainPad }}">
+            <div style="max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:{{ sp.gap }}">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <span style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#8A5F32"><span style="width:6px;height:6px;border-radius:50%;background:#8A5F32"></span>{{ sp.t.required }}</span>
+                <h2 style="margin:0;font:400 {{ sp.titleSize }}/1.1 'Newsreader','Noto Serif SC',serif;letter-spacing:-.01em;text-wrap:balance">{{ sp.t.title }}</h2>
+              </div>
+              <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;border-top:1px solid #2A241C">
+                <li style="display:grid;grid-template-columns:{{ sp.numCol }} minmax(0,1fr);gap:8px;padding:20px 0;border-bottom:1px solid #DDD3C3">
+                  <span style="font:italic 400 22px/1.2 'Newsreader',serif;color:#3F6670">i.</span>
+                  <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+                    <p style="margin:0;font-size:15px;line-height:1.6;color:#4E4639;text-wrap:pretty"><sc-for list="{{ sp.copy }}" as="seg" hint-placeholder-count="3"><sc-if value="{{ seg.code }}" hint-placeholder-val="{{ false }}"><code style="font:500 13px 'JetBrains Mono',monospace;background:#E8E1D4;color:#2A241C;padding:2px 6px;border-radius:3px;white-space:nowrap">{{ seg.v }}</code></sc-if><sc-if value="{{ seg.text }}" hint-placeholder-val="{{ true }}">{{ seg.v }}</sc-if></sc-for></p>
+                    <div style="display:flex;flex-direction:column;min-width:0">
+                      <span style="align-self:flex-start;font:500 12px/1 'JetBrains Mono',monospace;padding:8px 12px;border-radius:6px 6px 0 0;background:#3A332A;color:#CDBFA9">.env.local</span>
+                      <pre tabindex="0" aria-label=".env.local" style="margin:0;overflow-x:auto;padding:16px 18px;border-radius:0 6px 6px 6px;background:#2A241C;color:#EFE9DF;font:400 13px/1.75 'JetBrains Mono',monospace;white-space:pre"><span style="color:#A9C4C9">VITE_SUPABASE_URL</span>=https://your-project.supabase.co
+<span style="color:#A9C4C9">VITE_SUPABASE_PUBLISHABLE_KEY</span>=your-publishable-or-anon-key</pre>
+                    </div>
+                  </div>
+                </li>
+                <li style="display:grid;grid-template-columns:{{ sp.numCol }} minmax(0,1fr);gap:8px;padding:20px 0;border-bottom:1px solid #DDD3C3">
+                  <span style="font:italic 400 22px/1.2 'Newsreader',serif;color:#3F6670">ii.</span>
+                  <p style="margin:0;font-size:15px;line-height:1.6;color:#4E4639;text-wrap:pretty"><sc-for list="{{ sp.sql }}" as="seg" hint-placeholder-count="3"><sc-if value="{{ seg.code }}" hint-placeholder-val="{{ false }}"><code style="font:500 13px 'JetBrains Mono',monospace;background:#E8E1D4;color:#2A241C;padding:2px 6px;border-radius:3px;white-space:nowrap">{{ seg.v }}</code></sc-if><sc-if value="{{ seg.text }}" hint-placeholder-val="{{ true }}">{{ seg.v }}</sc-if></sc-for></p>
+                </li>
+              </ol>
+            </div>
+          </main>
+        </div>
+        <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639;max-width:{{ sp.w }}">{{ sp.note }}</p>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section style="padding:40px 56px 80px;display:flex;flex-direction:column;gap:28px;width:1540px">
+  <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #2A241C;padding-bottom:10px"><span style="font:italic 400 26px 'Newsreader',serif;color:#3F6670">XI.2</span><span style="font:400 30px/1 'Newsreader',serif;white-space:nowrap">Implementation handoff</span><span style="font-size:13px;color:#6F6656">For Codex · design only · no auth, Supabase or routing changes</span></div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px 56px">
+    <sc-for list="{{ specs }}" as="sec" hint-placeholder-count="8">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div style="display:flex;align-items:baseline;gap:10px;border-bottom:1px solid #DDD3C3;padding-bottom:8px"><span style="font:italic 400 20px 'Newsreader',serif;color:#8A5F32">{{ sec.n }}</span><span style="font:400 22px/1 'Newsreader',serif">{{ sec.title }}</span></div>
+        <sc-for list="{{ sec.rows }}" as="r" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;padding:7px 0;border-bottom:1px solid #E8E1D4;align-items:baseline">
+            <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600"><sc-if value="{{ r.sw }}" hint-placeholder-val="{{ false }}"><span style="width:14px;height:14px;border-radius:3px;background:{{ r.sw }};box-shadow:inset 0 0 0 1px rgba(42,36,28,.15);flex-shrink:0"></span></sc-if>{{ r.k }}</span>
+            <span style="font-size:13px;line-height:1.55;color:#4E4639;text-wrap:pretty;overflow-wrap:anywhere">{{ r.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { d: 'en', m: 'zh' };
+  static T = {
+    en: { langAria: 'Interface language', required: 'Supabase setup required', title: 'Connect FrenchLearning to your Supabase project.', copy: 'Create a `.env.local` file in this project with your new FrenchLearning Supabase values, then restart the dev server.', sql: 'After that, run the SQL in `supabase/schema.sql` inside the Supabase SQL Editor so notes are stored per signed-in user.' },
+    zh: { langAria: '界面语言', required: '需要设置 Supabase', title: '将 FrenchLearning 连接到你的 Supabase 项目。', copy: '在这个项目中创建 `.env.local` 文件，填入新的 FrenchLearning Supabase 配置，然后重启开发服务器。', sql: '之后，在 Supabase SQL Editor 中运行 `supabase/schema.sql`，这样笔记就会按登录用户分别存储。' },
+  };
+  segs(s) { return s.split('`').map((v, i) => ({ v, code: i % 2 === 1, text: i % 2 === 0 })); }
+  renderVals() {
+    const mk = (key, base) => {
+      const lang = this.state[key], t = Component.T[lang];
+      return { ...base, t, htmlLang: lang === 'zh' ? 'zh-CN' : 'en', copy: this.segs(t.copy), sql: this.segs(t.sql),
+        enP: lang === 'en' ? 'true' : 'false', zhP: lang === 'zh' ? 'true' : 'false',
+        enBg: lang === 'en' ? '#2A241C' : 'transparent', enFg: lang === 'en' ? '#EFE9DF' : '#4E4639',
+        zhBg: lang === 'zh' ? '#2A241C' : 'transparent', zhFg: lang === 'zh' ? '#EFE9DF' : '#4E4639',
+        toEn: () => this.setState({ [key]: 'en' }), toZh: () => this.setState({ [key]: 'zh' }) };
+    };
+    const rows = (a) => a.map(([k, v, sw]) => ({ k, v, sw: sw || '' }));
+    return {
+      setups: [
+        mk('d', { id: 'S1', title: 'Desktop · 1200', w: '1200px', h: '760px', r: '6px', m: '0', frame: '0 0 0 1px #CDBFA9, 0 30px 60px -36px rgba(42,36,28,.45)', headPad: '32px 48px', mainPad: '24px 48px 56px', gap: '32px', titleSize: '48px', numCol: '48px', tH: '30px', note: 'Single 720px column on paper. Code block is ink with a filename tab, scrolls horizontally inside itself and is keyboard-focusable (tabindex 0).' }),
+        mk('m', { id: 'S2', title: 'Mobile · 375 · 中文', w: '375px', h: '812px', r: '44px', m: '8px', frame: '0 0 0 1px #CDBFA9, 0 0 0 8px #2A241C, 0 24px 50px -24px rgba(42,36,28,.5)', headPad: '56px 16px 12px 20px', mainPad: '12px 20px 40px', gap: '24px', titleSize: '30px', numCol: '28px', tH: '36px', note: 'Long env values never widen the page — only the <pre> scrolls. Inline code chips stay nowrap; surrounding Chinese text wraps.' }),
+      ],
+      specs: [
+        { n: 'i.', title: 'Layout', rows: rows([
+          ['≥ 1024px', 'grid-template-columns: minmax(0,1fr) 600px; height 100dvh (min 720px). Cover padding 44 72 48 120; margin double-rule at 84px. Sheet padding 36 80 32; form max-width 440, vertically centred.'],
+          ['768 – 1023px', 'Single column on paper: wordmark + toggle row, entry strip (headword 64px + def. 1), then the sheet as a centred 560px card (radius 10, rule border). Sommaire hidden.'],
+          ['< 768px', 'Mobile structure from X.4: header 56px, entry strip (44px headword + def. 1), form on #FCFAF6, gutters 20px. Strip hides while an input is focused and innerHeight < 600.'],
+          ['Cover type scale', 'Headword Newsreader 400 176/0.86, −0.035em, “·” in wood. IPA italic 30 river. Definitions 22/1.45. Example italic 20. Sommaire 14 / numerals italic 13.'],
+          ['Cover entrance only', 'Cover is decorative context: cap the headword with clamp(120px, 12vw, 176px) so 1024–1280 widths do not collide with the sheet.'],
+        ]) },
+        { n: 'ii.', title: 'Colour (existing tokens only)', rows: rows([
+          ['--paper', 'Page / cover background', '#EFE9DF'], ['--sheet-bright', 'Auth sheet', '#FCFAF6'], ['--sheet', 'Input fill', '#F8F5EF'],
+          ['--ink / --ink-2', 'Text, button, tab indicator / body copy', '#2A241C'], ['--mute', 'Labels for optional, hints, inactive tabs', '#6F6656'],
+          ['--river', 'Focus line, focused label, IPA, roman numerals, hover button', '#3F6670'], ['--wood', 'French kicker, eyebrows, headword dot', '#8A5F32'],
+          ['--sage', 'Success button, met password rule, valid email check', '#55703F'], ['rust (UI 2.0 error)', 'Field errors and banner title · banner bg #F6ECE2', '#A0402F'],
+          ['--rule / --rule-strong', 'Tab baseline / input border, toggle border', '#CDBFA9'],
+        ]) },
+        { n: 'iii.', title: 'Typography', rows: rows([
+          ['Serif', '“Newsreader”, “Noto Serif SC”, serif — titles, kickers, numerals, cover. Uses existing .editorial-title; opsz left automatic for the 176px headword.'],
+          ['Sans', '“Instrument Sans”, “Noto Sans SC”, system-ui — labels 14/600, inputs 16/400, hints & errors 13/1.4, button 15/600, tabs 15/500→600.'],
+          ['Form title', 'clamp(28px, 9.5cqi, 40px)/1.1 on a container-type:inline-size wrapper (≈40 desktop, 30 at 320).'],
+          ['Chinese', 'Same stacks — CJK glyphs fall through to Noto SC. No letter-spacing on CJK runs; no italics on Chinese text (French kickers stay italic).'],
+          ['French accents', 'Kickers “— bon retour / — bienvenue”, “Sommaire”, glosses: always decorative, marked lang="fr", never the only label for a control.'],
+        ]) },
+        { n: 'iv.', title: 'Form components', rows: rows([
+          ['Mode tabs', 'role=tablist; two role=tab buttons, 52px, roman numeral (Newsreader italic 17) + label. Indicator 2px ink, 50% width, translateX. Roving tabindex; ← → Home End switch and focus. Panel = the <form>.'],
+          ['Text field', '<label for> 14/600 above; input 48px, radius 6, bg --sheet, inset 1px --rule-strong. Focus: inset 1px river + label river + 2px bottom rule scaleX 0→1. Error: rust border, label, rule.'],
+          ['Password', 'Show/Hide text button inside the field (40×44, river 13/600, eye icon), aria-pressed + aria-label “Show password”. Masked value gets letter-spacing .12em for legibility.'],
+          ['Recovery email', 'Rendered in both modes; collapsed via grid-template-rows 0fr and disabled in Sign in so it is out of tab order and not submitted.'],
+          ['Hint / error line', 'One line slot under each field. Error replaces the hint (never both). Linked with aria-describedby; icon is aria-hidden.'],
+          ['Form banner', 'Server errors only. bg #F6ECE2, radius 6, 12×14 padding, rust title 14/600 + ink-2 detail 13. role=alert. No left border stripe.'],
+          ['Language toggle', 'Existing LanguageToggle markup; restyle .language-segment to the sidebar pill: 1px --rule-strong, 3px inset, ink active segment. 30px segments desktop, 36px mobile.'],
+        ]) },
+        { n: 'v.', title: 'Motion · ease-ink cubic-bezier(.2,.7,.2,1)', rows: rows([
+          ['Page entrance', 'Cover blocks fade-up 8px, 420–520ms, staggered 0/80/160ms. Sheet slides 16px from right, 480ms, 60ms delay. Once per load; the form is interactive immediately.'],
+          ['Mode switch', 'Tab indicator 280ms. Title block re-enters (fade-up 6px, 320ms). Email row expands grid-rows + opacity, 280ms. Values and focus preserved.'],
+          ['Focus line', 'scaleX from left, 240ms; border & label colour 160ms.'],
+          ['Button', 'Hover background 160ms · press scale(.98) 160ms · spinner 800ms linear · success check pop scale .6→1, 240ms.'],
+          ['Errors', 'Fade + translateY(−4px→0), 220ms. No shaking, no colour flashing.'],
+          ['Success', 'Sage button + check as soon as Supabase resolves; workspace mounts and fades in 240ms. No artificial delay.'],
+          ['Reduced motion', 'prefers-reduced-motion: all durations → 1ms; entrance and transforms removed; spinner replaced by static “Signing in…” label (keep text).'],
+        ]) },
+        { n: 'vi.', title: 'States & messages', rows: rows([
+          ['Validation timing', 'Client checks on submit only (form noValidate). After the first submit, a field clears its error as soon as it is edited.'],
+          ['Empty username / password', '“Enter your username.” / “Enter your password.” · 请输入用户名。/ 请输入密码。 Focus first invalid field.'],
+          ['Password < 6 (sign up)', '“Use at least 6 characters.” · 密码至少需要 6 个字符。 Hint turns sage with check when met.'],
+          ['Invalid email (optional)', 'Only if non-empty: “Enter a valid email, or leave it blank.”'],
+          ['Invalid credentials', 'getFriendlyAuthError → banner; focus Password; keep both values.'],
+          ['Username taken', '“User already registered” → Username field error, not the banner; focus Username.'],
+          ['Other / network', 'Banner “Couldn’t reach French Desk.” + detail; submit label → “Try again”. Requires passing an error kind alongside the string — UI-only change.'],
+          ['Loading / disabled', 'isLoading → button disabled + spinner, tabs disabled, fields readOnly (not disabled, so they stay readable), form aria-busy.'],
+        ]) },
+        { n: 'vii.', title: 'Accessibility', rows: rows([
+          ['Focus order', 'Language toggle → tabs (one stop) → Username → Password → Show/Hide → Email (sign-up) → Submit. Enter submits from any field.'],
+          ['Visible focus', 'Inputs: river border + 2px rule. Everything else: global 2px river outline, 2px offset (already in index.css).'],
+          ['Announcements', 'Hidden role=status announces “Signing in…”, success, and “Please fix the highlighted fields.” Banner uses role=alert. Each invalid input: aria-invalid + aria-describedby.'],
+          ['Autocomplete', 'username / current-password / new-password / email; autocapitalize none, spellcheck off on username and email; inputMode email.'],
+          ['Contrast', 'Body ink-2 on sheet 8.9:1 · mute 5.3:1 · rust on #F6ECE2 6.4:1 · river 6.0:1 · sage 5.2:1 · button text 13:1.'],
+          ['Language', 'html lang follows the toggle (en / zh-CN); French fragments carry lang="fr".'],
+        ]) },
+        { n: 'viii.', title: 'Reuse from UI 2.0', rows: rows([
+          ['Brand block', 'Sidebar wordmark: tricolore 3×14px bars, “French Desk” italic 28, “Learning Hub” 11 caps — lift into Brand.jsx variant.'],
+          ['Buttons', '.primary-action (ink → river hover, scale .98, disabled rule/mute) — set min-h 52px and full width on auth.'],
+          ['Inputs', 'Settings field styling (VIII): 44→48px, --sheet fill, inset rule, river focus, rust error line + icon-circle-alert.'],
+          ['Rules & eyebrows', '.editorial-rule under the headword; .eyebrow for “Entrée · nom masculin”.'],
+          ['Icons', 'lucide-react: CircleAlert, Check, Eye, EyeOff, WifiOff, Minus. Remove BookOpen / Flame / Sparkles / CheckCircle2 from SignInPage.'],
+          ['Files touched', 'SignInPage.jsx, SetupPage.jsx, index.css (auth section, .language-segment). App.jsx only to pass an error kind. No changes to auth.js, Supabase, or routing.'],
+        ]) },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

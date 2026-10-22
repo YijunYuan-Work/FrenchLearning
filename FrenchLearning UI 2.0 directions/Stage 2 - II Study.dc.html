@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans:wght@400&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>
+body{margin:0;background:#E4E0D8;font-family:'Instrument Sans',system-ui,sans-serif;color:#2A241C;-webkit-font-smoothing:antialiased}
+a{color:#3F6670;text-decoration:underline;text-underline-offset:3px}
+a:hover{color:#8A5F32}
+button{font:inherit}
+</style>
+</helmet>
+
+<section style="padding:56px 56px 8px;display:flex;flex-direction:column;gap:18px;width:1710px">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span style="font:500 12px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F6656">French Desk · UI 2.0 · Stage 2 · Le Cahier · Bois</span>
+    <nav style="display:flex;gap:6px;font-size:14px">
+      <a href="Stage 2 - I Today.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">I. Today</a>
+      <a href="Stage 2 - II Study.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;background:#2A241C;color:#EFE9DF;text-decoration:none">II. Study</a>
+      <a href="Stage 2 - III Quiz.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">III. Quiz</a>
+      <a href="Stage 2 - IV System.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">IV. System &amp; motion</a>
+    </nav>
+  </div>
+  <div style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #2A241C;padding-bottom:16px">
+    <h1 style="margin:0;font:400 64px/1 'Newsreader',serif;letter-spacing:-.02em">Chapitre <span style="font-style:italic">II</span> — Study</h1>
+    <span style="font:italic 400 22px/1 'Newsreader',serif;color:#6F6656">étude · flashcards</span>
+  </div>
+</section>
+
+<section style="padding:32px 56px 0;display:flex;gap:40px;align-items:flex-start;width:1710px">
+  <div style="width:1280px;height:800px;display:grid;grid-template-columns:248px minmax(0,1fr);background:#EFE9DF;color:#2A241C;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 #DDD3C3,0 24px 60px -24px rgba(50,38,20,.25);flex-shrink:0;position:relative">
+    <aside style="background:#E7ECED;border-right:1px solid #DDD3C3;padding:30px 20px 24px;display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;flex-direction:column;gap:8px;padding:0 8px">
+        <div style="display:flex;gap:3px"><span style="width:14px;height:3px;background:#23408E"></span><span style="width:14px;height:3px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #DDD3C3"></span><span style="width:14px;height:3px;background:#B43A2E"></span></div>
+        <span style="font:italic 500 28px/1 'Newsreader',serif;letter-spacing:-.01em">French Desk</span>
+        <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656">Learning Hub</span>
+      </div>
+      <nav style="display:flex;flex-direction:column;gap:2px;flex:1">
+        <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6F6656;padding:0 8px 8px">Pratique</span>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">01</span><span style="font-weight:500;font-size:15px">Today</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">aujourd'hui</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;background:#F8F5EF;box-shadow:0 1px 0 #DDD3C3;color:#3F6670"><span style="font:italic 400 14px/1 'Newsreader',serif">02</span><span style="font-weight:600;font-size:15px">Study</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#8A5F32">étude</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">03</span><span style="font-weight:500;font-size:15px">Quiz</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">dictée</span></div>
+        <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6F6656;padding:20px 8px 8px">Le cahier</span>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">04</span><span style="font-weight:500;font-size:15px">Vocabulary</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">mots</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">05</span><span style="font-weight:500;font-size:15px">Phrases</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">expressions</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">06</span><span style="font-weight:500;font-size:15px">Grammar</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">grammaire</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">07</span><span style="font-weight:500;font-size:15px">Pronunciation</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">phonétique</span></div>
+        <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6F6656;padding:20px 8px 8px">Bureau</span>
+        <div style="display:grid;grid-template-columns:22px 1fr;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">08</span><span style="font-weight:500;font-size:15px">Import</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">09</span><span style="font-weight:500;font-size:15px">Settings</span></div>
+      </nav>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:0 8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;border:1px solid #CDBFA9;border-radius:999px;padding:3px;font-size:13px;font-weight:500"><span style="text-align:center;padding:6px 0;border-radius:999px;background:#2A241C;color:#EFE9DF">EN</span><span style="text-align:center;padding:6px 0;color:#4E4639;font-family:'Noto Sans SC'">中文</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#4E4639"><span>Demo</span><span style="color:#8A5F32">Sign out</span></div>
+      </div>
+    </aside>
+
+    <main tabindex="0" onKeyDown="{{ onKey }}" aria-label="Study session. Space flips the card, arrow keys move between cards." style="padding:30px 60px 24px;display:flex;flex-direction:column;min-width:0;overflow:hidden;outline:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A5F32;font-weight:600">Personal French workspace</span>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span style="font:italic 400 15px/1 'Newsreader',serif;color:#4E4639;white-space:nowrap">lundi 19 octobre 2026</span>
+          <span style="width:1px;height:20px;background:#DDD3C3"></span>
+          <button style="display:flex;align-items:center;gap:8px;white-space:nowrap;height:40px;padding:0 18px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-weight:500;font-size:14px;cursor:pointer" style-hover="background:#3F6670"><i class="icon-plus" style="font-size:16px"></i>Add note</button>
+        </div>
+      </div>
+      <div style="height:3px;border-top:2px solid #2A241C;border-bottom:1px solid #2A241C;margin:16px 0 22px;flex-shrink:0"></div>
+
+      <sc-if value="{{ vCards }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:18px;flex:1;min-height:0">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:end">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:13px;font-weight:600;color:#8A5F32">Study mode</span>
+              <h3 style="margin:0;font:400 44px/1 'Newsreader',serif;letter-spacing:-.02em">Flashcards <span style="font-style:italic;color:#6F6656;font-size:28px">· {{ sectionLine }}</span></h3>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:6px" aria-live="polite"><span style="font:400 56px/.9 'Newsreader',serif;color:#3F6670;letter-spacing:-.03em">{{ posNum }}</span><span style="font:italic 400 26px/1 'Newsreader',serif;color:#6F6656">/ {{ totalNum }}</span><span style="font-size:13px;color:#6F6656;margin-left:8px">{{ cardOf }}</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px">
+            <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;font-weight:{{ g.weight }};color:{{ g.color }}">{{ g.label }}</span><span style="font:italic 400 16px/1 'Newsreader',serif;color:{{ g.color }}">{{ g.count }}</span></div>
+                <div style="display:flex;gap:3px"><sc-for list="{{ g.segs }}" as="s" hint-placeholder-count="3"><span style="flex:1;height:4px;background:{{ s.bg }};transition:{{ s.trans }}"></span></sc-for></div>
+                <span style="font-size:12px;color:#6F6656">{{ g.limit }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="position:relative;flex:1;min-height:0;margin-top:6px">
+            <sc-if value="{{ showSheet2 }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:28px;right:28px;top:14px;bottom:-12px;border-radius:10px;background:#DDD3C3"></div></sc-if>
+            <sc-if value="{{ showSheet1 }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:14px;right:14px;top:7px;bottom:-6px;border-radius:10px;background:#E8E1D4;box-shadow:0 1px 0 #CDBFA9"></div></sc-if>
+            <div style="position:absolute;inset:0;transform:{{ moveTr }};opacity:{{ moveOp }};transition:{{ moveTrans }}">
+              <div style="position:absolute;inset:0;perspective:1800px;transform:{{ liftTr }};transition:{{ liftTrans }}">
+                <div style="position:absolute;inset:0;transform-style:preserve-3d;transform:{{ flipTr }};transition:{{ flipTrans }}">
+                  <button onClick="{{ flip }}" aria-hidden="{{ frontHidden }}" tabindex="{{ frontTab }}" aria-label="{{ revealAria }}" style="position:absolute;inset:0;border:0;padding:0;margin:0;cursor:pointer;text-align:left;color:#2A241C;backface-visibility:hidden;-webkit-backface-visibility:hidden;visibility:{{ frontVis }};transition:{{ visTrans }};border-radius:10px;background-color:#F8F5EF;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 35px,rgba(63,102,112,.11) 35px,rgba(63,102,112,.11) 36px);box-shadow:0 1px 0 #CDBFA9,0 22px 40px -26px rgba(50,38,20,.45);overflow:hidden" style-hover="box-shadow:0 1px 0 #CDBFA9,0 28px 48px -26px rgba(50,38,20,.55)" style-focus="outline:2px solid #3F6670;outline-offset:3px">
+                    <span style="position:absolute;left:72px;top:0;bottom:0;width:1px;background:rgba(138,95,50,.45)"></span>
+                    <span style="position:absolute;left:24px;top:24px;font:italic 400 16px/1 'Newsreader',serif;color:#8A5F32">nº {{ posNum }}</span>
+                    <span style="position:absolute;left:96px;top:24px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">{{ cur.catLabel }}</span>
+                    <span style="position:absolute;left:96px;right:48px;top:50%;transform:translateY(-50%);font:400 {{ cur.frSize }}/1.08 'Newsreader',serif;letter-spacing:-.02em;overflow-wrap:anywhere;hyphens:auto;text-wrap:balance">{{ cur.fr }}</span>
+                    <span style="position:absolute;left:96px;bottom:22px;display:flex;align-items:center;gap:8px;font-size:13px;color:#6F6656"><i class="icon-rotate-ccw" style="font-size:14px"></i>Click or press <span style="font:500 11px 'JetBrains Mono';border:1px solid #CDBFA9;border-radius:4px;padding:2px 6px;background:#EFE9DF">Space</span> to reveal</span>
+                  </button>
+                  <div aria-hidden="{{ backHidden }}" style="position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;visibility:{{ backVis }};transition:{{ visTrans }};transform:rotateY(180deg);border-radius:10px;background:#FCFAF6;box-shadow:0 1px 0 #CDBFA9,0 22px 40px -26px rgba(50,38,20,.45);display:flex;flex-direction:column;overflow:hidden">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:22px 28px 16px;border-bottom:1px solid #DDD3C3">
+                      <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#3F6670">{{ cur.catLabel }}</span><span style="width:3px;height:3px;border-radius:50%;background:#958B7A"></span><span style="font:italic 400 15px/1 'Newsreader',serif;color:#55703F">{{ cur.confLabel }}</span></div>
+                        <span style="font:400 34px/1.1 'Newsreader',serif;letter-spacing:-.015em;overflow-wrap:anywhere">{{ cur.fr }}</span>
+                        <sc-if value="{{ cur.showEn }}" hint-placeholder-val="{{ false }}"><span style="font-size:19px;font-weight:500;color:#433C31">{{ cur.en }}</span></sc-if>
+                      </div>
+                      <button style="flex-shrink:0;display:flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:0;border-radius:4px;background:transparent;box-shadow:inset 0 0 0 1px #CDBFA9;color:#2A241C;font-size:13px;font-weight:500;cursor:pointer" style-hover="background:#EFE9DF"><i class="icon-pencil" style="font-size:14px"></i>Edit note</button>
+                    </div>
+                    <div style="flex:1;overflow:auto;padding:18px 28px 22px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 36px;align-content:start">
+                      <sc-if value="{{ cur.canConf }}" hint-placeholder-val="{{ false }}">
+                        <div style="grid-column:1 / -1;display:flex;flex-direction:column;gap:8px">
+                          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Confidence</span><span style="font:italic 400 14px 'Newsreader',serif;color:#6F6656">keys 1–4</span></div>
+                          <div role="radiogroup" aria-label="Confidence" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+                            <sc-for list="{{ cur.confBtns }}" as="b" hint-placeholder-count="4">
+                              <button role="radio" aria-checked="{{ b.checked }}" onClick="{{ b.onClick }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:10px 12px;border:0;border-radius:6px;cursor:pointer;text-align:left;background:{{ b.bg }};color:{{ b.fg }};box-shadow:inset 0 0 0 1px {{ b.border }};transition:{{ b.trans }}" style-hover="box-shadow:inset 0 0 0 1px #3F6670" style-focus="outline:2px solid #3F6670;outline-offset:2px">
+                                <span style="display:flex;gap:2px"><sc-for list="{{ b.ticks }}" as="k" hint-placeholder-count="4"><span style="width:12px;height:3px;background:{{ k.bg }}"></span></sc-for></span>
+                                <span style="font-size:13px;font-weight:600">{{ b.label }}</span>
+                              </button>
+                            </sc-for>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ cur.vocabConfNote }}" hint-placeholder-val="{{ false }}">
+                        <div style="grid-column:1 / -1;display:flex;align-items:center;gap:12px"><span style="display:flex;gap:2px"><sc-for list="{{ cur.meter }}" as="k" hint-placeholder-count="4"><span style="width:16px;height:4px;background:{{ k.bg }}"></span></sc-for></span><span style="font:italic 400 15px/1.3 'Newsreader',serif;color:#6F6656">Confidence changes only through Quiz or editing.</span></div>
+                      </sc-if>
+                      <sc-if value="{{ cur.isPhrase }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:6px;grid-column:1 / -1"><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Translation</span><span style="font-size:20px;font-weight:500;line-height:1.4">{{ cur.en }}</span></div>
+                      </sc-if>
+                      <sc-if value="{{ cur.isVocab }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Example</span><span style="font:italic 400 19px/1.45 'Newsreader',serif;color:#2A241C">« {{ cur.example }} »</span></div>
+                      </sc-if>
+                      <sc-if value="{{ cur.hasDetails }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Word details</span>
+                          <dl style="margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:15px"><sc-for list="{{ cur.details }}" as="d" hint-placeholder-count="3"><dt style="color:#6F6656">{{ d.k }}</dt><dd style="margin:0;font-family:'Noto Sans','Instrument Sans',sans-serif">{{ d.v }}</dd></sc-for></dl>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ cur.hasConj }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:6px;grid-column:1 / -1"><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Conjugation · présent</span>
+                          <dl style="margin:0;display:grid;grid-template-columns:repeat(3,auto 1fr);gap:6px 14px;align-items:baseline"><sc-for list="{{ cur.conj }}" as="c" hint-placeholder-count="6"><dt style="font-size:13px;color:#6F6656">{{ c.k }}</dt><dd style="margin:0;font:400 19px/1.2 'Newsreader',serif">{{ c.v }}</dd></sc-for></dl>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ cur.hasNotes }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:8px;grid-column:{{ cur.notesSpan }}"><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">{{ cur.notesLabel }}</span>
+                          <sc-for list="{{ cur.notes }}" as="p" hint-placeholder-count="2"><p style="margin:0;font:{{ p.font }};color:{{ p.color }};padding-left:{{ p.indent }};max-width:720px;text-wrap:pretty">{{ p.t }}</p></sc-for>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ cur.hasTags }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-direction:column;gap:6px;grid-column:1 / -1"><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Tags</span><div style="display:flex;gap:12px;flex-wrap:wrap"><sc-for list="{{ cur.tags }}" as="tg" hint-placeholder-count="2"><span style="font:italic 400 16px 'Newsreader',serif;color:#4E4639">#{{ tg }}</span></sc-for></div></div>
+                      </sc-if>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin-top:12px">
+            <button onClick="{{ prev }}" disabled="{{ prevDisabled }}" style="justify-self:start;display:flex;align-items:center;gap:6px;height:44px;padding:0 14px;border:0;background:transparent;color:#2A241C;font-size:14px;font-weight:500;cursor:pointer;opacity:{{ prevOp }};border-radius:4px" style-hover="background:#E8E1D4" style-focus="outline:2px solid #3F6670;outline-offset:2px"><i class="icon-chevron-left" style="font-size:17px"></i>Previous</button>
+            <button onClick="{{ flip }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 18px;border:0;border-radius:4px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;color:#2A241C;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#F8F5EF" style-focus="outline:2px solid #3F6670;outline-offset:2px"><i class="icon-rotate-ccw" style="font-size:16px"></i>{{ flipLabel }}</button>
+            <button onClick="{{ next }}" style="justify-self:end;display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#3F6670" style-focus="outline:2px solid #3F6670;outline-offset:2px">{{ nextLabel }}<i class="icon-chevron-right" style="font-size:17px"></i></button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ vComplete }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;max-width:760px;opacity:{{ endOp }};transform:{{ endTr }};transition:{{ endTrans }}">
+          <span style="width:72px;height:72px;border-radius:50%;background:#55703F;color:#EFE9DF;display:grid;place-items:center;box-shadow:0 0 0 6px #EFE9DF,0 0 0 7px #55703F"><i class="icon-check" style="font-size:34px"></i></span>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A5F32;font-weight:600">Study complete · étude terminée</span>
+            <h3 style="margin:0;font:400 52px/1.04 'Newsreader',serif;letter-spacing:-.025em">Nice work. You finished this <span style="font-style:italic">study cycle.</span></h3>
+            <p style="margin:0;font-size:17px;color:#4E4639">You reviewed 9 cards.</p>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;border-top:1px solid #DDD3C3;padding-top:16px">
+            <div style="display:flex;flex-direction:column;gap:7px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;color:#2A241C">Vocabulary</span><span style="font:italic 400 16px 'Newsreader',serif">3/3</span></div><span style="height:4px;background:#3F6670"></span></div>
+            <div style="display:flex;flex-direction:column;gap:7px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;color:#2A241C">Phrases</span><span style="font:italic 400 16px 'Newsreader',serif">3/3</span></div><span style="height:4px;background:#3F6670"></span></div>
+            <div style="display:flex;flex-direction:column;gap:7px"><div style="display:flex;justify-content:space-between"><span style="font-size:14px;color:#2A241C">Grammar</span><span style="font:italic 400 16px 'Newsreader',serif">3/3</span></div><span style="height:4px;background:#3F6670"></span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+            <button onClick="{{ restart }}" disabled="{{ noUnseen }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:{{ restartBg }};color:{{ restartFg }};font-size:14px;font-weight:500;cursor:{{ restartCursor }}" style-focus="outline:2px solid #3F6670;outline-offset:2px"><i class="icon-rotate-ccw" style="font-size:16px"></i>Start a new study cycle</button>
+            <sc-if value="{{ noUnseen }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 16px/1.4 'Newsreader',serif;color:#4E4639;max-width:420px">All available study cards have appeared. Add more notes or return after confidence levels change.</span></sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ vEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:grid;grid-template-columns:360px minmax(0,1fr);gap:56px;align-items:center">
+          <div style="position:relative;height:240px">
+            <div style="position:absolute;inset:16px -10px -10px 16px;border-radius:10px;border:1px dashed #CDBFA9"></div>
+            <div style="position:absolute;inset:0;border-radius:10px;border:1px dashed #958B7A;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(63,102,112,.10) 31px,rgba(63,102,112,.10) 32px)"><span style="position:absolute;left:56px;top:0;bottom:0;width:1px;background:rgba(138,95,50,.35)"></span><span style="position:absolute;left:76px;top:50%;transform:translateY(-50%);font:italic 400 30px/1 'Newsreader',serif;color:#958B7A">…</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;max-width:520px">
+            <span style="font-size:13px;font-weight:600;color:#8A5F32">Study mode</span>
+            <h3 style="margin:0;font:400 44px/1.05 'Newsreader',serif;letter-spacing:-.02em">{{ emptyTitle }}</h3>
+            <p style="margin:0;font-size:17px;line-height:1.6;color:#4E4639">{{ emptyCopy }}</p>
+            <sc-if value="{{ emptyShowAdd }}" hint-placeholder-val="{{ true }}"><button style="align-self:flex-start;display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#3F6670"><i class="icon-plus" style="font-size:16px"></i>Add note</button></sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ vLoading }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;gap:18px" role="status">
+          <div style="display:flex;flex-direction:column;gap:10px"><span style="width:90px;height:12px;background:#E3DACB;border-radius:2px"></span><span style="width:300px;height:36px;background:#E3DACB;border-radius:2px"></span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px"><span style="height:4px;background:#E3DACB"></span><span style="height:4px;background:#E3DACB"></span><span style="height:4px;background:#E3DACB"></span></div>
+          <div style="flex:1;border-radius:10px;background:#F3EEE5;box-shadow:0 1px 0 #DDD3C3;display:grid;place-items:center"><span style="font:italic 400 22px/1 'Newsreader',serif;color:#6F6656">Loading saved study progress…</span></div>
+        </div>
+      </sc-if>
+    </main>
+
+    <div aria-live="polite" style="position:absolute;top:84px;right:60px;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:6px;background:#2A241C;color:#EFE9DF;font-size:13px;pointer-events:none;opacity:{{ toastOp }};transform:{{ toastTr }};transition:{{ toastTrans }}"><span style="font:italic 400 15px 'Newsreader',serif;color:#E0CDB0">Reprise</span>Resumed at card 5 of 9</div>
+  </div>
+
+  <div style="width:350px;display:flex;flex-direction:column;gap:20px;flex-shrink:0">
+    <div style="background:#F8F5EF;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Prototype · jump to state</span>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="8">
+          <button onClick="{{ s.onClick }}" style="display:flex;justify-content:space-between;align-items:center;height:42px;padding:0 14px;border:0;border-radius:6px;cursor:pointer;text-align:left;background:{{ s.bg }};color:{{ s.fg }}" style-focus="outline:2px solid #3F6670;outline-offset:2px"><span style="font-weight:500;font-size:14px">{{ s.label }}</span><span style="font:italic 400 14px 'Newsreader',serif;opacity:.8">{{ s.note }}</span></button>
+        </sc-for>
+      </div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639;border-top:1px solid #DDD3C3;padding-top:12px">Click the study area once, then use <b>Space</b> to flip, <b>← →</b> to move, <b>1–4</b> for confidence on phrase/grammar cards. The cycle is 3 vocabulary · 3 phrases · 3 grammar, matching the per-category limits in Settings.</p>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E3DACB;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.5;color:#433C31">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Card anatomy</span>
+      <div><b style="font-weight:600">Front = notebook page.</b> Ruled river lines, wood margin rule, nº index. Only the French, as today.</div>
+      <div><b style="font-weight:600">Back = clean sheet.</b> No ruling, brighter paper (#FCFAF6) so it reads as the other side. Body scrolls internally; header stays fixed.</div>
+      <div><b style="font-weight:600">Depth.</b> Up to two sheets behind show how many cards are left (2+ / 1 / 0).</div>
+      <div><b style="font-weight:600">Confidence.</b> Only on phrase and grammar cards, as in <code style="font-family:'JetBrains Mono';font-size:12px">ReviewView</code>. Vocabulary shows a read-only meter.</div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 0;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 28px/1 'Newsreader',serif">State flow</span><span style="font-size:14px;color:#6F6656">Everything below is existing ReviewView behaviour, re-skinned</span></div>
+  <div style="display:flex;align-items:stretch;gap:0">
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px;padding:16px;background:#F8F5EF;border-radius:8px 0 0 8px;border-right:1px solid #DDD3C3"><span style="font:italic 400 22px 'Newsreader',serif;color:#3F6670">Front</span><span style="font-size:13px;line-height:1.5;color:#4E4639">French only. <code style="font-family:'JetBrains Mono';font-size:11px">isFlipped=false</code></span></div>
+    <div style="width:118px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;font-size:12px;color:#6F6656;text-align:center"><i class="icon-arrow-right" style="font-size:18px;color:#2A241C"></i>click · Space<br>600ms flip</div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px;padding:16px;background:#FCFAF6;border-radius:0;box-shadow:inset 0 0 0 1px #DDD3C3"><span style="font:italic 400 22px 'Newsreader',serif;color:#3F6670">Back</span><span style="font-size:13px;line-height:1.5;color:#4E4639">Details, Edit note. Flip state is persisted with the session.</span></div>
+    <div style="width:118px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;font-size:12px;color:#6F6656;text-align:center"><i class="icon-arrow-right" style="font-size:18px;color:#2A241C"></i>1–4 · click<br>meter fills 240ms</div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px;padding:16px;background:#FCFAF6;box-shadow:inset 0 0 0 1px #DDD3C3"><span style="font:italic 400 22px 'Newsreader',serif;color:#3F6670">Confidence set</span><span style="font-size:13px;line-height:1.5;color:#4E4639">Phrase / grammar only. Calls <code style="font-family:'JetBrains Mono';font-size:11px">onStudyConfidenceChange</code>.</span></div>
+    <div style="width:118px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;font-size:12px;color:#6F6656;text-align:center"><i class="icon-arrow-right" style="font-size:18px;color:#2A241C"></i>Next · →<br>200ms out / 320ms in</div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px;padding:16px;background:#F8F5EF;box-shadow:inset 0 0 0 1px #DDD3C3"><span style="font:italic 400 22px 'Newsreader',serif;color:#3F6670">Front n+1</span><span style="font-size:13px;line-height:1.5;color:#4E4639">Always lands unflipped. Ledger segment advances.</span></div>
+    <div style="width:118px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;font-size:12px;color:#6F6656;text-align:center"><i class="icon-arrow-right" style="font-size:18px;color:#2A241C"></i>Finish study<br>on last card</div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:6px;padding:16px;background:#2A241C;color:#EFE9DF;border-radius:0 8px 8px 0"><span style="font:italic 400 22px 'Newsreader',serif;color:#C9D6B9">Complete</span><span style="font-size:13px;line-height:1.5;color:#DDD3C3">Calls <code style="font-family:'JetBrains Mono';font-size:11px">onStudyComplete</code>. New cycle only if unseen cards remain.</span></div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 96px;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 28px/1 'Newsreader',serif">Mobile study</span><span style="font-size:14px;color:#6F6656">Focused mode: tab bar hides, actions pin to the thumb zone. Tap the card to flip, swipe ← for next.</span></div>
+  <div style="display:flex;gap:36px;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:grid;grid-template-columns:44px 1fr auto;align-items:center;padding:4px 16px 10px;border-bottom:2px solid #2A241C;margin:0 4px"><span style="width:44px;height:44px;display:grid;place-items:center"><i class="icon-chevron-left" style="font-size:22px"></i></span><span style="font-size:15px;font-weight:500;text-align:center">抽认卡 · 词汇 2/3</span><span style="font:400 22px/1 'Newsreader',serif;color:#3F6670">02<span style="font-style:italic;font-size:15px;color:#6F6656"> /09</span></span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 20px 0">
+        <div style="display:flex;gap:2px"><span style="flex:1;height:3px;background:#3F6670"></span><span style="flex:1;height:3px;background:#8A5F32"></span><span style="flex:1;height:3px;background:#DDD3C3"></span></div>
+        <div style="display:flex;gap:2px"><span style="flex:1;height:3px;background:#DDD3C3"></span><span style="flex:1;height:3px;background:#DDD3C3"></span><span style="flex:1;height:3px;background:#DDD3C3"></span></div>
+        <div style="display:flex;gap:2px"><span style="flex:1;height:3px;background:#DDD3C3"></span><span style="flex:1;height:3px;background:#DDD3C3"></span><span style="flex:1;height:3px;background:#DDD3C3"></span></div>
+      </div>
+      <div style="flex:1;padding:22px 20px 18px;position:relative">
+        <div style="position:absolute;left:34px;right:34px;top:34px;bottom:8px;border-radius:10px;background:#DDD3C3"></div>
+        <div style="position:absolute;left:27px;right:27px;top:28px;bottom:12px;border-radius:10px;background:#E8E1D4"></div>
+        <div style="position:absolute;left:20px;right:20px;top:22px;bottom:18px;border-radius:10px;background-color:#F8F5EF;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,rgba(63,102,112,.11) 31px,rgba(63,102,112,.11) 32px);box-shadow:0 1px 0 #CDBFA9,0 18px 30px -20px rgba(50,38,20,.45);overflow:hidden">
+          <span style="position:absolute;left:46px;top:0;bottom:0;width:1px;background:rgba(138,95,50,.45)"></span>
+          <span style="position:absolute;left:12px;top:18px;font:italic 400 14px/1 'Newsreader',serif;color:#8A5F32">nº 2</span>
+          <span style="position:absolute;left:62px;top:20px;font-size:11px;letter-spacing:.1em;color:#6F6656;font-weight:500">词汇</span>
+          <span style="position:absolute;left:62px;right:20px;top:50%;transform:translateY(-50%);font:400 44px/1.08 'Newsreader',serif;letter-spacing:-.02em">organiser</span>
+          <span style="position:absolute;left:62px;bottom:18px;font-size:12px;color:#6F6656">轻点卡片查看详情</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:52px 1fr 1fr;gap:8px;padding:10px 16px 30px;border-top:1px solid #DDD3C3;background:#EFE9DF">
+        <button aria-label="上一张" style="height:52px;border:0;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 1px #CDBFA9;display:grid;place-items:center"><i class="icon-chevron-left" style="font-size:20px"></i></button>
+        <button style="height:52px;border:0;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;font-family:'Noto Sans SC';font-size:15px;font-weight:500">显示详情</button>
+        <button style="height:52px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-family:'Noto Sans SC';font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:4px">下一张<i class="icon-chevron-right" style="font-size:18px"></i></button>
+      </div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · FRONT · 中文</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:grid;grid-template-columns:44px 1fr auto;align-items:center;padding:4px 16px 10px;border-bottom:2px solid #2A241C;margin:0 4px"><span style="width:44px;height:44px;display:grid;place-items:center"><i class="icon-chevron-left" style="font-size:22px"></i></span><span style="font-size:15px;font-weight:500;text-align:center">抽认卡 · 短语 1/3</span><span style="font:400 22px/1 'Newsreader',serif;color:#3F6670">04<span style="font-style:italic;font-size:15px;color:#6F6656"> /09</span></span></div>
+      <div style="flex:1;padding:18px 20px 14px;display:flex;flex-direction:column">
+        <div style="flex:1;border-radius:10px;background:#FCFAF6;box-shadow:0 1px 0 #CDBFA9,0 18px 30px -20px rgba(50,38,20,.45);display:flex;flex-direction:column;overflow:hidden">
+          <div style="padding:18px 18px 14px;border-bottom:1px solid #DDD3C3;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:500;color:#3F6670">短语 · <span style="font:italic 400 14px 'Newsreader',serif;color:#55703F">学习中</span></span><span style="width:44px;height:36px;display:grid;place-items:center;color:#4E4639"><i class="icon-pencil" style="font-size:16px"></i></span></div>
+            <span style="font:400 32px/1.1 'Newsreader',serif;letter-spacing:-.015em">avoir le cafard</span>
+          </div>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:18px;overflow:hidden">
+            <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:12px;font-weight:500;color:#6F6656">掌握度</span>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <span style="height:48px;padding:0 12px;border-radius:6px;box-shadow:inset 0 0 0 1px #DDD3C3;display:flex;align-items:center;gap:8px;font-size:14px"><span style="display:flex;gap:2px"><span style="width:8px;height:3px;background:#3F6670"></span><span style="width:8px;height:3px;background:#DDD3C3"></span><span style="width:8px;height:3px;background:#DDD3C3"></span><span style="width:8px;height:3px;background:#DDD3C3"></span></span>需要练习</span>
+                <span style="height:48px;padding:0 12px;border-radius:6px;background:#2A241C;color:#EFE9DF;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500"><span style="display:flex;gap:2px"><span style="width:8px;height:3px;background:#C9D6B9"></span><span style="width:8px;height:3px;background:#C9D6B9"></span><span style="width:8px;height:3px;background:#5A5246"></span><span style="width:8px;height:3px;background:#5A5246"></span></span>学习中</span>
+                <span style="height:48px;padding:0 12px;border-radius:6px;box-shadow:inset 0 0 0 1px #DDD3C3;display:flex;align-items:center;gap:8px;font-size:14px"><span style="display:flex;gap:2px"><span style="width:8px;height:3px;background:#3F6670"></span><span style="width:8px;height:3px;background:#3F6670"></span><span style="width:8px;height:3px;background:#3F6670"></span><span style="width:8px;height:3px;background:#DDD3C3"></span></span>熟悉</span>
+                <span style="height:48px;padding:0 12px;border-radius:6px;box-shadow:inset 0 0 0 1px #DDD3C3;display:flex;align-items:center;gap:8px;font-size:14px"><span style="display:flex;gap:2px"><span style="width:8px;height:3px;background:#3F6670"></span><span style="width:8px;height:3px;background:#3F6670"></span><span style="width:8px;height:3px;background:#3F6670"></span><span style="width:8px;height:3px;background:#3F6670"></span></span>牢固</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;font-weight:500;color:#6F6656">翻译</span><span style="font-size:17px;line-height:1.6">心情低落；闷闷不乐</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:12px;font-weight:500;color:#6F6656">标签</span><span style="font:italic 400 16px 'Newsreader',serif;color:#4E4639">#idiom  #feelings</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:52px 1fr 1fr;gap:8px;padding:10px 16px 30px;border-top:1px solid #DDD3C3">
+        <button aria-label="上一张" style="height:52px;border:0;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 1px #CDBFA9;display:grid;place-items:center"><i class="icon-chevron-left" style="font-size:20px"></i></button>
+        <button style="height:52px;border:0;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;font-family:'Noto Sans SC';font-size:15px;font-weight:500">显示正面</button>
+        <button style="height:52px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-family:'Noto Sans SC';font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:4px">下一张<i class="icon-chevron-right" style="font-size:18px"></i></button>
+      </div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · BACK + CONFIDENCE · 中文</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:4px 16px 10px;border-bottom:2px solid #2A241C;margin:0 4px"><span style="width:44px;height:44px;display:grid;place-items:center"><i class="icon-chevron-left" style="font-size:22px"></i></span><span style="font-size:15px;font-weight:500;text-align:center">Flashcards</span><span></span></div>
+      <div style="flex:1;padding:44px 24px 0;display:flex;flex-direction:column;gap:18px">
+        <span style="width:60px;height:60px;border-radius:50%;background:#55703F;color:#EFE9DF;display:grid;place-items:center;box-shadow:0 0 0 5px #EFE9DF,0 0 0 6px #55703F"><i class="icon-check" style="font-size:28px"></i></span>
+        <span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A5F32;font-weight:600">Study complete</span>
+        <h3 style="margin:0;font:400 36px/1.08 'Newsreader',serif;letter-spacing:-.02em">Nice work. You finished this <span style="font-style:italic">study cycle.</span></h3>
+        <p style="margin:0;font-size:16px;color:#4E4639">You reviewed 9 cards.</p>
+        <div style="display:flex;flex-direction:column;border-top:1px solid #DDD3C3">
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #DDD3C3;font-size:15px"><span>Vocabulary</span><span style="font:italic 400 17px 'Newsreader',serif">3/3</span></div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #DDD3C3;font-size:15px"><span>Phrases</span><span style="font:italic 400 17px 'Newsreader',serif">3/3</span></div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #DDD3C3;font-size:15px"><span>Grammar</span><span style="font:italic 400 17px 'Newsreader',serif">3/3</span></div>
+        </div>
+      </div>
+      <div style="padding:10px 16px 30px;border-top:1px solid #DDD3C3"><button style="width:100%;height:52px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px"><i class="icon-rotate-ccw" style="font-size:16px"></i>Start a new study cycle</button></div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · COMPLETE · EN</span>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;reducedMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  cards = [
+    { cat: 'vocabulary', fr: 'la boulangerie', en: 'bakery', pos: 'Noun', ipa: '/bu.lɑ̃ʒ.ʁi/', gender: 'feminine', example: 'Je passe à la boulangerie après le travail.', notes: ['Also: le boulanger / la boulangère — the baker.'], tags: ['food', 'daily life'], conf: 2 },
+    { cat: 'vocabulary', fr: 'organiser', en: 'to organize', pos: 'Verb', ipa: '/ɔʁ.ɡa.ni.ze/', example: 'Je dois organiser mes notes de français.', conj: [['je', 'organise'], ['tu', 'organises'], ['il/elle', 'organise'], ['nous', 'organisons'], ['vous', 'organisez'], ['ils/elles', 'organisent']], notes: [], tags: ['work'], conf: 1 },
+    { cat: 'vocabulary', fr: 'anticonstitutionnellement', en: 'unconstitutionally', pos: 'Adverb', ipa: '/ɑ̃.ti.kɔ̃s.ti.ty.sjɔ.nɛl.mɑ̃/', example: "Selon l'opposition, la loi a été adoptée anticonstitutionnellement.", notes: ['Often cited as one of the longest words in French — 25 letters.'], tags: [], conf: 1 },
+    { cat: 'phrases', fr: 'avoir le cafard', en: 'to feel down; to have the blues', tags: ['idiom', 'feelings'], conf: 2 },
+    { cat: 'phrases', fr: 'Ça me dit quelque chose.', en: 'That rings a bell.', tags: [], conf: 1 },
+    { cat: 'phrases', fr: 'Mieux vaut tard que jamais.', en: 'Better late than never.', tags: ['proverb'], conf: 3 },
+    { cat: 'grammar', fr: 'Le subjonctif après « il faut que »', conf: 1, tags: ['subjonctif'], notes: [
+      'Il faut que is always followed by the subjunctive, because it expresses necessity rather than a fact.',
+      '» Il faut que tu viennes demain.',
+      '» Il faut que nous fassions attention aux accords.',
+      'Formation: take the ils/elles form of the present tense, drop -ent, add -e, -es, -e, -ions, -iez, -ent. Irregular stems to memorise: être (sois), avoir (aie), faire (fasse), aller (aille), pouvoir (puisse), savoir (sache), vouloir (veuille).',
+      'Do not confuse with il faut + infinitive, which is impersonal: Il faut partir. Use que + subjunctive only when the subject is specified.',
+      'Related triggers: bien que, pour que, avant que, à condition que, je veux que, je doute que.',
+    ] },
+    { cat: 'grammar', fr: 'Accord du participe passé avec avoir', conf: 2, tags: [], notes: [
+      'With avoir, the past participle agrees with the direct object only when that object comes before the verb.',
+      '» Les lettres que j’ai écrites.',
+      'J’ai écrit des lettres. — no agreement, the object follows.',
+    ] },
+    { cat: 'grammar', fr: 'En ou y ?', conf: 2, tags: ['pronoms'], notes: [
+      'En replaces de + noun (quantities, origin). Y replaces à + thing or a place.',
+      '» Tu veux du pain ? — Oui, j’en veux.',
+      '» Tu vas à Lyon ? — Oui, j’y vais.',
+    ] },
+  ];
+  catLabel = { vocabulary: 'Vocabulary', phrases: 'Phrases', grammar: 'Grammar' };
+  confLabels = ['Needs practice', 'Learning', 'Familiar', 'Strong'];
+  state = { sc: 'fresh', view: 'cards', idx: 0, flipped: false, anim: 'idle', dir: 1, lift: false, conf: {}, toast: false, unseen: true, endIn: true };
+  scen = {
+    fresh: { label: 'New session', note: 'card 1', apply: { view: 'cards', idx: 0, flipped: false } },
+    saved: { label: 'Returning to saved session', note: 'card 5, flipped', apply: { view: 'cards', idx: 4, flipped: true }, toast: true },
+    long: { label: 'Long word', note: '25 letters', apply: { view: 'cards', idx: 2, flipped: false } },
+    longNote: { label: 'Long grammar note', note: 'scrolls', apply: { view: 'cards', idx: 6, flipped: true } },
+    complete: { label: 'Session complete', note: 'more available', apply: { view: 'complete', unseen: true } },
+    completeNoMore: { label: 'Complete · nothing new', note: 'disabled', apply: { view: 'complete', unseen: false } },
+    empty: { label: 'No cards available', note: 'empty', apply: { view: 'empty', allSeen: false } },
+    allSeen: { label: 'All cards have appeared', note: 'exhausted', apply: { view: 'empty', allSeen: true } },
+    loading: { label: 'Loading saved session', note: '', apply: { view: 'loading' } },
+  };
+  componentWillUnmount() { [this.t1, this.t2, this.t3].forEach(clearTimeout); }
+  rm() { return !!this.props.reducedMotion; }
+  setSc(k) {
+    const s = this.scen[k];
+    [this.t1, this.t2, this.t3].forEach(clearTimeout);
+    this.setState({ sc: k, anim: 'pre', dir: 1, lift: false, toast: false, allSeen: false, endIn: false, ...s.apply });
+    requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ anim: 'idle', endIn: true, toast: !!s.toast })));
+    if (s.toast) this.t3 = setTimeout(() => this.setState({ toast: false }), 2800);
+  }
+  flip = () => {
+    if (this.state.view !== 'cards') return;
+    this.setState((x) => ({ flipped: !x.flipped, lift: !this.rm() }));
+    clearTimeout(this.t2);
+    this.t2 = setTimeout(() => this.setState({ lift: false }), 300);
+  };
+  moveTo(n, dir) {
+    if (this.state.anim !== 'idle') return;
+    if (this.rm()) return this.setState({ idx: n, flipped: false });
+    this.setState({ anim: 'out', dir });
+    this.t1 = setTimeout(() => {
+      this.setState({ idx: n, flipped: false, anim: 'pre' });
+      requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ anim: 'idle' })));
+    }, 200);
+  }
+  next = () => {
+    const { idx } = this.state;
+    if (idx === this.cards.length - 1) {
+      this.setState({ view: 'complete', unseen: true, endIn: false });
+      requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ endIn: true })));
+    } else this.moveTo(idx + 1, 1);
+  };
+  prev = () => { if (this.state.idx > 0) this.moveTo(this.state.idx - 1, -1); };
+  setConf(id, v) { this.setState((x) => ({ conf: { ...x.conf, [id]: v } })); }
+  onKey = (e) => {
+    if (this.state.view !== 'cards') return;
+    const tag = e.target.tagName;
+    if (e.key === ' ' && tag !== 'BUTTON') { e.preventDefault(); this.flip(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); this.next(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); this.prev(); }
+    else if (/^[1-4]$/.test(e.key) && this.state.flipped) {
+      const c = this.cards[this.state.idx];
+      if (c.cat !== 'vocabulary') this.setConf(this.state.idx, Number(e.key));
+    }
+  };
+  renderVals() {
+    const rm = this.rm();
+    const tr = (v) => (rm ? 'none' : v);
+    const s = this.state;
+    const c = this.cards[s.idx];
+    const conf = s.conf[s.idx] ?? c.conf;
+    const isVocab = c.cat === 'vocabulary', isPhrase = c.cat === 'phrases', isGrammar = c.cat === 'grammar';
+    const details = isVocab ? [['Type', c.pos], ['IPA', c.ipa], ...(c.gender ? [['Gender', c.gender]] : [])].map(([k, v]) => ({ k, v })) : [];
+    const notesSrc = isGrammar ? c.notes : isVocab ? (c.notes.length ? c.notes : ['No notes yet.']) : [];
+    const notes = notesSrc.map((t) => {
+      const ex = t.startsWith('» ');
+      return { t: ex ? t.slice(2) : t, font: ex ? "italic 400 19px/1.45 'Newsreader',serif" : "400 15px/1.65 'Instrument Sans',sans-serif", color: ex ? '#2A241C' : '#433C31', indent: ex ? '18px' : '0' };
+    });
+    const meter = [1, 2, 3, 4].map((v) => ({ bg: v <= conf ? '#55703F' : '#DDD3C3' }));
+    const confBtns = [1, 2, 3, 4].map((v) => {
+      const on = v === conf;
+      return {
+        label: this.confLabels[v - 1], checked: on ? 'true' : 'false',
+        bg: on ? '#2A241C' : 'transparent', fg: on ? '#EFE9DF' : '#2A241C', border: on ? '#2A241C' : '#DDD3C3',
+        trans: tr('background 200ms ease, color 200ms ease'),
+        ticks: [1, 2, 3, 4].map((t) => ({ bg: t <= v ? (on ? '#C9D6B9' : '#3F6670') : on ? '#5A5246' : '#DDD3C3' })),
+        onClick: () => this.setConf(s.idx, v),
+      };
+    });
+    const cur = {
+      fr: c.fr, en: c.en, catLabel: this.catLabel[c.cat], confLabel: this.confLabels[conf - 1],
+      frSize: c.fr.length > 22 ? '46px' : c.fr.length > 14 ? '58px' : '72px',
+      showEn: !isPhrase && !!c.en, isPhrase, isVocab,
+      canConf: !isVocab, vocabConfNote: isVocab, confBtns, meter,
+      example: c.example, details, hasDetails: details.length > 0,
+      conj: (c.conj || []).map(([k, v]) => ({ k, v })), hasConj: !!c.conj,
+      notes, hasNotes: notes.length > 0, notesLabel: isGrammar ? 'Grammar note' : 'Notes', notesSpan: isGrammar ? '1 / -1' : 'auto',
+      tags: c.tags || [], hasTags: (c.tags || []).length > 0,
+    };
+    const cats = ['vocabulary', 'phrases', 'grammar'];
+    const groups = cats.map((cat) => {
+      const idxs = this.cards.map((x, i) => (x.cat === cat ? i : -1)).filter((i) => i >= 0);
+      const reviewed = idxs.filter((i) => i <= s.idx).length;
+      const isCur = c.cat === cat;
+      return {
+        label: this.catLabel[cat], count: `${reviewed}/${idxs.length}`,
+        color: isCur ? '#3F6670' : '#4E4639', weight: isCur ? 600 : 500,
+        limit: `Limit 3, available ${idxs.length}`,
+        segs: idxs.map((i) => ({ bg: i < s.idx ? '#3F6670' : i === s.idx ? '#8A5F32' : '#DDD3C3', trans: tr('background 300ms ease') })),
+      };
+    });
+    const pad = (n) => String(n).padStart(2, '0');
+    const remaining = this.cards.length - 1 - s.idx;
+    let moveTr = 'none', moveOp = 1, moveTrans = tr('transform 320ms cubic-bezier(.2,.7,.2,1), opacity 260ms ease-out');
+    if (s.anim === 'out') { moveTr = s.dir > 0 ? 'translateX(-36px) rotate(-1.2deg)' : 'translateX(36px) rotate(1.2deg)'; moveOp = 0; moveTrans = 'transform 200ms ease-in, opacity 180ms ease-in'; }
+    if (s.anim === 'pre') { moveTr = s.dir > 0 ? 'translateY(10px) scale(.985)' : 'translateX(-28px)'; moveOp = 0; moveTrans = 'none'; }
+    const isLast = s.idx === this.cards.length - 1;
+    const emptyAllSeen = !!s.allSeen;
+    return {
+      onKey: this.onKey, flip: this.flip, next: this.next, prev: this.prev,
+      vCards: s.view === 'cards', vComplete: s.view === 'complete', vEmpty: s.view === 'empty', vLoading: s.view === 'loading',
+      cur, groups,
+      sectionLine: `${this.catLabel[c.cat]} ${groups[cats.indexOf(c.cat)].count}`,
+      posNum: pad(s.idx + 1), totalNum: pad(this.cards.length), cardOf: `Card ${s.idx + 1} of ${this.cards.length}`,
+      showSheet1: remaining >= 1, showSheet2: remaining >= 2,
+      moveTr, moveOp, moveTrans,
+      liftTr: s.lift ? 'translateY(-6px) scale(1.012)' : 'none',
+      liftTrans: tr('transform 300ms cubic-bezier(.2,.7,.2,1)'),
+      flipTr: s.flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+      flipTrans: s.anim === 'pre' || rm ? 'none' : 'transform 600ms cubic-bezier(.3,.7,.2,1)',
+      visTrans: s.anim === 'pre' || rm ? 'none' : 'visibility 0s linear 300ms',
+      frontVis: s.flipped ? 'hidden' : 'visible', backVis: s.flipped ? 'visible' : 'hidden',
+      frontHidden: s.flipped ? 'true' : 'false', backHidden: s.flipped ? 'false' : 'true',
+      frontTab: s.flipped ? -1 : 0,
+      revealAria: `Reveal details for ${c.fr}`,
+      flipLabel: s.flipped ? 'Show front' : 'Show details',
+      nextLabel: isLast ? 'Finish study' : 'Next',
+      prevDisabled: s.idx === 0, prevOp: s.idx === 0 ? 0.4 : 1,
+      endOp: s.endIn || rm ? 1 : 0, endTr: s.endIn || rm ? 'none' : 'translateY(10px)', endTrans: tr('opacity 360ms ease-out, transform 360ms ease-out'),
+      noUnseen: !s.unseen,
+      restartBg: s.unseen ? '#2A241C' : '#DDD3C3', restartFg: s.unseen ? '#EFE9DF' : '#6F6656', restartCursor: s.unseen ? 'pointer' : 'not-allowed',
+      restart: () => this.setSc('fresh'),
+      emptyTitle: emptyAllSeen ? 'All available study cards have appeared.' : 'No study cards are due.',
+      emptyCopy: emptyAllSeen ? 'Add more notes or return after confidence levels change.' : 'Add a new note or edit an existing note if you want something in the Study deck.',
+      emptyShowAdd: !emptyAllSeen,
+      toastOp: s.toast ? 1 : 0, toastTr: s.toast || rm ? 'none' : 'translateY(-6px)', toastTrans: tr('opacity 240ms ease-out, transform 240ms ease-out'),
+      scenarios: Object.entries(this.scen).map(([k, v]) => ({ label: v.label, note: v.note, bg: s.sc === k ? '#2A241C' : '#EFE9DF', fg: s.sc === k ? '#EFE9DF' : '#2A241C', onClick: () => this.setSc(k) })),
+    };
+  }
+}
+</script>
+</body>
+</html>

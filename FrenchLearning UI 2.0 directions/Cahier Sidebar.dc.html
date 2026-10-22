@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Instrument+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+</helmet>
+<aside style="width:100%;height:100%;box-sizing:border-box;background:#E7ECED;border-right:1px solid #DDD3C3;padding:30px 20px 24px;display:flex;flex-direction:column;gap:28px;font-family:'Instrument Sans',sans-serif;color:#2A241C">
+  <div style="display:flex;flex-direction:column;gap:8px;padding:0 8px">
+    <div style="display:flex;gap:3px"><span style="width:14px;height:3px;background:#23408E"></span><span style="width:14px;height:3px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #DDD3C3"></span><span style="width:14px;height:3px;background:#B43A2E"></span></div>
+    <span style="font:italic 500 28px/1 'Newsreader',serif;letter-spacing:-.01em">French Desk</span>
+    <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656">Learning Hub</span>
+  </div>
+  <nav style="display:flex;flex-direction:column;gap:2px;flex:1">
+    <sc-for list="{{ items }}" as="it" hint-placeholder-count="12">
+      <sc-if value="{{ it.isGroup }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6F6656;padding:{{ it.pad }}">{{ it.label }}</span></sc-if>
+      <sc-if value="{{ it.isItem }}" hint-placeholder-val="{{ true }}"><div style="display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:baseline;gap:8px;padding:10px 8px;border-radius:6px;background:{{ it.bg }};box-shadow:{{ it.sh }};color:{{ it.fg }}" style-hover="background:#D5DEDF"><span style="font:italic 400 14px/1 'Newsreader',serif;color:{{ it.numFg }}">{{ it.n }}</span><span style="font-weight:{{ it.w }};font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.label }}</span><span aria-hidden="true" style="font:italic 400 12px/1 'Newsreader',serif;color:{{ it.glossFg }};white-space:nowrap">{{ it.gloss }}</span></div></sc-if>
+    </sc-for>
+  </nav>
+  <div style="display:flex;flex-direction:column;gap:12px;padding:0 8px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;border:1px solid #CDBFA9;border-radius:999px;padding:3px;font-size:13px;font-weight:500"><span style="text-align:center;padding:6px 0;border-radius:999px;background:#2A241C;color:#EFE9DF">EN</span><span style="text-align:center;padding:6px 0;color:#4E4639;font-family:'Noto Sans SC'">中文</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;color:#4E4639"><span>Demo</span><span style="color:#8A5F32">Sign out</span></div>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:248,&quot;height&quot;:800},&quot;active&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;today&quot;,&quot;study&quot;,&quot;quiz&quot;,&quot;vocabulary&quot;,&quot;phrases&quot;,&quot;grammar&quot;,&quot;pronunciation&quot;,&quot;import&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;vocabulary&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.active ?? 'today';
+    const rows = [
+      ['g', 'Pratique', '0 8px 8px'],
+      ['today', '01', 'Today', "aujourd'hui"], ['study', '02', 'Study', 'étude'], ['quiz', '03', 'Quiz', 'dictée'],
+      ['g', 'Le cahier', '20px 8px 8px'],
+      ['vocabulary', '04', 'Vocabulary', 'mots'], ['phrases', '05', 'Phrases', 'expressions'], ['grammar', '06', 'Grammar', 'grammaire'], ['pronunciation', '07', 'Pronunciation', 'sons'],
+      ['g', 'Bureau', '20px 8px 8px'],
+      ['import', '08', 'Import', ''], ['settings', '09', 'Settings', ''],
+    ];
+    return {
+      items: rows.map((r) => {
+        if (r[0] === 'g') return { isGroup: true, isItem: false, label: r[1], pad: r[2] };
+        const on = r[0] === active;
+        return { isGroup: false, isItem: true, n: r[1], label: r[2], gloss: r[3], bg: on ? '#F8F5EF' : 'transparent', sh: on ? '0 1px 0 #DDD3C3' : 'none', fg: on ? '#3F6670' : '#4E4639', numFg: on ? '#3F6670' : '#6F6656', glossFg: on ? '#8A5F32' : '#958B7A', w: on ? 600 : 500 };
+      }),
+    };
+  }
+}
+</script>
+</body>
+</html>

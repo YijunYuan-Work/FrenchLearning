@@ -1,68 +1,36 @@
-import { LogOut, Plus, Sparkle } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
-import { getDisplayName } from "../utils/accountIdentity";
-import { LanguageToggle } from "./LanguageToggle";
+import { Brand } from "./Brand";
 
-export function AppHeader({
-  activeSection,
-  isDemo = false,
-  onSignOut,
-  openNewItem,
-  pageTitle,
-  user,
-}) {
-  const { t } = useLanguage();
-  const displayName = getDisplayName(user);
+const libraryChapters = { vocabulary: ["04", "mots", "Vocabulary"], phrases: ["05", "expressions", "Phrases"], grammar: ["06", "grammaire", "Grammar"], pronunciation: ["07", "phonétique", "Pronunciation"], import: ["08", "CSV", "Import"], settings: ["09", "réglages", "Settings"] };
 
+export function AppHeader({ activeSection, openNewItem, pageTitle, learningDay }) {
+  const { language, t } = useLanguage();
+  const chapter = libraryChapters[activeSection];
+  const title = activeSection === "pronunciation" ? t("navPronunciation", "Pronunciation") : pageTitle;
+  const heading = chapter && language === "zh" ? <>{chapter[2]} <span className="library-title-translation">{title}</span></> : title;
+  const date = new Date(`${learningDay}T12:00:00`);
+  const dateLabel = date.toLocaleDateString(language === "zh" ? "zh-CN" : "fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   return (
-    <header className="px-3 pb-4 pt-5 md:px-7 md:pb-5 md:pt-7">
-      <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="min-w-0">
-          <p className="hidden items-center gap-2 text-sm font-medium text-frenchRed sm:inline-flex">
-            <Sparkle size={15} />
-            {t("personalWorkspace", "Personal French workspace")}
-          </p>
-          <h2 className="max-w-3xl break-words text-[1.35rem] font-light leading-[1.12] tracking-[-0.02em] sm:text-2xl md:text-3xl">
-            {pageTitle}
-          </h2>
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
-          <LanguageToggle />
-          {user && (
-            <div className="hidden h-10 items-center rounded-full border border-line bg-white px-3 text-sm font-medium text-inkSecondary shadow-sm sm:flex">
-              {displayName}
-            </div>
-          )}
+    <header className={`cahier-header${chapter ? " library-header" : ""}`}>
+      <div className="cahier-header-row">
+        <div className="cahier-mobile-brand">{chapter ? <div className="library-mobile-heading"><p className="eyebrow">{["import", "settings"].includes(activeSection) ? t("bureau", "Bureau") : t("notebook", "Notebook")} · {chapter[0]}</p><h2 aria-label={pageTitle} className="editorial-title">{heading}</h2></div> : <Brand compact />}</div>
+        <p className="eyebrow cahier-workspace-label">{chapter ? `${["import", "settings"].includes(activeSection) ? t("bureau", "Bureau") : t("notebook", "Notebook")} · ${chapter[0]}` : t("personalWorkspace", "Personal French workspace")}</p>
+        <div className="cahier-header-actions">
+          <time dateTime={learningDay} lang={language === "zh" ? "zh-CN" : "fr"}>{dateLabel}</time>
           <button
-            className="primary-action order-3 col-span-2 h-10 sm:order-none sm:col-span-1"
-            onClick={() =>
-              openNewItem(
-                activeSection === "today" ||
-                  activeSection === "review" ||
-                  activeSection === "quiz" ||
-                  activeSection === "import" ||
-                  activeSection === "settings"
-                  ? "vocabulary"
-                  : activeSection
-              )
-            }
+            aria-label={t("addNote", "Add note")}
+            className="primary-action cahier-add-note"
+            onClick={() => openNewItem(["today", "review", "quiz", "import", "settings"].includes(activeSection) ? "vocabulary" : activeSection)}
+            title={t("addNote", "Add note")}
             type="button"
           >
-            <Plus size={17} />
-            {t("addNote", "Add note")}
+            <Plus size={17} aria-hidden="true" /><span>{t("addNote", "Add note")}</span>
           </button>
-          {!isDemo && (
-            <button
-              className="secondary-action order-2 h-10 hover:border-frenchRed hover:bg-blush hover:text-frenchRed sm:order-none"
-              onClick={onSignOut}
-              type="button"
-            >
-              <LogOut size={17} />
-              {t("signOut", "Sign out")}
-            </button>
-          )}
         </div>
       </div>
+      <div className="editorial-rule" />
+      {!["today", "review", "quiz"].includes(activeSection) && <h2 aria-label={chapter ? pageTitle : undefined} className={`cahier-page-title editorial-title${chapter ? " library-heading" : ""}`}>{heading}{chapter && language !== "zh" && <em lang="fr"> · {chapter[1]}</em>}</h2>}
     </header>
   );
 }

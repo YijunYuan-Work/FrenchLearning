@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { getLearningPreferences } from "./api/preferences";
 import { AppHeader } from "./components/AppHeader";
 import { EditorModal } from "./components/EditorModal";
+import { LibraryDialog } from "./components/LibraryDialog";
 import { Sidebar } from "./components/Sidebar";
+import { ViewBoundary } from "./components/ViewBoundary";
 import { categories } from "./data/categories";
 import { demoNotes, demoUser } from "./data/demoData";
 import { hasSupabaseConfig } from "./lib/supabase";
@@ -16,18 +18,9 @@ import { isPublicDemoRoute } from "./utils/demoMode";
 import { SetupPage } from "./pages/SetupPage";
 import { SignInPage } from "./pages/SignInPage";
 import { assertNoDuplicateNote, normalizeNoteInput } from "./utils/noteIntegrity";
-import { getDisplayName } from "./utils/accountIdentity";
 import { getTodayKey, MAX_CONFIDENCE } from "./utils/quiz";
 import { shouldDelayLearningMount } from "./utils/studyState";
-import { GrammarView } from "./views/GrammarView";
-import { ImportView } from "./views/ImportView";
-import { PhrasesView } from "./views/PhrasesView";
-import { SettingsView } from "./views/SettingsView";
-import { PronunciationView } from "./views/PronunciationView";
-import { QuizView } from "./views/QuizView";
-import { ReviewView } from "./views/ReviewView";
 import { TodayView } from "./views/TodayView";
-import { VocabularyView } from "./views/VocabularyView";
 import { createEmptyWordDetails, normalizeWordDetails } from "./data/wordFields";
 import { createDailyProgress } from "./utils/dailyProgress";
 import { defaultLearningSettings } from "./utils/learningSettings";
@@ -42,6 +35,15 @@ const emptyForm = {
   confidence: 1,
   ...createEmptyWordDetails(),
 };
+
+const GrammarView = lazy(() => import("./views/GrammarView").then((module) => ({ default: module.GrammarView })));
+const ImportView = lazy(() => import("./views/ImportView").then((module) => ({ default: module.ImportView })));
+const PhrasesView = lazy(() => import("./views/PhrasesView").then((module) => ({ default: module.PhrasesView })));
+const SettingsView = lazy(() => import("./views/SettingsView").then((module) => ({ default: module.SettingsView })));
+const PronunciationView = lazy(() => import("./views/PronunciationView").then((module) => ({ default: module.PronunciationView })));
+const QuizView = lazy(() => import("./views/QuizView").then((module) => ({ default: module.QuizView })));
+const ReviewView = lazy(() => import("./views/ReviewView").then((module) => ({ default: module.ReviewView })));
+const VocabularyView = lazy(() => import("./views/VocabularyView").then((module) => ({ default: module.VocabularyView })));
 
 const viewBySection = {
   today: TodayView,
@@ -96,11 +98,15 @@ function AccountSession({ isDemoRoute }) {
 
 function Workspace({ isDemoRoute, auth }) {
   const learningDay = useLocalLearningDay();
-  const { t, languagePreferenceStatus, retryLanguagePreference } = useLanguage();
+  const { t, language, languagePreferenceStatus, retryLanguagePreference } = useLanguage();
   const { user, loading: authLoading, error: authError, isCurrentAccount, updateUser: setUser,
     handleAuthSubmit, handleSignOut } = auth;
+  const [authSubmissionStarted, setAuthSubmissionStarted] = useState(false);
   const [dataError, setDataError] = useState("");
   const confirmingDeletion = useRef(false);
+  const deletionDecision = useRef(null);
+  const [deletePrompt, setDeletePrompt] = useState(null);
+  useEffect(() => () => { deletionDecision.current?.(false); }, []);
   const [learningSettings, setLearningSettings] = useState(defaultLearningSettings);
   const [settingsLoad, setSettingsLoad] = useState({ userId: null, status: "idle", error: "" });
   const [settingsLoadAttempt, setSettingsLoadAttempt] = useState(0);
@@ -201,11 +207,6 @@ function Workspace({ isDemoRoute, auth }) {
     setSelectedTag("all");
   }, [selectedTag, tags]);
 
-  const weakItems = useMemo(
-    () => items.filter((item) => item.confidence <= 2),
-    [items]
-  );
-
   const filteredItems = useMemo(() => {
     const searchable = query.trim().toLowerCase();
     return items.filter((item) => {
@@ -236,18 +237,6 @@ function Workspace({ isDemoRoute, auth }) {
       return matchesSection && matchesTag && haystack.includes(searchable);
     });
   }, [activeSection, items, query, selectedTag]);
-
-  const stats = useMemo(() => {
-    const confidenceTotal = items.reduce((sum, item) => sum + item.confidence, 0);
-    return {
-      total: items.length,
-      weak: weakItems.length,
-      tags: tags.length - 1,
-      average: items.length
-        ? Math.round((confidenceTotal / (items.length * 4)) * 100)
-        : 0,
-    };
-  }, [items, tags.length, weakItems.length]);
 
   const visibleDailyProgress = isDemoRoute
     ? (demoDailyProgress.date === learningDay ? demoDailyProgress : createDailyProgress(learningDay))
@@ -346,29 +335,40 @@ function Workspace({ isDemoRoute, auth }) {
   }
 
   async function deleteItem(item) {
-    await confirmDeletion(`Delete "${item.french}"?`, () => notes.deleteOne(item.id));
+    await confirmDeletion(t("deleteSingleConfirm", 'Delete "{word}"?', { word: item.french }), () => notes.deleteOne(item.id));
   }
 
   async function deleteSelected() {
     if (selectedIds.length === 0 || !user) return;
     await confirmDeletion(
-      `Delete ${selectedIds.length} selected note${selectedIds.length === 1 ? "" : "s"}?`,
+      t("deleteSelectionConfirm", "Delete {count} selected notes?", { count: selectedIds.length }),
       notes.deleteSelected,
+      items.filter((item) => selectedIds.includes(item.id)).map((item) => item.french),
     );
   }
 
-  async function confirmDeletion(message, remove) {
+  async function confirmDeletion(message, remove, names = []) {
     if (!user || !isCurrentAccount() || confirmingDeletion.current || notes.isDeleting) return;
     confirmingDeletion.current = true;
     try {
-      if (window.confirm(message)) await remove();
+      const accepted = await new Promise((resolve) => {
+        deletionDecision.current = resolve;
+        setDeletePrompt({ message, names });
+      });
+      if (accepted && isCurrentAccount()) await remove();
     } finally {
       confirmingDeletion.current = false;
     }
   }
 
+  function decideDeletion(accepted) {
+    const resolve = deletionDecision.current;
+    deletionDecision.current = null;
+    setDeletePrompt(null);
+    resolve?.(accepted);
+  }
+
   const ActiveView = viewBySection[activeSection] ?? TodayView;
-  const displayName = getDisplayName(user);
   const isLearningStateLoading = shouldDelayLearningMount({
     activeSection,
     dailyStateLoaded,
@@ -396,12 +396,7 @@ function Workspace({ isDemoRoute, auth }) {
       retry: () => setSettingsLoadAttempt((current) => current + 1),
     },
   ].filter((failure) => failure.error);
-  const pageTitle =
-    activeSection === "today"
-      ? t("todayTitle", "Bonjour, {username}. Ready for 12 minutes of French?", {
-          username: displayName,
-        })
-      : t(categories[activeSection].labelKey, categories[activeSection].label);
+  const pageTitle = t(categories[activeSection].labelKey, categories[activeSection].label);
 
   const viewProps = {
     learningDay,
@@ -410,6 +405,8 @@ function Workspace({ isDemoRoute, auth }) {
     activeSection,
     dailyProgress: visibleDailyProgress,
     dailyProgressReady: isDemoRoute || dailyStateLoaded,
+    learningDataReady: isDemoRoute || (notes.isLoaded && settingsLoad.userId === userId && settingsLoad.status === "ready"),
+    learningLoadFailed: loadFailures.length > 0,
     filteredItems,
     items,
     isDeleting: notes.isDeleting,
@@ -434,7 +431,9 @@ function Workspace({ isDemoRoute, auth }) {
     onQuizComplete: () => completeTask("quiz", learningDay),
     onQuizStateChange: isDemoRoute || dailyStateLoaded ? setDailyQuizState : undefined,
     onStartStudy: () => setActiveSection("review"),
+    onExitStudy: () => setActiveSection("today"),
     onStartQuiz: () => setActiveSection("quiz"),
+    onExitQuiz: () => setActiveSection("today"),
     onStudyComplete: () => completeTask("study", learningDay),
     onStudyConfidenceChange: notes.setStudyConfidence,
     onStudyStateChange: setDailyStudyState,
@@ -446,9 +445,7 @@ function Workspace({ isDemoRoute, auth }) {
     selectedIds,
     setQuery,
     setSelectedTag,
-    stats,
     tags,
-    weakItems,
     savedQuizState: dailyQuizState,
     savedStudyState: dailyStudyState,
     user,
@@ -458,10 +455,10 @@ function Workspace({ isDemoRoute, auth }) {
     return <SetupPage />;
   }
 
-  if (authLoading && !user) {
+  if (authLoading && !user && !authSubmissionStarted) {
     return (
       <div className="grid min-h-screen place-items-center bg-cloud/80 px-4 text-ink">
-        <div className="app-card p-5 font-semibold">
+        <div className="app-card p-5 font-semibold" role="status">
           {t("loadingWorkspace", "Loading your French workspace...")}
         </div>
       </div>
@@ -473,29 +470,34 @@ function Workspace({ isDemoRoute, auth }) {
       <SignInPage
         error={authError ? getFriendlyAuthError({ message: authError }) : ""}
         isLoading={authLoading}
-        onAuthSubmit={handleAuthSubmit}
+        onAuthSubmit={(values) => {
+          // Initial hydration uses the workspace loader; submissions keep the draft mounted.
+          setAuthSubmissionStarted(true);
+          return handleAuthSubmit(values);
+        }}
       />
     );
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-cloud/80 pt-[61px] text-ink md:pl-64 md:pt-0">
+    <div className={`cahier-workspace${activeSection === "review" ? " is-studying" : activeSection === "quiz" ? " is-quizzing" : ["vocabulary", "phrases", "grammar", "pronunciation"].includes(activeSection) ? " is-library" : ["import", "settings"].includes(activeSection) ? " is-bureau" : ""}`} lang={language === "zh" ? "zh-CN" : "en"}>
       <Sidebar
         activeSection={activeSection}
         setActiveSection={setActiveSection}
+        isDemo={isDemoRoute}
+        onSignOut={handleSignOut}
+        user={user}
       />
 
-      <main className="mx-auto min-w-0 max-w-7xl">
+      <main className="cahier-main">
         <AppHeader
           activeSection={activeSection}
-          isDemo={isDemoRoute}
-          onSignOut={handleSignOut}
           openNewItem={openNewItem}
           pageTitle={pageTitle}
-          user={user}
+          learningDay={learningDay}
         />
 
-        <section className="grid gap-4 px-3 pb-6 pt-2 sm:px-4 sm:pb-8 md:px-7 lg:gap-5">
+        <section className="cahier-content">
           {notes.dataWarningCount > 0 && (
             <p className="rounded-lg border border-line bg-paper p-3 text-sm text-slate-700" role="status">
               {t("noteDataWarning", "{count} saved notes have invalid data. Safe defaults are used where possible; unrecognizable notes are hidden. Stored data was not changed.", { count: notes.dataWarningCount })}
@@ -512,12 +514,12 @@ function Workspace({ isDemoRoute, auth }) {
             </div>
           )}
           {(dataError || authError) && (
-            <div className="rounded-xl border border-frenchRed/25 bg-blush p-3 text-sm font-medium text-frenchRed">
+            <div className="rounded-xl border border-frenchRed/25 bg-blush p-3 text-sm font-medium text-frenchRed" role="alert">
               {dataError || authError}
             </div>
           )}
           {(notes.isDeleting || notes.deletionResult) && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-paper p-3 text-sm" role="status" aria-live="polite">
+            <div className="library-delete-status flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-paper p-3 text-sm" role="status" aria-live="polite">
               <p>{notes.isDeleting
                 ? t("deletingNotes", "Deleting notes...")
                 : t("deleteNotesResult", "Deleted: {deleted}. Failed: {failed}.", notes.deletionResult)}
@@ -560,7 +562,7 @@ function Workspace({ isDemoRoute, auth }) {
               )}
             </div>
           )}
-          {notes.isLoading && items.length === 0 && !isLearningStateLoading && (
+          {activeSection !== "today" && notes.isLoading && items.length === 0 && !isLearningStateLoading && (
             <div className="app-card p-3 text-sm font-medium text-inkSecondary">
               {t("loadingNotes", "Loading notes...")}
             </div>
@@ -572,11 +574,20 @@ function Workspace({ isDemoRoute, auth }) {
                 : t("loadingLearningState", "Loading your saved learning session...")}
             </div>
           ) : (
-            <ActiveView key={["quiz", "review"].includes(activeSection) ? `${activeSection}:${learningDay}` : activeSection} {...viewProps} />
+            <ViewBoundary key={activeSection} message={t("viewLoadFailed", "This page could not be opened. Check your connection and reload the page to try again.")} reloadLabel={t("reloadPage", "Reload page")}>
+              <Suspense fallback={<p className="view-loading" role="status">{t("viewLoading", "Opening page...")}</p>}>
+                <ActiveView key={["quiz", "review"].includes(activeSection) ? `${activeSection}:${learningDay}` : activeSection} {...viewProps} />
+              </Suspense>
+            </ViewBoundary>
           )}
         </section>
       </main>
 
+      {deletePrompt && <LibraryDialog title={deletePrompt.message} confirm onClose={() => decideDeletion(false)}>
+        {deletePrompt.names.length > 0 && <p className="library-confirm-list" lang="fr">{deletePrompt.names.slice(0, 4).join(" · ")}{deletePrompt.names.length > 4 ? ` · +${deletePrompt.names.length - 4}` : ""}</p>}
+        <p>{t("deleteNotesWarning", "This permanently removes the selected notes. It cannot be undone.")}</p>
+        <div className="library-sheet-actions"><button className="secondary-action" onClick={() => decideDeletion(false)} type="button">{t("cancel", "Cancel")}</button><button className="primary-action library-danger" aria-label={t("confirmDeletion", "Confirm deletion")} onClick={() => decideDeletion(true)} type="button">{t("delete", "Delete")}</button></div>
+      </LibraryDialog>}
       {editorSession && (
         <EditorModal
           key={editorSession.id}

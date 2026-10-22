@@ -1,5 +1,7 @@
 # French Desk Project Audit
 
+> Historical baseline, not a current open-issue list. The lifecycle, data-integrity and UI work that followed this audit is reassessed against the merged UI 2.0 implementation in [UI2_FINAL_AUDIT.md](UI2_FINAL_AUDIT.md). Original findings and reproduction evidence are retained below for traceability.
+
 Audit date: 2026-10-19 (America/Toronto). Reviewed baseline: `712361b9dd0f3eb3d1b2901d4d1f9aa2d75b6ff1` on `main`, after fetching and confirming no divergence from `origin/main`. Audit branch: `codex/comprehensive-project-audit`.
 
 This is an audit, not an implementation. Only this document is changed. No production accounts, data, secrets, database schema, permissions, deployments, or platform configuration were inspected or modified. Runtime reproductions used the local app, disposable browser storage, fake users, and intercepted Supabase/OpenAI/Wiktionary responses.

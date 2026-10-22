@@ -1,225 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { VOCABULARY_CSV_HEADERS } from "../src/utils/importParsers.js";
-
-const origin = "https://account-lifecycle.supabase.test";
-const ids = { A: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", B: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" };
-
-function deferred() {
-  let resolve;
-  const promise = new Promise((release) => { resolve = release; });
-  return { promise, resolve };
-}
-
-function sessionFor(user, expiresIn = 3600) {
-  const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
-  const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
-  return {
-    access_token: `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: user.id, exp: expiresAt, role: "authenticated" })}.test`,
-    refresh_token: `refresh-${user.id}`, expires_at: expiresAt, expires_in: expiresIn, token_type: "bearer", user,
-  };
-}
-
-async function setupAccounts({ page, context, baseURL }, { sync = true, delayInitialSession = false, ignoreAiCancellation = false, sessionLifetimeSeconds = 3600 } = {}) {
-  const date = await page.evaluate(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  });
-  const accounts = Object.fromEntries(Object.entries(ids).map(([name, id]) => [id, {
-    user: { id, email: `${name.toLowerCase()}@demo.supabase.co`, user_metadata: { username: name.toLowerCase(), name: `Account ${name}` } },
-    notes: [1, 2, 3].map((index) => ({
-      id: `${name}-${index}`, user_id: id, category: "vocabulary", french: `${name}-word-${index}`,
-      english: `${name}-meaning-${index}`, confidence: 1, part_of_speech: "interjection",
-    })),
-    daily: {
-      add_note: false, study: name === "A", quiz: false,
-      quiz_state: { date, limit: 23, queueIds: [`${name}-1`, `${name}-2`, `${name}-3`],
-        answered: { [`${name}-1`]: { correct: true, answer: `${name}-meaning-1` } }, seenIds: [`${name}-1`, `${name}-2`, `${name}-3`] },
-      study_state: { date, cardIndex: 1, cycleIds: [`${name}-1`, `${name}-2`, `${name}-3`],
-        seenIds: [`${name}-1`, `${name}-2`, `${name}-3`], isFlipped: true, isStudyComplete: false },
-    },
-    preferences: { language: "en", quiz_vocabulary_limit: 23 },
-  }]));
-  const gates = new Map();
-  const hits = new Map();
-  const ledger = [];
-  const waitFor = (key) => {
-    if (!hits.has(key)) hits.set(key, deferred());
-    return hits.get(key).promise;
-  };
-  const hold = (key) => {
-    const gate = deferred();
-    gates.set(key, gate);
-    hits.set(key, deferred());
-    return gate;
-  };
-  const failures = new Set();
-  const lostNoteResponses = new Set();
-  const failNoteOnce = new Set();
-  const failedCreates = new Set();
-  const failedDeletes = new Set();
-  const lostDeleteResponses = new Set();
-  const transport = { failCompletedQuiz: false, aiError: null, aiStatus: 429, aiRaw: undefined, failNextCreate: false };
-
-  if (ignoreAiCancellation) {
-    // Keep real Auth, request and response handling, but simulate a transport
-    // that cannot cancel. The editor must still discard obsolete completions.
-    await page.route("**/src/components/EditorModal.jsx", async (route) => {
-      const response = await route.fetch();
-      const body = (await response.text())
-        .replace("import { autoFillFrenchVocabulary }", "import { autoFillFrenchVocabulary as requestAutoFill }")
-        .replace("const inputClass =", "const autoFillFrenchVocabulary = (word, language, options) => requestAutoFill(word, language, { ...options, signal: undefined });\nconst inputClass =");
-      await route.fulfill({ response, body });
-    });
-  }
-
-  await page.route("**/src/lib/supabase.js", async (route) => {
-    const response = await route.fetch();
-    let body = (await response.text())
-      .replace(/const supabaseUrl =[^;]*;/, `const supabaseUrl = ${JSON.stringify(origin)};`)
-      .replace(/const supabasePublishableKey =[\s\S]*?;/, 'const supabasePublishableKey = "test-publishable-key";');
-    if (delayInitialSession) {
-      body += `
-        const originalGetSession = supabase.auth.getSession.bind(supabase.auth);
-        let firstSession = true;
-        supabase.auth.getSession = async (...args) => {
-          const delay = firstSession; firstSession = false;
-          const result = await originalGetSession(...args);
-          if (delay) await new Promise((resolve) => { globalThis.releaseInitialSession = resolve; });
-          return result;
-        };`;
-    }
-    await route.fulfill({ response, body });
-  });
-  await page.route("**/src/api/dailyLearning.js", async (route) => {
-    const response = await route.fetch();
-    const body = (await response.text()).replace(/const dailyLearningSyncEnabled =[\s\S]*?;/,
-      `const dailyLearningSyncEnabled = ${sync};`);
-    await route.fulfill({ response, body });
-  });
-
-  const handle = async (route) => {
-    const request = route.request();
-    const url = new URL(request.url());
-    const token = request.headers().authorization?.replace(/^Bearer /, "");
-    const subject = token?.includes(".") ? JSON.parse(Buffer.from(token.split(".")[1], "base64url")).sub : null;
-    const body = request.postDataJSON();
-    const id = subject ?? Object.values(accounts).find((account) => account.user.email === body?.email)?.user.id;
-    const account = accounts[id];
-    const resource = url.pathname === "/api/autofill-vocabulary" ? "ai" : url.pathname.split("/").at(-1);
-    const column = url.searchParams.get("select");
-    const key = `${id}:${resource}:${request.method()}${resource === "user_preferences" ? `:${column}` : ""}`;
-    const noteId = resource === "notes" ? url.searchParams.get("id")?.slice(3) : null;
-    ledger.push({ id, resource, method: request.method(), body, column, noteId, filter: url.searchParams.get("user_id"), categoryFilter: url.searchParams.get("category") });
-    if (!hits.has(key)) hits.set(key, deferred());
-    hits.get(key).resolve();
-    const rowKey = noteId ?? (resource === "notes" && request.method() === "POST" ? body?.french : null);
-    if (rowKey) {
-      const scoped = `${key}:${rowKey}`;
-      if (!hits.has(scoped)) hits.set(scoped, deferred());
-      hits.get(scoped).resolve();
-      await gates.get(scoped)?.promise;
-    }
-    await gates.get(key)?.promise;
-    if (failures.has(key)) return route.fulfill({
-      status: (resource === "user_preferences" && column === "language") || (resource === "notes" && request.method() === "PATCH") ? 400 : 500,
-      json: { message: "Late account A failure" },
-    });
-    if (!account) return route.fulfill({ status: 401, json: { message: "No synthetic account" } });
-    if (url.pathname === "/auth/v1/user") {
-      if (request.method() === "PUT") {
-        if (body.data) account.user.user_metadata = body.data;
-        if (body.password) account.passwordChanged = true;
-      }
-      return route.fulfill({ json: account.user });
-    }
-    if (url.pathname === "/auth/v1/token") return route.fulfill({ json: sessionFor(account.user) });
-    if (resource === "notes") {
-      if (request.method() === "GET") return route.fulfill({ json: account.notes });
-      if (request.method() === "DELETE") {
-        expect(url.searchParams.get("user_id")).toBe(`eq.${id}`);
-        if (failedDeletes.has(`${id}:${noteId}`)) return route.fulfill({ status: 400, json: { message: "Delete failed" } });
-        account.notes = account.notes.filter((note) => note.id !== noteId);
-        if (lostDeleteResponses.delete(`${id}:${noteId}`)) return route.abort("connectionfailed");
-        return route.fulfill({ status: 204 });
-      }
-      if (request.method() === "PATCH") {
-        if (failNoteOnce.delete(`${id}:${noteId}`)) return route.fulfill({ status: 400, json: { message: "Confidence save failed" } });
-        expect(url.searchParams.get("user_id")).toBe(`eq.${id}`);
-        const index = account.notes.findIndex((note) => note.id === noteId);
-        if (url.searchParams.get("category") && (index < 0 || `eq.${account.notes[index].category}` !== url.searchParams.get("category"))) {
-          return route.fulfill({ status: 406, json: { code: "PGRST116", message: "No eligible Vocabulary row" } });
-        }
-        if (index < 0) return route.fulfill({ status: 404, json: { message: "Note missing" } });
-        account.notes[index] = { ...account.notes[index], ...body };
-        if (lostNoteResponses.delete(`${id}:${noteId}`)) {
-          return route.fulfill({ status: 400, json: { message: "Response lost after note commit" } });
-        }
-        return route.fulfill({ json: account.notes[index] });
-      }
-      expect(body.user_id).toBe(id);
-      if (failedCreates.has(body.french)) return route.fulfill({ status: 400, json: { message: "Import row save failed" } });
-      if (transport.failNextCreate) {
-        transport.failNextCreate = false;
-        return route.fulfill({ status: 400, json: { message: "Note save failed" } });
-      }
-      const note = { ...body, id: `saved-${body.french}` };
-      account.notes.push(note);
-      return route.fulfill({ json: note });
-    }
-    if (resource === "daily_learning_state") {
-      if (request.method() === "GET") return route.fulfill({ json: [account.daily] });
-      if (transport.failCompletedQuiz && Object.values(body.quiz_state?.answered ?? {}).some((result) => result.status === "complete")) {
-        return route.fulfill({ status: 400, json: { message: "Quiz result save failed" } });
-      }
-      expect(body.user_id).toBe(id);
-      account.daily = { ...account.daily, ...body };
-      return route.fulfill({ json: account.daily });
-    }
-    if (resource === "user_preferences") {
-      if (request.method() !== "GET") {
-        expect(body.user_id).toBe(id);
-        account.preferences = { ...account.preferences, ...body };
-      }
-      return route.fulfill({ json: request.method() === "GET" ? [account.preferences] : account.preferences });
-    }
-    if (resource === "ai") {
-      if (transport.aiRaw !== undefined) return route.fulfill({ status: transport.aiStatus, contentType: "text/html", body: transport.aiRaw });
-      if (transport.aiError) return route.fulfill({ status: transport.aiStatus, json: transport.aiError });
-      return route.fulfill({ json: {
-        category: "vocabulary", word: body.word, english: body.language === "zh" ? "中文释义" : "AI meaning",
-        partOfSpeech: "verb", tags: ["AI topic"], notes: body.language === "zh" ? "中文笔记" : "AI notes",
-        ipa: "/test/", example: "AI example", conjugation: { je: "AI form" },
-      } });
-    }
-    return route.fulfill({ json: [] });
-  };
-  await page.route(`${origin}/**`, handle);
-  await page.route("**/api/autofill-vocabulary", handle);
-
-  const session = sessionFor(accounts[ids.A].user, sessionLifetimeSeconds);
-  await context.addCookies([
-    { name: "sb-account-lifecycle-auth-token.chunks", value: "1", url: baseURL },
-    { name: "sb-account-lifecycle-auth-token.0", value: encodeURIComponent(JSON.stringify(session)), url: baseURL },
-  ]);
-  const initialDaily = Object.fromEntries(Object.entries(accounts).map(([id, account]) => [id, account.daily]));
-  await page.addInitScript(({ initialDaily, date }) => {
-    for (const [id, daily] of Object.entries(initialDaily)) {
-      const key = `french-learning-daily-learning-state-v1:${id}:${date}`;
-      if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(daily));
-    }
-  }, { initialDaily, date });
-
-  const switchTo = async (name) => {
-    await page.evaluate(async (session) => {
-      const { supabase } = await import("/src/lib/supabase.js");
-      const { error } = await supabase.auth.setSession(session);
-      if (error) throw error;
-    }, sessionFor(accounts[ids[name]].user));
-    await expect(page.getByRole("heading", { name: new RegExp(`Bonjour, Account ${name}\\.`) })).toBeVisible();
-  };
-  const writes = (id) => ledger.filter((entry) => entry.id === id && entry.method !== "GET" && entry.resource !== "token");
-  return { accounts, ledger, hold, waitFor, failures, lostNoteResponses, failNoteOnce, failedCreates, failedDeletes, lostDeleteResponses, transport, switchTo, writes, date };
-}
+import { libraryRows } from "./fixtures/library-data.js";
+import { origin, ids, sessionFor, setupAccounts, go } from "./fixtures/accounts.js";
+import { importCsv, importRow, uploadCsv, expectBatch, noteCreates } from "./fixtures/imports.js";
 
 async function addNote(page, french) {
   await page.getByRole("button", { name: "Add note", exact: true }).click();
@@ -229,9 +12,199 @@ async function addNote(page, french) {
   await editor.getByRole("button", { name: "Save note", exact: true }).click();
 }
 
-async function go(page, name) {
-  await page.getByRole("button", { name, exact: true }).click();
+async function editorCapture(page, testInfo, name) {
+  await page.evaluate(() => globalThis.document.fonts.ready);
+  if (!name.includes("long-form")) await page.locator(".editor-scroll-body").evaluate((el) => { el.scrollTop = 0; });
+  await page.mouse.move(0, 0);
+  await page.screenshot({ path: testInfo.outputPath(`${name}.png`) });
+  await page.getByRole("dialog").screenshot({ path: testInfo.outputPath(`detail-${name}.png`) });
 }
+
+test("editor notebook layout creates and edits every category with conditional fields and cursor insertion", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  const editor = await openDraft(page, "boulangerie");
+  await editor.getByLabel("English", { exact: true }).fill("bakery");
+  await editor.getByLabel("Word type", { exact: true }).selectOption("noun");
+  await editor.getByRole("radio", { name: "Feminine", exact: true }).check();
+  await editorCapture(page, testInfo, "desktop-vocabulary");
+  const french = editor.getByLabel("French", { exact: true });
+  await french.fill("cafe");
+  await french.press("End");
+  await french.press("Shift+ArrowLeft");
+  await editor.getByRole("button", { name: "é", exact: true }).click();
+  await expect(french).toHaveValue("café");
+  await expect(french).toBeFocused();
+  expect(await editor.locator(".french-character-rows button").count()).toBe(45);
+  await go(page, "Save note");
+  await expect(editor).toHaveCount(0);
+  await go(page, "Edit café");
+  await expect(editor.getByRole("radio", { name: "Feminine", exact: true })).toBeChecked();
+  await editor.getByLabel("French", { exact: true }).fill("organiser");
+  await editor.getByLabel("English", { exact: true }).fill("to organize");
+  await editor.getByLabel("IPA pronunciation", { exact: true }).fill("/ɔʁ.ɡa.ni.ze/");
+  await editor.getByLabel("Word type", { exact: true }).selectOption("verb");
+  for (const [pronoun, value] of Object.entries({ je: "organise", tu: "organises", "il/elle": "organise", nous: "organisons", vous: "organisez", "ils/elles": "organisent" })) await editor.getByLabel(pronoun, { exact: true }).fill(value);
+  await editor.getByLabel("Example", { exact: true }).fill("Je dois organiser mes notes de français.");
+  await editor.getByLabel("Notes", { exact: true }).fill("Regular -er verb.");
+  await editor.getByLabel("Tags", { exact: true }).fill("work, verbs");
+  await editor.getByRole("radio", { name: "Learning", exact: true }).check();
+  await editorCapture(page, testInfo, "desktop-verb");
+  await go(page, "Save note");
+  await expect(editor).toHaveCount(0);
+  expect(storedNote(backend, "saved-café")).toMatchObject({ french: "organiser", conjugation: { vous: "organisez" }, confidence: 2 });
+
+  for (const [category, label, title, meaning] of [
+    ["phrases", "Phrases", "Il ne faut pas vendre la peau de l’ours avant de l’avoir tué.", "Don't count your chickens before they hatch."],
+    ["grammar", "Grammar", "Le subjonctif après « il faut que »", ""],
+    ["pronunciation", "Pronunciation Rules", "Le R français", "A French uvular consonant."],
+  ]) {
+    await go(page, "Add note");
+    await editor.getByRole("radio", { name: label, exact: true }).check();
+    const titleInput = editor.getByRole("textbox", { name: category === "grammar" ? "Title" : category === "phrases" ? "Original French" : "French", exact: true });
+    await titleInput.fill(title);
+    if (category === "grammar") {
+      const rich = editor.getByRole("textbox", { name: "Grammar note", exact: true });
+      await rich.fill("Il faut que is always followed by the subjunctive.");
+      await rich.press("ControlOrMeta+a");
+      await editor.getByRole("button", { name: "Bold", exact: true }).click();
+      await expect(rich.locator("b,strong")).toContainText("Il faut que");
+      await rich.press("ControlOrMeta+a");
+      await rich.evaluate((element) => {
+        const clipboardData = new globalThis.DataTransfer();
+        clipboardData.setData("text/html", '<p><strong>Il faut que</strong> is always followed by the subjunctive, because it expresses necessity rather than a fact.</p><p><em>Il faut que tu viennes demain.</em></p><ol><li>Take the ils/elles form of the present tense.</li><li>Drop -ent.</li><li>Add -e, -es, -e, -ions, -iez, -ent.</li></ol>');
+        element.dispatchEvent(new globalThis.ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true }));
+      });
+      await rich.press("ArrowRight");
+    } else {
+      await editor.getByLabel(category === "phrases" ? "Translation" : "English", { exact: true }).fill(meaning);
+      if (category === "pronunciation") await editor.getByLabel("IPA pronunciation", { exact: true }).fill("/ʁ/");
+    }
+    await editor.getByLabel("Tags", { exact: true }).fill(category === "phrases" ? "proverb" : category === "grammar" ? "subjonctif" : "sounds");
+    await go(page, "Save note");
+    await expect(editor).toHaveCount(0);
+    await go(page, label);
+    await go(page, `Edit ${title}`);
+    await expect(titleInput).toHaveValue(title);
+    if (category === "grammar") await expect(editor.locator(".rich-text-editor b,.rich-text-editor strong")).toContainText("Il faut que");
+    await editorCapture(page, testInfo, `desktop-${category}`);
+    await editor.getByLabel("Tags", { exact: true }).fill("review");
+    await go(page, "Save note");
+    await expect(editor).toHaveCount(0);
+    expect(backend.accounts[ids.A].notes.find((note) => note.french === title)).toMatchObject({ category, tags: ["review"] });
+  }
+  expect(aiRequests(backend)).toHaveLength(0);
+});
+
+test("editor AI and Save feedback reflect real requests and keep manual edits, failures and retries safe", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "Add note");
+  const editor = page.getByRole("dialog");
+  await expect(editor.getByRole("button", { name: "Auto-fill", exact: true })).toBeDisabled();
+  await go(page, "Save note");
+  await expect(editor.getByRole("textbox", { name: "French", exact: true })).toHaveAttribute("aria-invalid", "true");
+  await editorCapture(page, testInfo, "desktop-validation");
+  await editor.getByLabel("French", { exact: true }).fill("chaleureux");
+  const gate = backend.hold(`${ids.A}:ai:POST`);
+  backend.transport.aiResult = { category: "vocabulary", word: "chaleureux", english: "warm, welcoming", partOfSpeech: "adjective", ipa: "/ʃa.lø.ʁø/", tags: ["people"], example: "Ils nous ont réservé un accueil chaleureux.", notes: "Used for a welcome or a friendly person.", adjectiveForms: { masculine: "chaleureux", feminine: "chaleureuse", masculinePlural: "chaleureux", femininePlural: "chaleureuses" } };
+  await go(page, "Auto-fill");
+  await backend.waitFor(`${ids.A}:ai:POST`);
+  await editorCapture(page, testInfo, "desktop-ai-loading");
+  await editor.getByLabel("Notes", { exact: true }).fill("My own explanation.");
+  gate.resolve();
+  await expect(editor.getByRole("status")).toContainText("Auto-filled.");
+  await expect(editor.getByLabel("Notes", { exact: true })).toHaveValue("My own explanation.");
+  await expect(editor.getByLabel("Feminine plural", { exact: true })).toHaveValue("chaleureuses");
+  await editorCapture(page, testInfo, "desktop-ai-success");
+  await expect(editor.locator(".is-autofilled")).toHaveCount(0);
+  await editorCapture(page, testInfo, "desktop-adjective");
+  backend.transport.aiError = { code: "OPENAI_TIMEOUT", error: "AI auto-fill timed out. Please try again." };
+  await go(page, "Auto-fill");
+  await expect(editor.getByRole("alert")).toContainText("timed out");
+  await editorCapture(page, testInfo, "desktop-ai-error");
+  expect(aiRequests(backend)).toHaveLength(2);
+  backend.transport.aiError = null;
+  await go(page, "Retry auto-fill");
+  await expect(editor.getByRole("status")).toContainText("Auto-filled.");
+  expect(aiRequests(backend)).toHaveLength(3);
+  backend.transport.failNextCreate = true;
+  const saveGate = backend.hold(`${ids.A}:notes:POST`);
+  await go(page, "Save note");
+  await backend.waitFor(`${ids.A}:notes:POST`);
+  await expect(editor).toHaveAttribute("aria-busy", "true");
+  await editorCapture(page, testInfo, "desktop-save-pending");
+  saveGate.resolve();
+  await expect(editor.getByRole("alert")).toContainText("Note save failed");
+  await editorCapture(page, testInfo, "desktop-save-failure");
+  await go(page, "Save note");
+  await expect(editor).toHaveCount(0);
+  expect(backend.accounts[ids.A].notes.filter((note) => note.french === "chaleureux")).toHaveLength(1);
+});
+
+test("mobile editor keeps its footer in a reduced visual viewport, scrolls long forms, and restores focus", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 370, height: 736 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "More");
+  await page.getByRole("button", { name: "简体中文", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "关闭", exact: true }).click();
+  const trigger = page.getByRole("button", { name: "添加笔记", exact: true });
+  await trigger.click();
+  const editor = page.getByRole("dialog");
+  const french = editor.getByLabel("法语", { exact: true });
+  await expect(french).toBeFocused();
+  await french.fill("chaleureu");
+  // Browser-emulated keyboard geometry, not a drawn keyboard or production fake.
+  await page.evaluate(() => {
+    Object.defineProperty(globalThis.visualViewport, "height", { configurable: true, value: 472 });
+    globalThis.visualViewport.dispatchEvent(new Event("resize"));
+  });
+  const footer = editor.locator(".editor-footer");
+  const bounds = await footer.boundingBox();
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(473);
+  await expect(editor.getByRole("button", { name: "保存笔记", exact: true })).toBeVisible();
+  await editorCapture(page, testInfo, "mobile-keyboard-chinese");
+  await french.fill("cafe");
+  await french.press("End");
+  await french.press("Shift+ArrowLeft");
+  await editor.getByRole("button", { name: "é", exact: true }).click();
+  await expect(french).toHaveValue("café");
+  await expect(french).toBeFocused();
+  await french.fill("organiser");
+  await page.evaluate(() => {
+    delete globalThis.visualViewport.height;
+    globalThis.visualViewport.dispatchEvent(new Event("resize"));
+  });
+  await editor.getByLabel("词性", { exact: true }).selectOption("verb");
+  await editor.getByLabel("ils/elles", { exact: true }).fill("organisent");
+  await editorCapture(page, testInfo, "mobile-long-form-chinese");
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 736 });
+    expect(await editor.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    const header = await editor.locator(".editor-header").boundingBox();
+    const actions = await footer.boundingBox();
+    expect(header.y).toBeGreaterThanOrEqual(0);
+    expect(actions.y + actions.height).toBeLessThanOrEqual(737);
+  }
+  await page.setViewportSize({ width: 370, height: 736 });
+  await editor.locator(".editor-scroll-body").evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  const cancel = editor.getByRole("button", { name: "取消", exact: true });
+  await cancel.focus();
+  await cancel.press("Tab");
+  await expect(editor.getByRole("button", { name: "保存笔记", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(editor.getByRole("button", { name: "关闭编辑器", exact: true })).toBeFocused();
+  expect(await editor.evaluate((el) => globalThis.getComputedStyle(el).animationName)).toBe("none");
+  await page.keyboard.press("Escape");
+  await expect(editor).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  expect(backend.writes(ids.A).filter((entry) => entry.resource === "notes")).toHaveLength(0);
+});
 
 test("late initial Auth and account A hydration cannot replace account B", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { delayInitialSession: true });
@@ -680,7 +653,7 @@ async function changeQuizNoteCategory(page, french, category) {
   await go(page, "Vocabulary");
   await go(page, `Edit ${french}`);
   const editor = page.getByRole("dialog");
-  await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption(category);
+  await editor.locator(`input[name="editor-category"][value="${category}"]`).check();
   if (category === "grammar") await editor.getByRole("textbox", { name: "Grammar note", exact: true }).fill("A grammar explanation.");
   await go(page, "Save note");
   await expect(editor).toHaveCount(0);
@@ -777,7 +750,7 @@ test("a Quiz answer queued behind a category save is rejected before its confide
   await go(page, "Vocabulary");
   await go(page, "Edit A-word-2");
   const editor = page.getByRole("dialog");
-  await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("phrases");
+  await editor.locator('input[name="editor-category"][value="phrases"]').check();
   await go(page, "Save note");
   await backend.waitFor(`${ids.A}:notes:PATCH:A-2`);
   await go(page, "Close editor");
@@ -834,15 +807,15 @@ test("demo Quiz reconciles reclassified questions without account or backend wri
   await page.addInitScript(() => { Math.random = () => 0; });
   await page.goto("/#/demo");
   await go(page, "Quiz");
-  const french = await page.locator("form p.text-3xl").innerText();
+  const french = await page.getByTestId("quiz-word").innerText();
   expect(french).toBe("organiser");
   await changeQuizNoteCategory(page, french, "phrases");
   await go(page, "Quiz");
-  await expect(page.locator("form p.text-3xl")).not.toHaveText(french);
-  const nextFrench = await page.locator("form p.text-3xl").innerText();
+  await expect(page.getByTestId("quiz-word")).not.toHaveText(french);
+  const nextFrench = await page.getByTestId("quiz-word").innerText();
   await go(page, "Today");
   await go(page, "Quiz");
-  await expect(page.locator("form p.text-3xl")).toHaveText(nextFrench);
+  await expect(page.getByTestId("quiz-word")).toHaveText(nextFrench);
   expect(backend.accounts[ids.A]).toEqual(originalA);
   expect(backend.writes(ids.A)).toEqual([]);
 });
@@ -965,7 +938,7 @@ for (const confidenceFirst of [true, false]) {
     expect(patches.find((entry) => entry.body.english)?.body).toEqual({ english: "newer edited meaning" });
     expect(patches.find((entry) => entry.body.confidence)?.body).toEqual({ confidence: 2, last_reviewed: "Today" });
     await page.getByRole("button", { name: "Edit A-word-2", exact: true }).click();
-    await expect(page.getByRole("dialog").getByRole("combobox", { name: "Confidence", exact: true })).toHaveValue("2");
+    await expect(page.getByRole("dialog").locator('input[name="editor-confidence"][value="2"]')).toBeChecked();
     await expect(page.getByRole("dialog").getByLabel("English", { exact: true })).toHaveValue("newer edited meaning");
     await page.getByRole("button", { name: "Close editor", exact: true }).click();
     if (confidenceFirst) {
@@ -1055,6 +1028,9 @@ test("a failed final Quiz write recovers after refresh without increasing confir
   await go(page, "Quiz");
   await answerQuiz(page, "A-meaning-2");
   await expect(page.getByRole("button", { name: "Retry saving answer", exact: true })).toBeVisible();
+  await expect(page.getByText("1/3", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry saving answer", exact: true })).toBeFocused();
+  await expect(page.getByLabel("Your answer", { exact: true })).toHaveValue("A-meaning-2");
   expect(storedNote(backend, "A-2").confidence).toBe(2);
   expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("pending");
   expect(backend.accounts[ids.A].daily.quiz).toBe(false);
@@ -1066,6 +1042,183 @@ test("a failed final Quiz write recovers after refresh without increasing confir
   await expect(page.getByText("Confidence advanced to 2.", { exact: true })).toBeVisible();
   expect(storedNote(backend, "A-2").confidence).toBe(2);
   expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("complete");
+});
+
+test("Quiz notebook keyboard flow preserves real saves, feedback and completion", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  const account = backend.accounts[ids.A];
+  const words = [
+    ["la boulangerie", "bakery", "noun", "feminine", "/bu.lɑ̃.ʒʁi/"],
+    ["souvent", "often", "adverb", "", "/su.vɑ̃/"],
+    ["le rendez-vous", "appointment, meeting", "noun", "masculine", "/ʁɑ̃.de.vu/"],
+    ["l'épanouissement", "fulfilment, blossoming; personal growth and flourishing", "noun", "masculine", "/e.pa.nwis.mɑ̃/"],
+    ["organiser", "to organize", "verb", "", "/ɔʁ.ɡa.ni.ze/"],
+    ["la chaise", "chair", "noun", "feminine", "/ʃɛz/"],
+  ];
+  account.notes = words.map(([french, english, part_of_speech, gender, ipa], index) => ({ id: `A-${index + 1}`, user_id: ids.A, category: "vocabulary", confidence: index === 0 ? 2 : 1, french, english, part_of_speech, gender, ipa }));
+  account.preferences.quiz_vocabulary_limit = 6;
+  account.daily.quiz_state = { date: backend.date, limit: 6, queueIds: account.notes.map((note) => note.id), answered: {}, seenIds: account.notes.map((note) => note.id) };
+  account.notes.push(...Array.from({ length: 12 }, (_, index) => ({ ...account.notes[1], id: `unseen-${index}`, french: `inédit-${index}` })));
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  const shot = async (name) => {
+    await page.evaluate(() => globalThis.document.fonts.ready);
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: testInfo.outputPath(`${name}.png`), animations: "disabled" });
+  };
+  await page.goto("/");
+  await go(page, "Quiz");
+  const answer = page.getByLabel("Your answer", { exact: true });
+  await expect(answer).toBeFocused();
+  await shot("desktop-question");
+  await answer.fill("bakery");
+  await page.getByRole("radio", { name: "Masculine", exact: true }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("radio", { name: "Feminine", exact: true })).toBeChecked();
+  const gate = backend.hold(`${ids.A}:notes:PATCH:A-1`);
+  backend.failures.add(`${ids.A}:notes:PATCH`);
+  await answer.press("Enter");
+  await backend.waitFor(`${ids.A}:notes:PATCH:A-1`);
+  await expect(page.getByRole("status").filter({ hasText: "Saving your answer..." })).toBeVisible();
+  await expect(answer).toBeDisabled();
+  await expect(page.getByText("0/6", { exact: true })).toBeVisible();
+  await shot("desktop-saving");
+  await page.setViewportSize({ width: 370, height: 736 });
+  await shot("mobile-saving");
+  await page.setViewportSize({ width: 1280, height: 800 });
+  gate.resolve();
+  const retry = page.getByRole("button", { name: "Retry saving answer", exact: true });
+  await expect(retry).toBeFocused();
+  await expect(answer).toHaveValue("bakery");
+  await shot("desktop-error");
+  await page.setViewportSize({ width: 370, height: 736 });
+  await shot("mobile-error");
+  await expect(retry).toBeInViewport();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  backend.failures.delete(`${ids.A}:notes:PATCH`);
+  await page.keyboard.press("Enter");
+  const next = page.getByRole("button", { name: "Next word", exact: true });
+  await expect(next).toBeFocused();
+  await expect(page.getByText("Confidence advanced to 3.", { exact: true })).toBeVisible();
+  expect(notePatches(backend, "A-1").map((entry) => entry.body.confidence)).toEqual([3, 3]);
+  await shot("desktop-correct");
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("quiz-word")).toHaveText("souvent");
+  await expect(answer).toBeFocused();
+  await answer.fill("sometimes");
+  await answer.press("Enter");
+  await expect(next).toBeFocused();
+  await page.getByRole("button", { name: "Mark as correct", exact: true }).click();
+  await expect(next).toBeFocused();
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  await next.press("Enter");
+  await expect(answer).toBeFocused();
+  await answer.fill("appointment");
+  await page.getByRole("radio", { name: "Masculine", exact: true }).check();
+  await answer.press("Enter");
+  await next.click();
+  await expect(page.getByTestId("quiz-word")).toHaveText("l'épanouissement");
+  await answer.fill("openness");
+  await page.getByRole("radio", { name: "Masculine", exact: true }).check();
+  await answer.press("Enter");
+  expect(await page.getByTestId("quiz-word").evaluate((element) => element.getBoundingClientRect().height / parseFloat(globalThis.getComputedStyle(element).lineHeight))).toBeLessThan(1.2);
+  await shot("desktop-incorrect-long");
+  await page.setViewportSize({ width: 370, height: 736 });
+  await shot("mobile-incorrect-long");
+  await expect(page.getByRole("button", { name: "Next word", exact: true })).toBeInViewport();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await next.click();
+  await expect(answer).toBeFocused();
+  await answer.fill("to organize");
+  await answer.press("Enter");
+  await next.click();
+  await page.getByRole("button", { name: "Show correct answer", exact: true }).click();
+  await expect(next).toBeFocused();
+  expect(notePatches(backend, "A-6")).toEqual([]);
+  await next.press("Enter");
+  await expect(page.getByRole("heading", { name: "Today's quiz is complete.", exact: true })).toBeFocused();
+  await expect.poll(() => account.daily.quiz).toBe(true);
+  expect(Object.values(account.daily.quiz_state.answered).filter((entry) => entry.correct)).toHaveLength(4);
+  await shot("desktop-complete");
+  await expect(page.getByRole("button", { name: "Start a new quiz", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "简体中文", exact: true }).click();
+  await shot("desktop-complete-chinese");
+  await page.setViewportSize({ width: 370, height: 736 });
+  await shot("mobile-complete-chinese");
+  await page.getByRole("button", { name: "开始新的测验", exact: true }).click();
+  await expect(page.getByTestId("quiz-word")).toContainText("inédit-");
+  await expect.poll(() => account.daily.quiz_state.queueIds.every((id) => id.startsWith("unseen-"))).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("mobile Quiz follows the visible viewport, bilingual controls and reduced motion", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 370, height: 736 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const backend = await setupAccounts({ page, context, baseURL });
+  const account = backend.accounts[ids.A];
+  account.preferences.language = "zh";
+  Object.assign(storedNote(backend, "A-2"), { french: "le rendez-vous", english: "约会，会面", part_of_speech: "noun", gender: "masculine", ipa: "/ʁɑ̃.de.vu/" });
+  await page.goto("/");
+  await go(page, "测验");
+  const answer = page.getByLabel("你的答案", { exact: true });
+  await expect(answer).toBeFocused();
+  await page.evaluate(() => globalThis.document.fonts.ready);
+  await page.screenshot({ path: testInfo.outputPath("mobile-question-chinese.png") });
+  await page.evaluate(() => {
+    Object.defineProperties(globalThis.visualViewport, { height: { configurable: true, value: 452 }, offsetTop: { configurable: true, value: 0 } });
+    globalThis.visualViewport.dispatchEvent(new Event("resize"));
+  });
+  await expect(page.locator(".quiz-page")).toHaveAttribute("data-keyboard", "true");
+  await answer.fill("约会");
+  await page.getByRole("radio", { name: "阳性", exact: true }).check();
+  await answer.focus();
+  const check = page.getByRole("button", { name: "检查答案", exact: true });
+  const bounds = await check.boundingBox();
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(452);
+  await page.evaluate(() => globalThis.document.fonts.ready);
+  await page.screenshot({ path: testInfo.outputPath("mobile-keyboard-chinese.png"), clip: { x: 0, y: 0, width: 370, height: 452 } });
+  await check.click();
+  const next = page.getByRole("button", { name: "下一个词", exact: true });
+  await expect(next).toBeFocused();
+  expect(storedNote(backend, "A-2").confidence).toBe(2);
+  await page.evaluate(() => {
+    Object.defineProperty(globalThis.visualViewport, "height", { configurable: true, value: 736 });
+    globalThis.visualViewport.dispatchEvent(new Event("resize"));
+  });
+  await page.screenshot({ path: testInfo.outputPath("mobile-correct-chinese.png") });
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect.poll(() => page.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+  }
+  expect(await page.locator(".quiz-feedback").evaluate((element) => globalThis.getComputedStyle(element).animationName)).toBe("none");
+  await page.setViewportSize({ width: 370, height: 736 });
+  await next.click();
+  await expect(answer).toBeFocused();
+  await page.getByRole("button", { name: "返回今日", exact: true }).click();
+  await expect(page.locator(".today-page")).toBeVisible();
+  await go(page, "测验");
+  await expect(page.getByTestId("quiz-word")).toHaveText("A-word-3");
+  await page.getByRole("button", { name: "显示正确答案", exact: true }).click();
+  await page.getByRole("button", { name: "下一个词", exact: true }).click();
+  await expect(page.getByRole("button", { name: "开始新的测验", exact: true })).toBeDisabled();
+  expect(notePatches(backend, "A-2")).toHaveLength(1);
+});
+
+test("the maximum configured Quiz fits its complete segmented ledger on a narrow phone", async ({ page, context, baseURL }) => {
+  await page.setViewportSize({ width: 320, height: 736 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  const account = backend.accounts[ids.A];
+  account.notes = Array.from({ length: 200 }, (_, index) => ({ ...account.notes[0], id: `word-${index}`, french: `mot-${index}` }));
+  account.preferences.quiz_vocabulary_limit = 200;
+  account.daily.quiz_state = { date: backend.date, limit: 200, queueIds: account.notes.map((note) => note.id), answered: {}, seenIds: account.notes.map((note) => note.id) };
+  await page.goto("/");
+  await go(page, "Quiz");
+  await expect(page.getByText("0/200", { exact: true })).toBeVisible();
+  await expect(page.locator(".quiz-segments > span")).toHaveCount(200);
+  const last = await page.locator(".quiz-segments > span").last().boundingBox();
+  expect(last.width).toBeGreaterThan(0);
+  expect(last.x + last.width).toBeLessThanOrEqual(300);
 });
 
 test("a pending intent in local daily storage survives a committed note response failure", async ({ page, context, baseURL }) => {
@@ -1092,7 +1245,7 @@ test("a correct demo Quiz answer changes only disposable demo confidence", async
   await page.goto("/#/demo");
   const storage = await page.evaluate(() => ({ ...localStorage }));
   await go(page, "Quiz");
-  const question = page.locator("form p.text-3xl");
+  const question = page.getByTestId("quiz-word");
   const french = await question.textContent();
   const note = await page.evaluate(async (french) => {
     const { demoNotes } = await import("/src/data/demoData.js");
@@ -1101,7 +1254,7 @@ test("a correct demo Quiz answer changes only disposable demo confidence", async
     return { ...note, acceptedAnswer: getAcceptedMeanings(note.english)[0] };
   }, french);
   await page.getByLabel("Your answer", { exact: true }).fill(note.acceptedAnswer);
-  if (note.partOfSpeech === "noun" && note.gender) await page.getByRole("combobox", { name: "Gender", exact: true }).selectOption(note.gender);
+  if (note.partOfSpeech === "noun" && note.gender) await page.getByRole("radio", { name: new RegExp(`^${note.gender}$`, "i") }).check();
   await page.getByRole("button", { name: "Check answer", exact: true }).click();
   await expect(page.getByText(`Confidence advanced to ${Math.min(4, note.confidence + 1)}.`, { exact: true })).toBeVisible();
   expect(backend.accounts).toEqual(original);
@@ -1111,9 +1264,153 @@ test("a correct demo Quiz answer changes only disposable demo confidence", async
 
 const noteDeletes = (backend, owner = ids.A) => backend.writes(owner).filter((entry) => entry.resource === "notes" && entry.method === "DELETE");
 
-async function deleteSelection(page) {
-  page.once("dialog", (dialog) => dialog.accept());
+test("library search, type, tags, sort and pagination preserve cross-page selection and confirmed deletion", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.accounts[ids.A].notes = libraryRows(ids.A);
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  const entries = page.getByRole("article");
+  await expect(entries).toHaveCount(10);
+  await expect(entries.first().getByRole("heading")).toHaveText("apprendre");
+  await page.getByRole("button", { name: /^Noun/ }).click();
+  await expect(entries).toHaveCount(5);
+  await page.getByRole("button", { name: /^All/ }).click();
+  await page.getByRole("radio", { name: "Date added (newest)", exact: true }).check();
+  await expect(entries.first().getByRole("heading")).toHaveText("le wifi");
+  await expect(page.locator(".library-letter")).toHaveCount(0);
+  await page.getByRole("radio", { name: "Alphabetical (A-Z)", exact: true }).check();
+  await page.getByRole("checkbox", { name: "Select apprendre", exact: true }).check();
+  await go(page, "Next");
+  await page.getByRole("checkbox", { name: "Select vachement", exact: true }).check();
+  await expect(page.getByText("2 selected", { exact: true })).toBeVisible();
+  const search = page.getByRole("textbox", { name: "Search notes", exact: true });
+  await search.fill("xylophone");
+  await expect(page.getByText("No notes match this view.", { exact: true })).toBeVisible();
+  await expect(page.getByText("2 selected", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Delete selected", exact: true }).click();
+  const confirmation = page.getByRole("alertdialog");
+  await expect(confirmation).toContainText("Delete 2 selected notes?");
+  expect(noteDeletes(backend)).toEqual([]);
+  await confirmation.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Delete selected", exact: true })).toBeFocused();
+  await page.getByRole("button", { name: "Clear search & filters", exact: true }).click();
+  await page.getByRole("combobox", { name: "Filter by tag", exact: true }).selectOption("work");
+  await expect(entries).toHaveCount(3);
+  await search.fill("/by.ʁo/");
+  await expect(entries).toHaveCount(1);
+  await expect(entries.getByRole("heading")).toHaveText("le bureau");
+  await deleteSelection(page);
+  await expect.poll(() => backend.accounts[ids.A].notes.filter((item) => item.category === "vocabulary").length).toBe(12);
+  expect(noteDeletes(backend).map((item) => item.noteId).sort()).toEqual(["vocabulary-13", "vocabulary-2"]);
+  const noun = libraryRows(ids.A)[0];
+  backend.accounts[ids.A].notes = ["École", "œuf", "Œuvre", "organiser"].map((french, index) => ({ ...noun, id: `accent-${index}`, french, part_of_speech: "", adjective_forms: { feminine: "legacy form" } }));
+  await page.reload();
+  await go(page, "Vocabulary");
+  await expect(entries).toHaveCount(4);
+  await expect(page.locator(".library-letter > span")).toHaveText(["E", "O"]);
+  await expect(entries.getByRole("heading")).toHaveText(["École", "œuf", "Œuvre", "organiser"]);
+  await expect(entries.first().locator(".library-word-meta")).toContainText("masculine");
+  await expect(entries.first().locator(".library-forms")).toContainText("legacy form");
+});
+
+test("grammar reader follows filters, deletion and confidence without changing sanitized HTML", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.accounts[ids.A].notes = libraryRows(ids.A);
+  await page.goto("/");
+  await go(page, "Grammar");
+  await page.locator(".library-contents-link").filter({ hasText: "Le subjonctif" }).click();
+  const reader = page.locator(".library-grammar-reader");
+  await expect(reader.getByRole("heading", { name: "Le subjonctif après « il faut que »", exact: true })).toBeFocused();
+  await expect(reader.locator(".rich-text-content ol > li")).toHaveCount(3);
+  await expect(reader.locator(".rich-text-content strong").first()).toHaveText("Il faut que");
+  const original = storedNote(backend, "grammar-2").notes;
+  await reader.getByRole("button", { name: "I know this", exact: true }).click();
+  await expect.poll(() => storedNote(backend, "grammar-2").confidence).toBe(2);
+  expect(storedNote(backend, "grammar-2").notes).toBe(original);
+  expect(notePatches(backend, "grammar-2")[0].body).toEqual({ confidence: 2, last_reviewed: "Today" });
+  await page.getByRole("textbox", { name: "Search notes", exact: true }).fill("pronoms");
+  await expect(reader.getByRole("heading", { name: "En ou y ?", exact: true })).toBeVisible();
+  await go(page, "Delete En ou y ?");
+  await expect(reader.getByRole("heading", { name: "Les pronoms relatifs : qui, que, dont, où", exact: true })).toBeVisible();
+  await page.getByRole("textbox", { name: "Search notes", exact: true }).fill("not-a-rule");
+  await expect(reader).toHaveCount(0);
+  await go(page, "Clear search & filters");
+  await expect(reader.getByRole("heading", { name: "Accord du participe passé avec avoir", exact: true })).toBeVisible();
+  expect(backend.accounts[ids.A].notes.some((note) => note.id === "grammar-3")).toBe(false);
+});
+
+test("a library confirmation cancels safely on Escape and account change before any delete", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "Vocabulary");
+  await page.getByRole("button", { name: "Delete A-word-1", exact: true }).click();
+  await expect(page.getByRole("alertdialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Delete A-word-1", exact: true })).toBeFocused();
+  await page.getByRole("button", { name: "Delete A-word-1", exact: true }).click();
+  await backend.switchTo("B");
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  expect(noteDeletes(backend)).toEqual([]);
+  expect(noteDeletes(backend, ids.B)).toEqual([]);
+});
+
+test("mobile bilingual libraries retain filter sheets, actions, reader navigation and bottom tabs", async ({ page, context, baseURL }) => {
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.accounts[ids.A].notes = libraryRows(ids.A);
+  backend.accounts[ids.A].preferences.language = "zh";
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  async function visit(name) {
+    await page.getByRole("button", { name: "笔记", exact: true }).click();
+    await page.getByRole("dialog", { name: "笔记", exact: true }).getByRole("button", { name, exact: true }).click();
+  }
+  await visit("短语");
+  await expect(page.getByRole("heading", { name: "Il ne faut pas vendre la peau de l'ours avant de l'avoir tué.", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "筛选与排序", exact: true }).click();
+  const filter = page.getByRole("dialog", { name: "筛选与排序", exact: true });
+  await filter.getByRole("radio", { name: "#idiom", exact: true }).check();
+  await filter.getByRole("button", { name: "应用筛选", exact: true }).click();
+  await expect(page.getByRole("article")).toHaveCount(1);
+  await page.getByRole("button", { name: "avoir le cafard 的操作", exact: true }).click();
+  const actions = page.getByRole("dialog");
+  await actions.getByRole("button", { name: "我会了", exact: true }).click();
+  await expect.poll(() => storedNote(backend, "phrases-1").confidence).toBe(3);
+  await page.keyboard.press("Escape");
+  await page.getByRole("checkbox", { name: "选择 avoir le cafard", exact: true }).check();
+  const selection = await page.getByRole("region", { name: "已选笔记", exact: true }).boundingBox();
+  const bottom = await page.locator(".cahier-mobile-nav").boundingBox();
+  expect(selection.y + selection.height).toBeLessThanOrEqual(bottom.y);
+  await page.getByRole("button", { name: "清除选择", exact: true }).click();
+  await visit("语法");
+  const contents = page.getByRole("navigation", { name: "语法目录", exact: true });
+  await expect(contents).toBeVisible();
+  await contents.getByRole("checkbox").first().check();
+  await page.locator(".library-contents-link").filter({ hasText: "Le subjonctif" }).click();
+  await expect(contents).toBeHidden();
+  await expect(page.getByRole("region", { name: "已选笔记", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "清除选择", exact: true }).click();
+  await expect(page.locator(".library-grammar-reader")).toBeVisible();
+  await page.getByRole("button", { name: "返回目录", exact: true }).click();
+  await expect(contents).toBeVisible();
+  await expect(page.locator(".library-contents-link").filter({ hasText: "Le subjonctif" })).toBeFocused();
+  await visit("发音规则");
+  await expect(page.getByRole("heading", { name: "eau · au · o", exact: true })).toBeVisible();
+  await visit("词汇");
+  await page.getByRole("button", { name: "下一页", exact: true }).click();
+  await expect(page.getByRole("article")).toHaveCount(4);
+  await expect.poll(() => page.evaluate(() => globalThis.scrollY)).toBe(0);
+  for (const width of [320, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+  }
+  expect(await page.getByRole("article").first().evaluate((element) => globalThis.getComputedStyle(element).transitionDuration)).toMatch(/^(0s|0.001s)(, (0s|0.001s))*$/);
+});
+
+async function deleteSelection(page) {
+  await page.getByRole("button", { name: "Delete selected", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Confirm deletion", exact: true }).click();
 }
 
 for (const fails of [false, true]) {
@@ -1130,10 +1427,14 @@ for (const fails of [false, true]) {
     expect(backend.accounts[ids.A].notes).toEqual(fails ? original : []);
     if (fails) {
       await expect(page.getByText("3 selected", { exact: true })).toBeVisible();
-      for (let index = 1; index <= 3; index += 1) await expect(page.getByRole("button", { name: `Unselect A-word-${index}`, exact: true })).toBeVisible();
+      for (let index = 1; index <= 3; index += 1) await expect(page.getByRole("checkbox", { name: `Unselect A-word-${index}`, exact: true })).toBeVisible();
     } else {
       await expect(page.getByRole("article")).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Retry failed deletions", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("textbox", { name: "Search notes", exact: true })).toBeHidden();
+      await go(page, "Add first note");
+      await expect(page.getByRole("dialog", { name: "Add learning note", exact: true })).toBeVisible();
+      await page.keyboard.press("Escape");
     }
     await page.reload();
     await go(page, "Vocabulary");
@@ -1141,8 +1442,9 @@ for (const fails of [false, true]) {
   });
 }
 
-test("partial deletion reconciles successes before the last response and retries only failures", async ({ page, context, baseURL }) => {
+test("partial deletion reconciles successes before the last response and retries only failures", async ({ page, context, baseURL }, testInfo) => {
   const backend = await setupAccounts({ page, context, baseURL });
+  await page.setViewportSize({ width: 1280, height: 900 });
   backend.failedDeletes.add(`${ids.A}:A-2`);
   const gate = backend.hold(`${ids.A}:notes:DELETE:A-3`);
   await page.goto("/");
@@ -1152,33 +1454,35 @@ test("partial deletion reconciles successes before the last response and retries
   await expect(page.getByRole("heading", { name: "A-word-1", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "A-word-2", exact: true })).toBeVisible();
   await expect(page.getByRole("status")).toHaveText("Deleting notes...");
+  await page.screenshot({ path: testInfo.outputPath("library-delete-pending.png") });
   gate.resolve();
   await expect(page.getByRole("status")).toContainText("Deleted: 2. Failed: 1.");
   await expect(page.getByText("1 selected", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Unselect A-word-2", exact: true })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Unselect A-word-2", exact: true })).toBeVisible();
   expect(backend.accounts[ids.A].notes.map((note) => note.id)).toEqual(["A-2"]);
+  await page.screenshot({ path: testInfo.outputPath("library-delete-partial.png") });
   backend.failedDeletes.clear();
   page.once("dialog", (dialog) => dialog.accept());
   await go(page, "Retry failed deletions");
   await expect(page.getByRole("status")).toHaveText("Deleted: 1. Failed: 0.");
   await expect(page.getByRole("article")).toHaveCount(0);
   expect(backend.accounts[ids.A].notes).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("library-delete-recovered.png") });
   expect(noteDeletes(backend).map((entry) => entry.noteId).sort()).toEqual(["A-1", "A-2", "A-2", "A-3"]);
 });
 
 test("rapid repeated delete actions issue one job and stay locked across navigation", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:notes:DELETE`);
-  let confirmations = 0;
-  page.on("dialog", async (dialog) => { confirmations += 1; await dialog.accept(); });
   await page.goto("/");
   await go(page, "Vocabulary");
   await go(page, "Select page");
   await page.getByRole("button", { name: "Delete selected", exact: true }).evaluate((button) => { button.click(); button.click(); });
+  await expect(page.getByRole("alertdialog")).toHaveCount(1);
+  await page.getByRole("alertdialog").getByRole("button", { name: "Confirm deletion", exact: true }).evaluate((button) => { button.click(); button.click(); });
   await expect.poll(() => noteDeletes(backend).length).toBe(3);
-  expect(confirmations).toBe(1);
   for (const name of ["Delete selected", "Clear selection", "Unselect page", "Delete A-word-1", "Unselect A-word-1"]) {
-    await expect(page.getByRole("button", { name, exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name, exact: true }).or(page.getByRole("checkbox", { name, exact: true }))).toBeDisabled();
   }
   await go(page, "Phrases");
   await go(page, "Vocabulary");
@@ -1212,7 +1516,8 @@ test("late deletes never affect another account and rehydration waits for the or
   await expect(page.getByText("A-word-3", { exact: true })).toBeVisible();
   await go(page, "Vocabulary");
   await expect(page.getByRole("heading", { name: "A-word-2", exact: true })).toHaveCount(0);
-  await expect(page.getByText("0 selected", { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Selected notes", exact: true })).toHaveCount(0);
+  await expect(page.locator('.library-checkbox input:checked')).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveCount(0);
   expect(backend.accounts[ids.A].notes.map((note) => note.id)).toEqual(["A-1", "A-3"]);
   expect(backend.accounts[ids.B]).toEqual(originalB);
@@ -1233,8 +1538,7 @@ test("bulk deletes wait for pending Quiz updates and removed notes stay out of Q
   await expect(page.getByRole("heading", { name: "A-word-3", exact: true })).toHaveCount(0);
   expect(noteDeletes(backend).map((entry) => entry.noteId)).toEqual(["A-3"]);
   const card = page.getByRole("article").filter({ has: page.getByRole("heading", { name: "A-word-2", exact: true }) });
-  await card.getByRole("button", { name: "I know this", exact: true }).click();
-  await expect(page.getByText("This note is being deleted. Wait before editing it.", { exact: true })).toBeVisible();
+  await expect(card.getByRole("button", { name: "I know this", exact: true })).toBeDisabled();
   gate.resolve();
   await expect(page.getByRole("status")).toHaveText("Deleted: 2. Failed: 0.");
   expect(notePatches(backend, "A-2")).toHaveLength(1);
@@ -1271,7 +1575,7 @@ test("a delete queued behind an update is cancelled if the account changes befor
   await go(page, "Select B-word-1");
   gate.resolve();
   await expect.poll(() => storedNote(backend, "A-2").confidence).toBe(2);
-  await expect(page.getByRole("button", { name: "Unselect B-word-1", exact: true })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Unselect B-word-1", exact: true })).toBeVisible();
   await expect(page.getByRole("status")).toHaveCount(0);
   await backend.switchTo("A");
   await go(page, "Vocabulary");
@@ -1314,7 +1618,7 @@ test("a lost delete response is reported as a failure and can be retried idempot
   await go(page, "Select A-word-2");
   await deleteSelection(page);
   await expect(page.getByRole("status")).toContainText("Deleted: 0. Failed: 1.");
-  await expect(page.getByRole("button", { name: "Unselect A-word-2", exact: true })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Unselect A-word-2", exact: true })).toBeVisible();
   expect(backend.accounts[ids.A].notes.map((note) => note.id)).toEqual(["A-1", "A-3"]);
   page.once("dialog", (dialog) => dialog.accept());
   await go(page, "Retry failed deletions");
@@ -1329,6 +1633,7 @@ test("demo bulk deletion changes only temporary notes, not the ambient account o
   await page.goto("/#/demo");
   const storage = await page.evaluate(() => ({ ...localStorage }));
   await go(page, "Phrases");
+  await expect(page.getByRole("article").first()).toBeVisible();
   const count = await page.getByRole("article").count();
   expect(count).toBeGreaterThan(0);
   await go(page, "Select page");
@@ -1351,6 +1656,20 @@ async function openDraft(page, french = "bonjour") {
 }
 
 const aiRequests = (backend) => backend.ledger.filter((entry) => entry.resource === "ai");
+
+test("mobile More keeps the real account settings and sign-out reachable", async ({ page, context, baseURL }) => {
+  await setupAccounts({ page, context, baseURL });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: /Bonjour, Account A/ })).toBeVisible();
+  await go(page, "More");
+  await page.getByRole("dialog", { name: "More", exact: true }).getByRole("button", { name: "Account A", exact: true }).click();
+  await expect(page.getByLabel("Display name", { exact: true })).toHaveValue("Account A");
+  await go(page, "More");
+  await page.getByRole("dialog", { name: "More", exact: true }).getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Sign in to your workspace.", exact: true })).toBeVisible();
+  await expect(page.locator(".cahier-workspace")).toHaveCount(0);
+});
 
 test("an obsolete word's uncancellable response cannot replace a new request or its loading state", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
@@ -1396,7 +1715,7 @@ test("manual field edits during autofill survive in both the form and saved note
   await editor.getByLabel("Notes", { exact: true }).fill("my own explanation");
   await editor.getByLabel("Tags", { exact: true }).fill("school, work");
   await editor.getByLabel("je", { exact: true }).fill("my conjugation");
-  await editor.getByRole("combobox", { name: "Confidence", exact: true }).selectOption("3");
+  await editor.locator('input[name="editor-confidence"][value="3"]').check();
   gate.resolve();
   await expect(editor.getByText("Auto-filled. Review the details before saving.", { exact: true })).toBeVisible();
   await expect(editor.getByLabel("English", { exact: true })).toHaveValue("my meaning");
@@ -1426,8 +1745,8 @@ for (const change of ["word", "category", "language"]) {
       await editor.getByLabel("French", { exact: true }).fill("merci");
       await editor.getByLabel("French", { exact: true }).fill("bonjour");
     } else if (change === "category") {
-      await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("grammar");
-      await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("vocabulary");
+      await editor.locator('input[name="editor-category"][value="grammar"]').check();
+      await editor.locator('input[name="editor-category"][value="vocabulary"]').check();
     } else {
       await page.getByRole("button", { name: "简体中文", exact: true }).evaluate((button) => button.click());
       await page.getByRole("button", { name: "English", exact: true }).evaluate((button) => button.click());
@@ -1711,7 +2030,7 @@ for (const demo of [false, true]) {
     await go(page, "Save note");
     await expect(editor.getByText(/already exists in this category/)).toBeVisible();
     await expect(editor.getByLabel("English", { exact: true })).toHaveValue("duplicate draft");
-    await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("phrases");
+    await editor.locator('input[name="editor-category"][value="phrases"]').check();
     await editor.getByRole("textbox", { name: "Translation", exact: true }).fill("   ");
     await go(page, "Save note");
     await expect(editor.getByText("Enter a meaning or translation, not just spaces.", { exact: true })).toBeVisible();
@@ -1719,7 +2038,7 @@ for (const demo of [false, true]) {
     await go(page, "Save note");
     await expect(editor).toHaveCount(0);
     await go(page, "Add note");
-    await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("grammar");
+    await editor.locator('input[name="editor-category"][value="grammar"]').check();
     await editor.getByRole("textbox", { name: "Title", exact: true }).fill("Grammar integrity");
     await go(page, "Save note");
     await expect(editor.getByText("Enter the grammar rule or explanation, not just empty formatting.", { exact: true })).toBeVisible();
@@ -1740,7 +2059,7 @@ test("grammar paste is safe and preserves spacing, lists, tables and entities af
   await page.goto("/");
   await go(page, "Add note");
   const editor = page.getByRole("dialog");
-  await editor.getByRole("combobox", { name: "Section", exact: true }).selectOption("grammar");
+  await editor.locator('input[name="editor-category"][value="grammar"]').check();
   await editor.getByRole("textbox", { name: "Title", exact: true }).fill("Pasted grammar");
   const rich = editor.getByRole("textbox", { name: "Grammar note", exact: true });
   await rich.focus();
@@ -1788,7 +2107,7 @@ test("malformed legacy rows are isolated without mutating stored data or crashin
   await expect(page.getByRole("heading", { name: "réparer", exact: true })).toBeVisible();
   await go(page, "Edit réparer");
   const editor = page.getByRole("dialog");
-  await expect(editor.getByRole("combobox", { name: "Confidence", exact: true })).toHaveValue("1");
+  await expect(editor.locator('input[name="editor-confidence"][value="1"]')).toBeChecked();
   await expect(editor.getByRole("textbox", { name: "Tags", exact: true })).toHaveValue("");
   await go(page, "Cancel");
   await go(page, "Study");
@@ -1837,27 +2156,6 @@ for (const mode of ["vocabulary", "phrases"]) {
     expect(backend.accounts[ids.A].notes.filter((note) => note.category === mode)).toHaveLength(mode === "vocabulary" ? 4 : 2);
   });
 }
-
-function importCsv(mode, rows, ending = "\n", prefix = "") {
-  const headers = mode === "vocabulary" ? VOCABULARY_CSV_HEADERS : ["french", "translation", "tags"];
-  const escape = (value = "") => /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
-  return prefix + [headers.join(","), ...rows.map((row) => headers.map((header) => escape(row[header] ?? "")).join(","))].join(ending);
-}
-
-function importRow(french, extra = {}) {
-  return { french, chinese: "中文释义", translation: "中文翻译", part_of_speech: "interjection", ...extra };
-}
-
-async function uploadCsv(page, text, name = "import.csv") {
-  await page.locator('input[type="file"]').setInputFiles({ name, mimeType: "text/csv", buffer: Buffer.from(text) });
-}
-
-async function expectBatch(page, added, skipped, failed, unprocessed) {
-  await expect(page.getByRole("status").filter({ hasText: "Batch:" })).toContainText(
-    `Batch: ${added + skipped + failed + unprocessed}. Added: ${added}. Skipped: ${skipped}. Failed: ${failed}. Unprocessed: ${unprocessed}.`);
-}
-
-const noteCreates = (backend) => backend.writes(ids.A).filter((entry) => entry.resource === "notes" && entry.method === "POST");
 
 for (const mode of ["vocabulary", "phrases"]) {
   test(`${mode} cancel and repeated resume preserve the original batch and never resubmit successes`, async ({ page, context, baseURL }) => {
@@ -2047,7 +2345,7 @@ test("resuming an import on the next local day earns its Add Note goal without p
   await page.clock.setSystemTime(nextDay);
   await page.evaluate(() => globalThis.dispatchEvent(new Event("pageshow")));
   await go(page, "Today");
-  await expect(page.getByText("0/3", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status", { name: "0 of 3 tasks done", exact: true })).toBeVisible();
   await go(page, "Import");
   await go(page, "Resume unprocessed rows");
   await expectBatch(page, 3, 0, 0, 0);

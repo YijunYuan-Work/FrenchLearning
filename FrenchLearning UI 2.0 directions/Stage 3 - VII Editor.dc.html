@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans:wght@400&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>
+body{margin:0;background:#E4E0D8;font-family:'Instrument Sans',system-ui,sans-serif;color:#2A241C;-webkit-font-smoothing:antialiased}
+a{color:#3F6670;text-decoration:underline;text-underline-offset:3px}
+a:hover{color:#8A5F32}
+button,select,input,textarea{font:inherit}
+input::placeholder,textarea::placeholder{color:#958B7A;font-style:italic}
+input:focus,select:focus,textarea:focus,[contenteditable]:focus{outline:none}
+@keyframes fl-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){*{animation-duration:0s!important;transition-duration:0s!important}}
+</style>
+</helmet>
+
+<section style="padding:56px 56px 8px;display:flex;flex-direction:column;gap:18px;width:1710px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:20px">
+    <span style="font:500 12px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F6656;white-space:nowrap">French Desk · UI 2.0 · Stage 3 · Le Cahier · Bois</span>
+    <nav style="display:flex;gap:6px;font-size:14px;flex-wrap:wrap;justify-content:flex-end">
+      <a href="Stage 3 - V Vocabulary.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">V. Vocabulary</a>
+      <a href="Stage 3 - VI Notes.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">VI. Phrases · Grammar · Pronunciation</a>
+      <a href="Stage 3 - VII Editor.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;background:#2A241C;color:#EFE9DF;text-decoration:none">VII. Editor</a>
+      <a href="Stage 3 - VIII Import Settings.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">VIII. Import · Settings</a>
+      <a href="Stage 3 - IX Components.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">IX. Components &amp; handoff</a>
+    </nav>
+  </div>
+  <div style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #2A241C;padding-bottom:16px">
+    <h1 style="margin:0;font:400 64px/1 'Newsreader',serif;letter-spacing:-.02em">Chapitre <span style="font-style:italic">VII</span> — The editor</h1>
+    <span style="font:italic 400 22px/1 'Newsreader',serif;color:#6F6656">une page blanche · create &amp; edit notes</span>
+  </div>
+</section>
+
+<section style="padding:32px 56px 0;display:flex;gap:40px;align-items:flex-start;width:1710px">
+  <div style="width:1280px;height:900px;background:#EFE9DF;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 #DDD3C3,0 24px 60px -24px rgba(50,38,20,.25);flex-shrink:0;position:relative;display:grid;grid-template-columns:248px minmax(0,1fr)">
+    <dc-import name="Cahier Sidebar" active="vocabulary" hint-size="248px,100%"></dc-import>
+    <div style="padding:30px 56px;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A5F32;font-weight:600">Le cahier · 04</span><button onClick="{{ openNew }}" style="display:flex;align-items:center;gap:8px;white-space:nowrap;height:40px;padding:0 18px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-weight:500;font-size:14px;cursor:pointer"><i class="icon-plus" style="font-size:16px"></i>Add note</button></div>
+      <div style="height:3px;border-top:2px solid #2A241C;border-bottom:1px solid #2A241C"></div>
+      <span style="font:400 52px/1 'Newsreader',serif;color:#2A241C">Vocabulary</span>
+      <div style="display:flex;flex-direction:column;opacity:.6"><span style="height:1px;background:#DDD3C3;margin-top:80px"></span><span style="height:1px;background:#DDD3C3;margin-top:80px"></span><span style="height:1px;background:#DDD3C3;margin-top:80px"></span></div>
+    </div>
+
+    <sc-if value="{{ open }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;inset:0;background:rgba(42,36,28,.42);display:grid;place-items:center;padding:28px;opacity:{{ scrimOp }};transition:{{ scrimTrans }}">
+      <form role="dialog" aria-modal="true" aria-labelledby="ed-title" aria-busy="{{ savingAria }}" onSubmit="{{ onSave }}" onKeyDown="{{ onKey }}" style="width:880px;max-height:100%;display:flex;flex-direction:column;background:#FCFAF6;border-radius:10px;box-shadow:0 40px 80px -30px rgba(42,36,28,.6);overflow:hidden;transform:{{ dlgTr }};opacity:{{ dlgOp }};transition:{{ dlgTrans }}">
+        <header style="padding:22px 32px 0;display:flex;flex-direction:column;gap:16px;flex-shrink:0">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px">
+            <div style="display:flex;flex-direction:column;gap:4px"><span style="font:italic 400 16px 'Newsreader',serif;color:#8A5F32">{{ eyebrow }}</span><h2 id="ed-title" style="margin:0;font:400 34px/1 'Newsreader',serif;letter-spacing:-.02em">{{ heading }}</h2></div>
+            <button type="button" onClick="{{ close }}" aria-label="Close editor" style="width:40px;height:40px;border:0;border-radius:4px;background:transparent;color:#2A241C;cursor:pointer;display:grid;place-items:center" style-hover="background:#EFE9DF" style-focus="outline:2px solid #3F6670"><i class="icon-x" style="font-size:20px"></i></button>
+          </div>
+          <div role="radiogroup" aria-label="Section" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-bottom:1px solid #DDD3C3">
+            <sc-for list="{{ cats }}" as="c" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{ c.checked }}" onClick="{{ c.onClick }}" disabled="{{ saving }}" style="display:flex;align-items:baseline;justify-content:center;gap:8px;height:44px;border:0;background:transparent;cursor:pointer;color:{{ c.fg }};font-size:14px;font-weight:{{ c.w }};box-shadow:{{ c.line }};transition:box-shadow 200ms, color 160ms;white-space:nowrap" style-focus="outline:2px solid #3F6670;outline-offset:-2px"><span style="font:italic 400 14px 'Newsreader',serif;color:{{ c.nfg }}">{{ c.n }}</span>{{ c.l }}</button></sc-for>
+          </div>
+        </header>
+
+        <div style="flex:1;overflow:auto;padding:22px 32px 26px;display:flex;flex-direction:column;gap:24px">
+          <sc-if value="{{ topError }}" hint-placeholder-val="{{ false }}"><div role="alert" style="display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-radius:6px;background:#F2E7D9;box-shadow:inset 0 0 0 1px #DCC6A8;font-size:14px;line-height:1.5"><i class="{{ topErrorIcon }}" style="font-size:17px;color:#A0402F;margin-top:2px"></i><span style="flex:1">{{ topErrorText }}</span></div></sc-if>
+          <sc-if value="{{ isDemoV }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:14px;color:#4E4639;display:flex;gap:8px;align-items:center"><i class="icon-info" style="font-size:16px;color:#6F6656"></i>Demo changes are temporary. AI auto-fill is unavailable in the public demo.</p></sc-if>
+
+          <fieldset disabled="{{ saving }}" style="border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:26px;opacity:{{ fsOp }};transition:opacity 200ms">
+            <div style="display:grid;grid-template-columns:{{ topCols }};gap:32px">
+              <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font:italic 400 20px 'Newsreader',serif;color:#3F6670">I.</span><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">L'essentiel</span></div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><label for="ed-french" style="font-size:13px;font-weight:600;color:#2A241C">{{ frenchLabel }} <span style="color:#A0402F" aria-hidden="true">*</span></label>
+                    <sc-if value="{{ isVocab }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ autofill }}" disabled="{{ afDisabled }}" style="display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:0;border-radius:999px;background:{{ afBg }};box-shadow:inset 0 0 0 1px {{ afBorder }};color:{{ afFg }};font-size:13px;font-weight:500;cursor:{{ afCursor }};white-space:nowrap;transition:background 160ms" style-focus="outline:2px solid #3F6670;outline-offset:2px"><i class="{{ afIcon }}" style="font-size:14px;animation:{{ afAnim }}"></i>{{ afLabel }}</button></sc-if>
+                  </div>
+                  <sc-if value="{{ frenchIsArea }}" hint-placeholder-val="{{ false }}"><textarea id="ed-french" ref="{{ frenchRef }}" rows="2" value="{{ f.french }}" onChange="{{ set.french }}" placeholder="{{ frenchPh }}" aria-invalid="{{ frenchInvalid }}" aria-describedby="ed-french-err" style="resize:none;border:0;border-bottom:1px solid {{ frenchLine }};background:transparent;font:400 28px/1.3 'Newsreader',serif;color:#2A241C;padding:4px 0 8px" style-focus="border-bottom-color:#3F6670;box-shadow:0 1px 0 #3F6670"></textarea></sc-if>
+                  <sc-if value="{{ frenchIsInput }}" hint-placeholder-val="{{ true }}"><input id="ed-french" ref="{{ frenchRef }}" lang="fr" autocomplete="off" value="{{ f.french }}" onChange="{{ set.french }}" placeholder="{{ frenchPh }}" aria-invalid="{{ frenchInvalid }}" aria-describedby="ed-french-err" style="border:0;border-bottom:1px solid {{ frenchLine }};background:transparent;font:400 34px/1.2 'Newsreader',serif;color:#2A241C;padding:4px 0 8px;letter-spacing:-.01em" style-focus="border-bottom-color:#3F6670;box-shadow:0 1px 0 #3F6670"></sc-if>
+                  <sc-if value="{{ frenchErr }}" hint-placeholder-val="{{ false }}"><span id="ed-french-err" style="font-size:13px;color:#A0402F;display:flex;gap:6px;align-items:center"><i class="icon-circle-alert" style="font-size:14px"></i>{{ frenchErrText }}</span></sc-if>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;padding-top:4px" aria-label="French characters">
+                    <sc-for list="{{ accents }}" as="a" hint-placeholder-count="12"><button type="button" onClick="{{ a.onClick }}" onMouseDown="{{ a.keep }}" aria-label="{{ a.aria }}" style="width:30px;height:30px;border:0;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;font:400 17px 'Newsreader',serif;color:#2A241C;cursor:pointer" style-hover="box-shadow:inset 0 0 0 1px #3F6670;color:#3F6670" style-focus="outline:2px solid #3F6670">{{ a.ch }}</button></sc-for>
+                  </div>
+                </div>
+                <sc-if value="{{ hasMeaning }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <label for="ed-en" style="font-size:13px;font-weight:600;display:flex;gap:6px;align-items:center">{{ meaningLabel }} <span style="color:#A0402F" aria-hidden="true">*</span><sc-if value="{{ ai.english }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 13px 'Newsreader',serif;color:#55703F">· auto-filled</span></sc-if></label>
+                    <sc-if value="{{ meaningIsArea }}" hint-placeholder-val="{{ false }}"><textarea id="ed-en" rows="3" value="{{ f.english }}" onChange="{{ set.english }}" style="resize:vertical;border:0;border-radius:6px;background:#F8F5EF;box-shadow:inset 0 0 0 1px {{ enLine }};font-size:16px;line-height:1.55;padding:10px 12px;color:#2A241C" style-focus="box-shadow:inset 0 0 0 2px #3F6670"></textarea></sc-if>
+                    <sc-if value="{{ meaningIsInput }}" hint-placeholder-val="{{ true }}"><input id="ed-en" value="{{ f.english }}" onChange="{{ set.english }}" style="height:44px;border:0;border-radius:6px;background:{{ aiBg.english }};box-shadow:inset 0 0 0 1px {{ enLine }};font-size:16px;padding:0 12px;color:#2A241C;transition:background 600ms" style-focus="box-shadow:inset 0 0 0 2px #3F6670"></sc-if>
+                    <sc-if value="{{ enErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:#A0402F;display:flex;gap:6px;align-items:center"><i class="icon-circle-alert" style="font-size:14px"></i>Add a meaning before saving.</span></sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ isVocab }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;gap:6px"><label for="ed-ipa" style="font-size:13px;font-weight:600;display:flex;gap:6px">IPA pronunciation<sc-if value="{{ ai.ipa }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 13px 'Newsreader',serif;color:#55703F">· auto-filled</span></sc-if></label><input id="ed-ipa" value="{{ f.ipa }}" onChange="{{ set.ipa }}" placeholder="e.g. /bu.lɑ̃ʒ.ʁi/" style="height:44px;border:0;border-radius:6px;background:{{ aiBg.ipa }};box-shadow:inset 0 0 0 1px #CDBFA9;font:400 16px 'Noto Sans','Instrument Sans',sans-serif;padding:0 12px;color:#2A241C;transition:background 600ms" style-focus="box-shadow:inset 0 0 0 2px #3F6670"></div>
+                </sc-if>
+              </div>
+
+              <sc-if value="{{ isVocab }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:18px;min-width:0;padding-left:32px;border-left:1px solid #DDD3C3">
+                  <div style="display:flex;align-items:baseline;gap:10px"><span style="font:italic 400 20px 'Newsreader',serif;color:#3F6670">II.</span><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Grammaire</span></div>
+                  <div style="display:flex;flex-direction:column;gap:6px"><label for="ed-pos" style="font-size:13px;font-weight:600;display:flex;gap:6px">Word type<sc-if value="{{ ai.pos }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 13px 'Newsreader',serif;color:#55703F">· auto-filled</span></sc-if></label><span style="position:relative;display:block"><select id="ed-pos" key="{{ f.pos }}" defaultValue="{{ f.pos }}" onChange="{{ set.pos }}" style="appearance:none;-webkit-appearance:none;width:100%;height:44px;border:0;border-radius:6px;background:{{ aiBg.pos }};box-shadow:inset 0 0 0 1px #CDBFA9;font-size:15px;padding:0 36px 0 12px;color:#2A241C;cursor:pointer;transition:background 600ms" style-focus="box-shadow:inset 0 0 0 2px #3F6670"><sc-for list="{{ posOptions }}" as="o" hint-placeholder-count="11"><option value="{{ o.v }}" selected="{{ o.selected }}">{{ o.l }}</option></sc-for></select><i class="icon-chevron-down" style="position:absolute;right:12px;top:14px;font-size:16px;color:#6F6656;pointer-events:none"></i></span></div>
+                  <sc-if value="{{ isNoun }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:8px"><span id="ed-g" style="font-size:13px;font-weight:600">Gender</span><div role="radiogroup" aria-labelledby="ed-g" style="display:grid;grid-template-columns:repeat(4,auto);justify-content:start;gap:4px;padding:3px;border-radius:999px;box-shadow:inset 0 0 0 1px #CDBFA9;width:max-content"><sc-for list="{{ genders }}" as="g" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{ g.checked }}" onClick="{{ g.onClick }}" style="display:flex;align-items:center;gap:5px;height:36px;padding:0 12px;border:0;border-radius:999px;cursor:pointer;background:{{ g.bg }};color:{{ g.fg }};white-space:nowrap" style-focus="outline:2px solid #3F6670"><span style="font:italic 400 16px/1 'Newsreader',serif;padding-bottom:2px">{{ g.art }}</span><span style="font-size:13px;line-height:1;font-weight:500">{{ g.l }}</span></button></sc-for></div></div>
+                  </sc-if>
+                  <sc-if value="{{ isVerb }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600;display:flex;gap:6px">Present tense conjugation<sc-if value="{{ ai.conj }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 13px 'Newsreader',serif;color:#55703F">· auto-filled</span></sc-if></span>
+                      <div style="display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);gap:4px 12px;align-items:center;background:{{ aiBg.conj }};transition:background 600ms;border-radius:6px"><sc-for list="{{ conj }}" as="c" hint-placeholder-count="6"><label for="{{ c.id }}" style="font-size:13px;color:#6F6656;text-align:right">{{ c.k }}</label><input id="{{ c.id }}" lang="fr" value="{{ c.v }}" onChange="{{ c.onChange }}" style="min-width:0;height:36px;border:0;border-bottom:1px solid #CDBFA9;background:transparent;font:400 18px 'Newsreader',serif;color:#2A241C;padding:0 2px" style-focus="border-bottom-color:#3F6670;box-shadow:0 1px 0 #3F6670"></sc-for></div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ isAdj }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:600">Adjective forms</span>
+                      <div style="display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);gap:4px 12px;align-items:center"><sc-for list="{{ adj }}" as="c" hint-placeholder-count="4"><label for="{{ c.id }}" style="font-size:13px;color:#6F6656;text-align:right;white-space:nowrap">{{ c.k }}</label><input id="{{ c.id }}" lang="fr" value="{{ c.v }}" onChange="{{ c.onChange }}" style="min-width:0;height:36px;border:0;border-bottom:1px solid #CDBFA9;background:transparent;font:400 18px 'Newsreader',serif;color:#2A241C;padding:0 2px" style-focus="border-bottom-color:#3F6670"></sc-for></div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ posEmpty }}" hint-placeholder-val="{{ true }}"><p style="margin:0;font:italic 400 16px/1.5 'Newsreader',serif;color:#6F6656">Choose a word type to add gender, conjugation or adjective forms.</p></sc-if>
+                </div>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ isGrammar }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:baseline;gap:10px"><span style="font:italic 400 20px 'Newsreader',serif;color:#3F6670">II.</span><span id="ed-rt" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Grammar note</span></div>
+                <div style="border-radius:6px;box-shadow:inset 0 0 0 1px #CDBFA9;background:#FFFFFF;overflow:hidden">
+                  <div role="toolbar" aria-label="Formatting" style="display:flex;gap:2px;padding:6px;border-bottom:1px solid #E3DACB;background:#F8F5EF">
+                    <sc-for list="{{ rtButtons }}" as="b" hint-placeholder-count="5"><button type="button" onMouseDown="{{ b.down }}" aria-label="{{ b.l }}" title="{{ b.l }}" style="width:34px;height:34px;border:0;border-radius:4px;background:transparent;color:#2A241C;cursor:pointer;display:grid;place-items:center" style-hover="background:#E8E1D4" style-focus="outline:2px solid #3F6670"><i class="{{ b.icon }}" style="font-size:16px"></i></button></sc-for>
+                    <span style="width:1px;background:#DDD3C3;margin:4px 6px"></span><span style="align-self:center;font:italic 400 13px 'Newsreader',serif;color:#6F6656">Paste is cleaned automatically</span>
+                  </div>
+                  <div role="textbox" aria-multiline="true" aria-labelledby="ed-rt" contentEditable="true" style="min-height:220px;padding:18px 22px;font:400 17px/1.7 'Newsreader',serif;color:#2A241C;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 28px,rgba(63,102,112,.07) 28px,rgba(63,102,112,.07) 29px);background-position:0 18px">
+                    <p style="margin:0 0 10px"><strong>Il faut que</strong> is always followed by the subjunctive, because it expresses necessity rather than a fact.</p>
+                    <p style="margin:0 0 10px"><em>Il faut que tu viennes demain.</em></p>
+                    <ol style="margin:0;padding-left:22px"><li>Take the ils/elles form of the present tense.</li><li>Drop -ent.</li><li>Add -e, -es, -e, -ions, -iez, -ent.</li></ol>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="display:flex;flex-direction:column;gap:18px">
+              <div style="display:flex;align-items:baseline;gap:10px;border-top:1px solid #DDD3C3;padding-top:20px"><span style="font:italic 400 20px 'Newsreader',serif;color:#3F6670">{{ ctxNum }}</span><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656">Contexte</span></div>
+              <div style="display:grid;grid-template-columns:{{ ctxCols }};gap:20px 32px">
+                <sc-if value="{{ hasExample }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;gap:6px"><label for="ed-ex" style="font-size:13px;font-weight:600;display:flex;gap:6px">Example<sc-if value="{{ ai.example }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 13px 'Newsreader',serif;color:#55703F">· auto-filled</span></sc-if></label><textarea id="ed-ex" lang="fr" rows="3" value="{{ f.example }}" onChange="{{ set.example }}" style="resize:vertical;border:0;border-radius:6px;background:{{ aiBg.example }};box-shadow:inset 0 0 0 1px #CDBFA9;font:italic 400 17px/1.5 'Newsreader',serif;padding:10px 12px;color:#2A241C;transition:background 600ms" style-focus="box-shadow:inset 0 0 0 2px #3F6670"></textarea></div></sc-if>
+                <sc-if value="{{ hasNotes }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;gap:6px"><label for="ed-notes" style="font-size:13px;font-weight:600">Notes</label><textarea id="ed-notes" rows="3" value="{{ f.notes }}" onChange="{{ set.notes }}" style="resize:vertical;border:0;border-radius:6px;background:#F8F5EF;box-shadow:inset 0 0 0 1px #CDBFA9;font-size:15px;line-height:1.55;padding:10px 12px;color:#2A241C" style-focus="box-shadow:inset 0 0 0 2px #3F6670"></textarea></div></sc-if>
+                <div style="display:flex;flex-direction:column;gap:6px"><label for="ed-tags" style="font-size:13px;font-weight:600">Tags</label><input id="ed-tags" value="{{ f.tags }}" onChange="{{ set.tags }}" placeholder="food, travel, A1" style="height:44px;border:0;border-radius:6px;background:#F8F5EF;box-shadow:inset 0 0 0 1px #CDBFA9;font-size:15px;padding:0 12px;color:#2A241C" style-focus="box-shadow:inset 0 0 0 2px #3F6670"><span style="font-size:12px;color:#6F6656">Separate with commas.</span></div>
+                <div style="display:flex;flex-direction:column;gap:6px"><span id="ed-conf" style="font-size:13px;font-weight:600">Confidence</span><div role="radiogroup" aria-labelledby="ed-conf" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px"><sc-for list="{{ confs }}" as="c" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{ c.checked }}" onClick="{{ c.onClick }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:8px 10px;border:0;border-radius:6px;cursor:pointer;text-align:left;background:{{ c.bg }};color:{{ c.fg }};box-shadow:inset 0 0 0 1px {{ c.border }}" style-focus="outline:2px solid #3F6670;outline-offset:1px"><span style="display:flex;gap:2px"><sc-for list="{{ c.ticks }}" as="k" hint-placeholder-count="4"><span style="width:9px;height:3px;background:{{ k.bg }}"></span></sc-for></span><span style="font-size:12px;font-weight:600;white-space:nowrap">{{ c.l }}</span></button></sc-for></div></div>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+
+        <footer style="flex-shrink:0;display:flex;align-items:center;gap:12px;padding:14px 32px;border-top:1px solid #DDD3C3;background:#F8F5EF">
+          <div role="status" aria-live="polite" style="flex:1;display:flex;align-items:center;gap:8px;font-size:14px;color:{{ statusFg }};min-width:0"><sc-if value="{{ hasStatus }}" hint-placeholder-val="{{ false }}"><i class="{{ statusIcon }}" style="font-size:16px;flex-shrink:0;animation:{{ statusAnim }}"></i><span>{{ statusText }}</span></sc-if><sc-if value="{{ statusRetry }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ autofill }}" style="height:32px;padding:0 10px;border:0;border-radius:4px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;font-size:13px;font-weight:500;cursor:pointer;flex-shrink:0;color:#2A241C">Retry auto-fill</button></sc-if></div>
+          <button type="button" onClick="{{ close }}" style="height:44px;padding:0 18px;border:0;border-radius:4px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;color:#2A241C;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#EFE9DF" style-focus="outline:2px solid #3F6670;outline-offset:2px">{{ cancelLabel }}</button>
+          <button type="submit" disabled="{{ saving }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 22px;border:0;border-radius:4px;background:{{ saveBg }};color:#EFE9DF;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="background:#3F6670" style-focus="outline:2px solid #3F6670;outline-offset:2px"><sc-if value="{{ saving }}" hint-placeholder-val="{{ false }}"><i class="icon-loader-circle" style="font-size:16px;animation:fl-spin 900ms linear infinite"></i></sc-if>{{ saveLabel }}</button>
+        </footer>
+      </form>
+    </div>
+    </sc-if>
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}"><div role="status" style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;padding:12px 18px;border-radius:6px;background:#2A241C;color:#EFE9DF;font-size:14px"><i class="icon-check" style="color:#C9D6B9"></i>{{ toastText }}</div></sc-if>
+  </div>
+
+  <div style="width:350px;display:flex;flex-direction:column;gap:20px;flex-shrink:0">
+    <div style="background:#F8F5EF;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Prototype · jump to state</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="12"><button onClick="{{ s.onClick }}" style="height:40px;padding:0 10px;border:0;border-radius:6px;cursor:pointer;text-align:left;font-size:13px;font-weight:500;background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button></sc-for>
+      </div>
+      <button onClick="{{ toggleFail }}" role="switch" aria-checked="{{ failAria }}" style="display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 14px;border:0;border-radius:6px;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px #CDBFA9;color:#2A241C"><span style="font-size:14px;font-weight:500">Next request fails</span><span style="width:34px;height:20px;border-radius:999px;background:{{ failTrack }};position:relative;display:block"><span style="position:absolute;top:2px;left:{{ failKnob }};width:16px;height:16px;border-radius:50%;background:#F8F5EF;transition:left 160ms"></span></span></button>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639;border-top:1px solid #DDD3C3;padding-top:12px">Live: switch section, pick Verb / Noun / Adjective, click accent keys, Auto-fill (edit a field while it loads — your edit is kept), Save with French blank, type "la boulangerie" to hit the duplicate. Esc closes.</p>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E3DACB;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.5;color:#433C31">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Structure</span>
+      <div><b style="font-weight:600">Three numbered parts</b> — I. L'essentiel · II. Grammaire (vocab) / Grammar note · III. Contexte. Vocabulary uses two columns ≥ 880px.</div>
+      <div><b style="font-weight:600">Section</b> select → 4-way tab radio. Changing it invalidates any running auto-fill (unchanged rule).</div>
+      <div><b style="font-weight:600">Auto-fill</b> is a pill beside the French label. Filled fields get a sage wash that fades over 600ms + an "auto-filled" note; fields you touched while it ran are never overwritten (<code style="font-family:'JetBrains Mono';font-size:12px">editedFields</code>).</div>
+      <div><b style="font-weight:600">Footer</b> is the single status line: auto-fill progress, errors, saving. Sticky; body scrolls.</div>
+      <div><b style="font-weight:600">While saving</b> the fieldset is <code style="font-family:'JetBrains Mono';font-size:12px">disabled + inert</code>, dimmed to 60%; Cancel becomes Close.</div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 96px;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 28px/1 'Newsreader',serif">Mobile editor</span><span style="font-size:14px;color:#6F6656">Full-screen sheet. Header and footer are sticky; the footer rides on <code style="font-family:'JetBrains Mono';font-size:12px">visualViewport</code> above the keyboard. Accent keys become a horizontal strip.</span></div>
+  <div style="display:flex;gap:36px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#FCFAF6;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:0 12px 8px"><span style="width:44px;height:44px;display:grid;place-items:center"><i class="icon-x" style="font-size:22px"></i></span><span style="text-align:center;font:500 18px 'Noto Serif SC',serif">添加笔记</span><span></span></div>
+      <div style="display:flex;gap:18px;padding:0 20px;border-bottom:1px solid #DDD3C3;white-space:nowrap;overflow:hidden;font-size:14px"><span style="height:40px;display:flex;align-items:center;box-shadow:inset 0 -2px 0 #2A241C;font-weight:600">词汇</span><span style="height:40px;display:flex;align-items:center;color:#4E4639">短语</span><span style="height:40px;display:flex;align-items:center;color:#4E4639">语法</span><span style="height:40px;display:flex;align-items:center;color:#4E4639">发音规则</span></div>
+      <div style="flex:1;overflow:hidden;padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:500">法语 *</span><span style="height:32px;padding:0 12px;border-radius:999px;box-shadow:inset 0 0 0 1px #3F6670;color:#3F6670;display:flex;align-items:center;gap:6px;font-size:13px"><i class="icon-sparkles" style="font-size:14px"></i>自动填写</span></div>
+        <div style="border-bottom:2px solid #3F6670;padding-bottom:6px;font:400 30px/1.2 'Newsreader',serif">chaleureu<span style="display:inline-block;width:2px;height:28px;background:#3F6670;vertical-align:-4px"></span></div>
+        <div style="display:flex;gap:4px;overflow:hidden"><span style="width:36px;height:36px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 18px 'Newsreader';flex-shrink:0">é</span><span style="width:36px;height:36px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 18px 'Newsreader';flex-shrink:0">è</span><span style="width:36px;height:36px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 18px 'Newsreader';flex-shrink:0">ê</span><span style="width:36px;height:36px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 18px 'Newsreader';flex-shrink:0">à</span><span style="width:36px;height:36px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 18px 'Newsreader';flex-shrink:0">ç</span><span style="width:36px;height:36px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 18px 'Newsreader';flex-shrink:0">ô</span><span style="width:36px;height:36px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 18px 'Newsreader';flex-shrink:0">û</span><span style="width:36px;height:36px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 18px 'Newsreader';flex-shrink:0">œ</span><span style="width:36px;height:36px;border-radius:4px;background:#F3EEE5;box-shadow:inset 0 0 0 1px #E3DACB;display:grid;place-items:center;font:400 18px 'Newsreader';flex-shrink:0">ï</span></div>
+        <span style="font-size:13px;font-weight:500">英文 / 中文含义 *</span>
+        <div style="height:44px;border-radius:6px;background:#F8F5EF;box-shadow:inset 0 0 0 1px #CDBFA9"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px;padding:8px 12px;border-top:1px solid #DDD3C3;background:#F8F5EF"><button style="height:46px;border:0;border-radius:6px;box-shadow:inset 0 0 0 1px #2A241C;background:transparent;font-family:'Noto Sans SC';font-size:14px">取消</button><button style="height:46px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-family:'Noto Sans SC';font-size:15px;font-weight:500">保存笔记</button></div>
+      <div style="height:230px;background:#D3D6DB;flex-shrink:0;display:flex;flex-direction:column;gap:9px;padding:8px 4px 26px"><div style="flex:1;display:grid;grid-template-columns:repeat(10,1fr);gap:6px"><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span></div><div style="flex:1;display:grid;grid-template-columns:repeat(9,1fr);gap:6px;padding:0 16px"><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span></div><div style="flex:1;display:grid;grid-template-columns:repeat(9,1fr);gap:6px"><span style="background:#ABB0BA;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#FCFCFE;border-radius:5px"></span><span style="background:#ABB0BA;border-radius:5px"></span></div></div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · CREATE · KEYBOARD · 中文</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#FCFAF6;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:0 12px 8px;border-bottom:1px solid #DDD3C3"><span style="width:44px;height:44px;display:grid;place-items:center"><i class="icon-x" style="font-size:22px"></i></span><span style="text-align:center;font:400 22px 'Newsreader',serif">Edit note</span><span></span></div>
+      <div style="flex:1;overflow:hidden;padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;gap:8px"><i style="font:italic 400 18px 'Newsreader';color:#3F6670">II.</i><span style="font-size:11px;letter-spacing:.14em;font-weight:600;color:#6F6656">GRAMMAIRE</span></div>
+        <span style="font-size:13px;font-weight:600">Word type</span><div style="height:44px;border-radius:6px;background:#EDF0E6;box-shadow:inset 0 0 0 1px #CDBFA9;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:15px">Verb<i class="icon-chevron-down" style="color:#6F6656"></i></div>
+        <span style="font-size:13px;font-weight:600">Present tense conjugation <i style="font:italic 400 13px 'Newsreader';color:#55703F">· auto-filled</i></span>
+        <div style="display:grid;grid-template-columns:64px 1fr;gap:4px 10px;align-items:center"><span style="font-size:13px;color:#6F6656;text-align:right">je</span><span style="height:38px;border-bottom:1px solid #CDBFA9;font:400 18px/38px 'Newsreader'">organise</span><span style="font-size:13px;color:#6F6656;text-align:right">tu</span><span style="height:38px;border-bottom:1px solid #CDBFA9;font:400 18px/38px 'Newsreader'">organises</span><span style="font-size:13px;color:#6F6656;text-align:right">il/elle</span><span style="height:38px;border-bottom:1px solid #CDBFA9;font:400 18px/38px 'Newsreader'">organise</span><span style="font-size:13px;color:#6F6656;text-align:right">nous</span><span style="height:38px;border-bottom:1px solid #CDBFA9;font:400 18px/38px 'Newsreader'">organisons</span><span style="font-size:13px;color:#6F6656;text-align:right">vous</span><span style="height:38px;border-bottom:1px solid #CDBFA9;font:400 18px/38px 'Newsreader'">organisez</span><span style="font-size:13px;color:#6F6656;text-align:right">ils/elles</span><span style="height:38px;border-bottom:1px solid #CDBFA9;font:400 18px/38px 'Newsreader'">organisent</span></div>
+      </div>
+      <div style="padding:8px 16px 0;background:#F8F5EF;border-top:1px solid #DDD3C3;font-size:13px;color:#55703F;display:flex;gap:6px;align-items:center"><i class="icon-sparkles" style="font-size:14px"></i>Auto-filled. Review the details before saving.</div>
+      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px;padding:8px 16px 30px;background:#F8F5EF"><button style="height:52px;border:0;border-radius:6px;box-shadow:inset 0 0 0 1px #2A241C;background:transparent;font-size:15px">Cancel</button><button style="height:52px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-size:15px;font-weight:500">Save note</button></div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · VERB · AI SUCCESS · EN</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#FCFAF6;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:0 12px 8px;border-bottom:1px solid #DDD3C3"><span style="width:44px;height:44px;display:grid;place-items:center"><i class="icon-x" style="font-size:22px"></i></span><span style="text-align:center;font:500 18px 'Noto Serif SC',serif">编辑语法笔记</span><span></span></div>
+      <div style="flex:1;overflow:hidden;padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:13px;font-weight:500">标题 *</span>
+        <div style="border-bottom:1px solid #2A241C;padding-bottom:6px;font:400 24px/1.25 'Newsreader',serif">Le subjonctif après « il faut que »</div>
+        <div style="border-radius:6px;box-shadow:inset 0 0 0 1px #CDBFA9;overflow:hidden;display:flex;flex-direction:column;flex:1">
+          <div style="display:flex;gap:2px;padding:4px;background:#F8F5EF;border-bottom:1px solid #E3DACB"><span style="width:40px;height:40px;display:grid;place-items:center"><i class="icon-bold"></i></span><span style="width:40px;height:40px;display:grid;place-items:center"><i class="icon-italic"></i></span><span style="width:40px;height:40px;display:grid;place-items:center"><i class="icon-underline"></i></span><span style="width:40px;height:40px;display:grid;place-items:center"><i class="icon-list"></i></span><span style="width:40px;height:40px;display:grid;place-items:center"><i class="icon-list-ordered"></i></span></div>
+          <div style="padding:14px 16px;font:400 16px/1.7 'Newsreader',serif;background:#fff;flex:1"><p style="margin:0 0 8px"><b>Il faut que</b> is always followed by the subjunctive…</p><p style="margin:0;font-style:italic">Il faut que tu viennes demain.</p></div>
+        </div>
+      </div>
+      <div role="alert" style="margin:0 16px 8px;padding:10px 12px;border-radius:6px;background:#F2E7D9;box-shadow:inset 0 0 0 1px #DCC6A8;font-size:13px;line-height:1.6;display:flex;gap:8px"><i class="icon-cloud-off" style="color:#A0402F;margin-top:3px"></i>笔记未能保存，请检查网络后重试。</div>
+      <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px;padding:8px 16px 30px;border-top:1px solid #DDD3C3;background:#F8F5EF"><button style="height:52px;border:0;border-radius:6px;box-shadow:inset 0 0 0 1px #2A241C;background:transparent;font-family:'Noto Sans SC';font-size:15px">取消</button><button style="height:52px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-family:'Noto Sans SC';font-size:15px;font-weight:500">重新保存</button></div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · GRAMMAR · SAVE FAILED · 中文</span>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;reducedMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  empty = () => ({ category: 'vocabulary', french: '', english: '', pos: '', ipa: '', gender: '', conj: { je: '', tu: '', 'il/elle': '', nous: '', vous: '', 'ils/elles': '' }, adj: { masculine: '', feminine: '', masculinePlural: '', femininePlural: '' }, example: '', notes: '', tags: '', conf: 1 });
+  filled = () => ({ ...this.empty(), french: 'organiser', english: 'to organize', pos: 'verb', ipa: '/ɔʁ.ɡa.ni.ze/', conj: { je: 'organise', tu: 'organises', 'il/elle': 'organise', nous: 'organisons', vous: 'organisez', 'ils/elles': 'organisent' }, example: 'Je dois organiser mes notes de français.', notes: 'Regular -er verb.', tags: 'work, verbs', conf: 2 });
+  frenchRef = React.createRef();
+  state = { open: true, inT: true, mode: 'new', f: this.empty(), err: null, af: 'idle', ai: {}, flash: {}, saving: false, failNext: false, demo: false, toast: null, sc: 'empty', touched: false };
+  componentDidMount() { this.focus(); }
+  componentWillUnmount() { [this.t1, this.t2, this.t3].forEach(clearTimeout); }
+  rm() { return !!this.props.reducedMotion; }
+  focus() { requestAnimationFrame(() => this.frenchRef.current?.focus({ preventScroll: true })); }
+  show(patch) {
+    [this.t1, this.t2].forEach(clearTimeout);
+    this.req = null;
+    this.setState({ open: true, inT: false, err: null, af: 'idle', ai: {}, flash: {}, saving: false, toast: null, touched: false, demo: false, ...patch });
+    requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ inT: true })));
+    this.focus();
+  }
+  close = () => {
+    this.req = null;
+    if (this.rm()) return this.setState({ open: false, af: 'idle' });
+    this.setState({ inT: false, af: 'idle' });
+    this.t3 = setTimeout(() => this.setState({ open: false }), 180);
+  };
+  upd(field, value) {
+    if (this.state.saving) return;
+    if (field === 'french' || field === 'category') { this.req = null; this.setState({ af: 'idle' }); }
+    else if (this.req) this.req.edited.add(field);
+    this.setState((x) => ({ f: { ...x.f, [field]: value }, err: x.err && (field === 'french' || field === 'english') ? null : x.err }));
+  }
+  autofill = () => {
+    const s = this.state;
+    if (s.demo || s.saving || this.req || !s.f.french.trim()) return;
+    const req = { edited: new Set(), french: s.f.french };
+    this.req = req;
+    this.setState({ af: 'loading', err: null });
+    this.t1 = setTimeout(() => {
+      if (this.req !== req || this.state.f.french !== req.french) return;
+      this.req = null;
+      if (this.state.failNext) return this.setState({ af: 'error', failNext: false });
+      const data = { english: 'warm, welcoming', pos: 'adjective', ipa: '/ʃa.lø.ʁø/', example: 'Ils nous ont réservé un accueil chaleureux.', adj: { masculine: 'chaleureux', feminine: 'chaleureuse', masculinePlural: 'chaleureux', femininePlural: 'chaleureuses' } };
+      const f = { ...this.state.f };
+      const ai = {};
+      Object.entries(data).forEach(([k, v]) => { if (!req.edited.has(k) && (k === 'adj' || !f[k])) { f[k] = v; ai[k === 'adj' ? 'conj' : k] = true; } });
+      this.setState({ f, af: 'success', ai, flash: ai });
+      this.t2 = setTimeout(() => this.setState({ flash: {} }), 50);
+    }, this.rm() ? 600 : 1600);
+  };
+  onSave = (e) => {
+    e.preventDefault();
+    const s = this.state;
+    if (s.saving) return;
+    this.req = null;
+    const f = s.f;
+    const needsMeaning = f.category !== 'grammar';
+    if (!f.french.trim() || (needsMeaning && !f.english.trim())) return this.setState({ err: 'required', af: 'idle', touched: true });
+    if (s.mode === 'new' && f.category === 'vocabulary' && f.french.trim().toLowerCase() === 'la boulangerie') return this.setState({ err: 'duplicate', af: 'idle' });
+    this.setState({ saving: true, err: null, af: 'idle' });
+    this.t1 = setTimeout(() => {
+      if (this.state.failNext) return this.setState({ saving: false, err: 'save', failNext: false });
+      this.setState({ saving: false, toast: s.mode === 'new' ? 'Note saved.' : 'Changes saved.' });
+      this.close();
+      this.t2 = setTimeout(() => this.setState({ toast: null }), 2600);
+    }, this.rm() ? 500 : 1300);
+  };
+  onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); this.close(); } };
+  renderVals() {
+    const s = this.state, f = s.f, rm = this.rm();
+    const cat = f.category;
+    const isVocab = cat === 'vocabulary', isPhr = cat === 'phrases', isGram = cat === 'grammar', isPron = cat === 'pronunciation';
+    const set = {};
+    ['french', 'english', 'ipa', 'pos', 'example', 'notes', 'tags'].forEach((k) => { set[k] = (e) => this.upd(k, e.target.value); });
+    const frenchMissing = s.err === 'required' && !f.french.trim();
+    const enMissing = s.err === 'required' && !isGram && !f.english.trim();
+    const sage = '#EDF0E6';
+    const aiBg = {};
+    ['english', 'ipa', 'pos', 'example', 'conj'].forEach((k) => { aiBg[k] = s.flash[k] ? sage : k === 'conj' ? 'transparent' : '#F8F5EF'; });
+    const afLoading = s.af === 'loading';
+    const afDisabled = s.demo || s.saving || afLoading || !f.french.trim();
+    let statusText = '', statusIcon = '', statusFg = '#4E4639', statusAnim = 'none';
+    if (s.saving) { statusText = 'Saving note…'; statusIcon = 'icon-feather'; }
+    else if (afLoading) { statusText = 'Asking AI to build the vocabulary note…'; statusIcon = 'icon-loader-circle'; statusAnim = 'fl-spin 900ms linear infinite'; statusFg = '#3F6670'; }
+    else if (s.af === 'success') { statusText = 'Auto-filled. Review the details before saving.'; statusIcon = 'icon-sparkles'; statusFg = '#55703F'; }
+    else if (s.af === 'error') { statusText = "Auto-fill couldn't reach the dictionary. This attempt counts toward today's AI limit."; statusIcon = 'icon-circle-alert'; statusFg = '#A0402F'; }
+    const topErrorText = s.err === 'duplicate' ? `“${f.french}” already exists in this category. Edit the existing note instead.` : s.err === 'save' ? 'The note could not be saved. Your text is still here — check your connection and save again.' : s.err === 'required' ? 'Fill in the required fields marked below.' : '';
+    const gopts = [['', '—', 'Unknown'], ['masculine', 'le', 'Masc.'], ['feminine', 'la', 'Fem.'], ['masculine or feminine', 'le/la', 'Both']];
+    const posList = [['', 'Select word type'], ['noun', 'Noun'], ['verb', 'Verb'], ['adjective', 'Adjective'], ['adverb', 'Adverb'], ['pronoun', 'Pronoun'], ['preposition', 'Preposition'], ['conjunction', 'Conjunction'], ['interjection', 'Interjection'], ['article', 'Article'], ['numeral', 'Numeral']];
+    const confL = ['Needs practice', 'Learning', 'Familiar', 'Strong'];
+    const scen = [
+      ['empty', 'Empty · create', () => this.show({ mode: 'new', f: this.empty() })],
+      ['filled', 'Filled · edit', () => this.show({ mode: 'edit', f: this.filled() })],
+      ['invalid', 'Validation', () => this.show({ mode: 'new', f: { ...this.empty(), english: 'bakery' }, err: 'required', touched: true })],
+      ['dup', 'Duplicate', () => this.show({ mode: 'new', f: { ...this.empty(), french: 'la boulangerie', english: 'bakery', pos: 'noun', gender: 'feminine' }, err: 'duplicate' })],
+      ['afload', 'AI loading', () => { this.show({ mode: 'new', f: { ...this.empty(), french: 'chaleureux' } }); setTimeout(this.autofill, 60); }],
+      ['afok', 'AI success', () => this.show({ mode: 'new', f: { ...this.empty(), french: 'chaleureux', english: 'warm, welcoming', pos: 'adjective', ipa: '/ʃa.lø.ʁø/', example: 'Ils nous ont réservé un accueil chaleureux.', adj: { masculine: 'chaleureux', feminine: 'chaleureuse', masculinePlural: 'chaleureux', femininePlural: 'chaleureuses' } }, af: 'success', ai: { english: true, pos: true, ipa: true, example: true } })],
+      ['aferr', 'AI error', () => this.show({ mode: 'new', f: { ...this.empty(), french: 'chaleureux' }, af: 'error' })],
+      ['saving', 'Saving', () => this.show({ mode: 'edit', f: this.filled(), saving: true })],
+      ['savefail', 'Save failed', () => this.show({ mode: 'edit', f: this.filled(), err: 'save' })],
+      ['phrase', 'Phrase', () => this.show({ mode: 'edit', f: { ...this.empty(), category: 'phrases', french: "Il ne faut pas vendre la peau de l'ours avant de l'avoir tué.", english: "Don't count your chickens before they hatch.", tags: 'proverb', conf: 1 } })],
+      ['grammar', 'Grammar', () => this.show({ mode: 'edit', f: { ...this.empty(), category: 'grammar', french: 'Le subjonctif après « il faut que »', tags: 'subjonctif' } })],
+      ['demo', 'Demo account', () => this.show({ mode: 'new', f: { ...this.empty(), french: 'chaleureux' }, demo: true })],
+    ];
+    const accents = ['é', 'è', 'ê', 'ë', 'à', 'â', 'ç', 'î', 'ï', 'ô', 'û', 'ù', 'œ', 'æ', '«', '»'];
+    return {
+      open: s.open, openNew: () => this.show({ mode: 'new', f: this.empty() }),
+      scrimOp: s.inT || rm ? 1 : 0, scrimTrans: rm ? 'none' : 'opacity 200ms ease',
+      dlgOp: s.inT || rm ? 1 : 0, dlgTr: s.inT || rm ? 'none' : 'translateY(12px)', dlgTrans: rm ? 'none' : 'opacity 220ms ease-out, transform 240ms cubic-bezier(.2,.7,.2,1)',
+      onSave: this.onSave, onKey: this.onKey, close: this.close, frenchRef: this.frenchRef,
+      eyebrow: s.mode === 'new' ? 'Nouvelle note' : 'Modifier la note', heading: s.mode === 'new' ? 'Add note' : 'Edit note',
+      savingAria: s.saving ? 'true' : 'false', saving: s.saving, fsOp: s.saving ? 0.6 : 1,
+      cats: [['vocabulary', 'Vocabulary'], ['phrases', 'Phrase'], ['grammar', 'Grammar'], ['pronunciation', 'Pronunciation']].map(([v, l], i) => { const on = cat === v; return { l, n: ['i', 'ii', 'iii', 'iv'][i], checked: on ? 'true' : 'false', fg: on ? '#2A241C' : '#4E4639', nfg: on ? '#8A5F32' : '#958B7A', w: on ? 600 : 500, line: on ? 'inset 0 -2px 0 #2A241C' : 'inset 0 0 0 transparent', onClick: () => this.upd('category', v) }; }),
+      topError: !!s.err, topErrorText, topErrorIcon: s.err === 'save' ? 'icon-cloud-off' : 'icon-circle-alert',
+      isDemoV: s.demo && isVocab,
+      topCols: isVocab ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)',
+      frenchLabel: isGram ? 'Title' : isPhr ? 'Original French' : isPron ? 'Rule' : 'French',
+      frenchPh: isGram ? 'e.g. Prepositions before cities and countries' : isPhr ? 'e.g. À bientôt !' : isPron ? 'e.g. -ent muet' : 'e.g. boulangerie, parler, heureux',
+      frenchIsArea: isPhr, frenchIsInput: !isPhr,
+      frenchErr: frenchMissing || s.err === 'duplicate', frenchErrText: s.err === 'duplicate' ? 'Already in Vocabulary.' : 'Required.',
+      frenchInvalid: frenchMissing || s.err === 'duplicate' ? 'true' : 'false',
+      frenchLine: frenchMissing || s.err === 'duplicate' ? '#A0402F' : '#2A241C',
+      f, set,
+      accents: accents.map((ch) => ({ ch, aria: `Insert ${ch}`, keep: (e) => e.preventDefault(), onClick: () => { this.upd('french', f.french + ch); this.focus(); } })),
+      isVocab, isGrammar: isGram,
+      hasMeaning: !isGram, meaningLabel: isPhr ? 'Translation' : 'English',
+      meaningIsArea: isPhr, meaningIsInput: !isPhr,
+      enErr: enMissing, enLine: enMissing ? '#A0402F' : '#CDBFA9',
+      ai: { english: !!s.ai.english, ipa: !!s.ai.ipa, pos: !!s.ai.pos, example: !!s.ai.example, conj: !!s.ai.conj }, aiBg,
+      autofill: this.autofill, afDisabled,
+      afLabel: afLoading ? 'Auto-filling…' : s.af === 'error' ? 'Retry auto-fill' : 'Auto-fill',
+      afIcon: afLoading ? 'icon-loader-circle' : 'icon-sparkles', afAnim: afLoading ? 'fl-spin 900ms linear infinite' : 'none',
+      afBg: afDisabled && !afLoading ? 'transparent' : afLoading ? '#E7ECED' : 'transparent', afBorder: afDisabled && !afLoading ? '#DDD3C3' : '#3F6670', afFg: afDisabled && !afLoading ? '#958B7A' : '#3F6670', afCursor: afDisabled ? 'not-allowed' : 'pointer',
+      posOptions: posList.map(([v, l]) => ({ v, l, selected: f.pos === v })),
+      isNoun: isVocab && f.pos === 'noun', isVerb: isVocab && f.pos === 'verb', isAdj: isVocab && f.pos === 'adjective', posEmpty: isVocab && !f.pos,
+      genders: gopts.map(([v, art, l]) => { const on = f.gender === v; return { art, l, checked: on ? 'true' : 'false', bg: on ? '#2A241C' : 'transparent', fg: on ? '#EFE9DF' : '#2A241C', onClick: () => this.upd('gender', v) }; }),
+      conj: Object.entries(f.conj).map(([k, v], i) => ({ k, v, id: 'cj' + i, onChange: (e) => { if (this.req) this.req.edited.add('conjugation'); this.setState((x) => ({ f: { ...x.f, conj: { ...x.f.conj, [k]: e.target.value } } })); } })),
+      adj: [['masculine', 'masc.'], ['feminine', 'fem.'], ['masculinePlural', 'masc. pl.'], ['femininePlural', 'fem. pl.']].map(([k, l], i) => ({ k: l, v: f.adj[k], id: 'aj' + i, onChange: (e) => { if (this.req) this.req.edited.add('adj'); this.setState((x) => ({ f: { ...x.f, adj: { ...x.f.adj, [k]: e.target.value } } })); } })),
+      rtButtons: [['bold', 'Bold', 'icon-bold'], ['italic', 'Italic', 'icon-italic'], ['underline', 'Underline', 'icon-underline'], ['insertUnorderedList', 'Bullet list', 'icon-list'], ['insertOrderedList', 'Numbered list', 'icon-list-ordered']].map(([c, l, icon]) => ({ l, icon, down: (e) => { e.preventDefault(); document.execCommand(c, false); } })),
+      ctxNum: isVocab || isGram ? 'III.' : 'II.',
+      ctxCols: 'minmax(0,1fr) minmax(0,1fr)',
+      hasExample: isVocab || isPron, hasNotes: isVocab || isPron,
+      confs: [1, 2, 3, 4].map((v) => { const on = Number(f.conf) === v; return { l: confL[v - 1], checked: on ? 'true' : 'false', bg: on ? '#2A241C' : 'transparent', fg: on ? '#EFE9DF' : '#2A241C', border: on ? '#2A241C' : '#DDD3C3', ticks: [1, 2, 3, 4].map((t) => ({ bg: t <= v ? (on ? '#C9D6B9' : '#3F6670') : on ? '#5A5246' : '#DDD3C3' })), onClick: () => this.upd('conf', v) }; }),
+      hasStatus: !!statusText, statusText, statusIcon, statusFg, statusAnim, statusRetry: s.af === 'error' && !s.saving,
+      cancelLabel: s.saving ? 'Close' : 'Cancel', saveLabel: s.saving ? 'Saving note…' : s.err === 'save' ? 'Save again' : 'Save note', saveBg: s.saving ? '#4E4639' : '#2A241C',
+      toast: !!s.toast, toastText: s.toast,
+      toggleFail: () => this.setState((x) => ({ failNext: !x.failNext })),
+      failAria: s.failNext ? 'true' : 'false', failTrack: s.failNext ? '#A0402F' : '#CDBFA9', failKnob: s.failNext ? '16px' : '2px',
+      scenarios: scen.map(([k, label, fn]) => ({ label, bg: s.sc === k ? '#2A241C' : '#EFE9DF', fg: s.sc === k ? '#EFE9DF' : '#2A241C', onClick: () => { this.setState({ sc: k }); fn(); } })),
+    };
+  }
+}
+</script>
+</body>
+</html>

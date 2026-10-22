@@ -202,6 +202,7 @@ test("demo settings and AI restrictions work without Supabase configuration", as
   await page.getByLabel("Display name", { exact: true }).fill("Offline Demo");
   await page.getByRole("button", { name: "Save profile", exact: true }).click();
   await expect(page.getByText("Profile updated.", { exact: true })).toBeVisible();
+  await page.getByLabel("Quiz vocabulary questions", { exact: true }).fill("3");
   await page.getByRole("button", { name: "Save learning settings", exact: true }).click();
   await expect(page.getByText("Learning settings updated.", { exact: true })).toBeVisible();
   const message = await page.evaluate(async () => {

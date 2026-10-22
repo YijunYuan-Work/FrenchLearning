@@ -1,0 +1,278 @@
+[
+  {
+    "width": 390,
+    "sample": 0,
+    "cls": 0.0019260525482747706,
+    "longTasks": [],
+    "resources": [
+      {
+        "file": "/fonts/instrument-sans.ttf",
+        "bytes": 194336,
+        "transfer": 194636,
+        "duration": 9
+      },
+      {
+        "file": "/fonts/newsreader.ttf",
+        "bytes": 451664,
+        "transfer": 451964,
+        "duration": 10.099999999627471
+      },
+      {
+        "file": "/assets/index-DKmium-G.css",
+        "bytes": 21120,
+        "transfer": 21420,
+        "duration": 10.799999999813735
+      },
+      {
+        "file": "/assets/index-Bt84DfYW.js",
+        "bytes": 228141,
+        "transfer": 228441,
+        "duration": 23.09999999962747
+      },
+      {
+        "file": "/brand/tricolore.png",
+        "bytes": 153,
+        "transfer": 453,
+        "duration": 2.3999999994412065
+      },
+      {
+        "file": "/fonts/newsreader-italic.ttf",
+        "bytes": 495684,
+        "transfer": 495984,
+        "duration": 31.200000000186265
+      }
+    ],
+    "domReady": 60.200000000186265,
+    "unexpected": []
+  },
+  {
+    "width": 390,
+    "sample": 1,
+    "cls": 0.0019260525482747706,
+    "longTasks": [],
+    "resources": [
+      {
+        "file": "/fonts/instrument-sans.ttf",
+        "bytes": 194336,
+        "transfer": 194636,
+        "duration": 11.899999999441206
+      },
+      {
+        "file": "/fonts/newsreader.ttf",
+        "bytes": 451664,
+        "transfer": 451964,
+        "duration": 12.799999999813735
+      },
+      {
+        "file": "/assets/index-DKmium-G.css",
+        "bytes": 21120,
+        "transfer": 21420,
+        "duration": 16.40000000037253
+      },
+      {
+        "file": "/assets/index-Bt84DfYW.js",
+        "bytes": 228141,
+        "transfer": 228441,
+        "duration": 37.90000000037253
+      },
+      {
+        "file": "/brand/tricolore.png",
+        "bytes": 153,
+        "transfer": 453,
+        "duration": 3.099999999627471
+      },
+      {
+        "file": "/fonts/newsreader-italic.ttf",
+        "bytes": 495684,
+        "transfer": 495984,
+        "duration": 29.100000000558794
+      }
+    ],
+    "domReady": 67.5,
+    "unexpected": []
+  },
+  {
+    "width": 390,
+    "sample": 2,
+    "cls": 0.0019260525482747706,
+    "longTasks": [],
+    "resources": [
+      {
+        "file": "/fonts/instrument-sans.ttf",
+        "bytes": 194336,
+        "transfer": 194636,
+        "duration": 7.2999999998137355
+      },
+      {
+        "file": "/fonts/newsreader.ttf",
+        "bytes": 451664,
+        "transfer": 451964,
+        "duration": 8.100000000558794
+      },
+      {
+        "file": "/assets/index-DKmium-G.css",
+        "bytes": 21120,
+        "transfer": 21420,
+        "duration": 9.699999999254942
+      },
+      {
+        "file": "/assets/index-Bt84DfYW.js",
+        "bytes": 228141,
+        "transfer": 228441,
+        "duration": 27.699999999254942
+      },
+      {
+        "file": "/brand/tricolore.png",
+        "bytes": 153,
+        "transfer": 453,
+        "duration": 2.400000000372529
+      },
+      {
+        "file": "/fonts/newsreader-italic.ttf",
+        "bytes": 495684,
+        "transfer": 495984,
+        "duration": 28.399999999441206
+      }
+    ],
+    "domReady": 58,
+    "unexpected": []
+  },
+  {
+    "width": 1280,
+    "sample": 0,
+    "cls": 0.016819490432739257,
+    "longTasks": [],
+    "resources": [
+      {
+        "file": "/fonts/instrument-sans.ttf",
+        "bytes": 194336,
+        "transfer": 194636,
+        "duration": 9.200000000186265
+      },
+      {
+        "file": "/assets/index-DKmium-G.css",
+        "bytes": 21120,
+        "transfer": 21420,
+        "duration": 12.299999999813735
+      },
+      {
+        "file": "/fonts/newsreader.ttf",
+        "bytes": 451664,
+        "transfer": 451964,
+        "duration": 10.199999999254942
+      },
+      {
+        "file": "/assets/index-Bt84DfYW.js",
+        "bytes": 228141,
+        "transfer": 228441,
+        "duration": 31.199999999254942
+      },
+      {
+        "file": "/brand/tricolore.png",
+        "bytes": 153,
+        "transfer": 453,
+        "duration": 2.7999999998137355
+      },
+      {
+        "file": "/fonts/newsreader-italic.ttf",
+        "bytes": 495684,
+        "transfer": 495984,
+        "duration": 45.799999999813735
+      }
+    ],
+    "domReady": 60.799999999813735,
+    "unexpected": []
+  },
+  {
+    "width": 1280,
+    "sample": 1,
+    "cls": 0.016819490432739257,
+    "longTasks": [],
+    "resources": [
+      {
+        "file": "/fonts/instrument-sans.ttf",
+        "bytes": 194336,
+        "transfer": 194636,
+        "duration": 8.299999999813735
+      },
+      {
+        "file": "/fonts/newsreader.ttf",
+        "bytes": 451664,
+        "transfer": 451964,
+        "duration": 9.599999999627471
+      },
+      {
+        "file": "/assets/index-DKmium-G.css",
+        "bytes": 21120,
+        "transfer": 21420,
+        "duration": 11.600000000558794
+      },
+      {
+        "file": "/assets/index-Bt84DfYW.js",
+        "bytes": 228141,
+        "transfer": 228441,
+        "duration": 28.40000000037253
+      },
+      {
+        "file": "/brand/tricolore.png",
+        "bytes": 153,
+        "transfer": 453,
+        "duration": 3.099999999627471
+      },
+      {
+        "file": "/fonts/newsreader-italic.ttf",
+        "bytes": 495684,
+        "transfer": 495984,
+        "duration": 41.5
+      }
+    ],
+    "domReady": 59.799999999813735,
+    "unexpected": []
+  },
+  {
+    "width": 1280,
+    "sample": 2,
+    "cls": 0.016819490432739257,
+    "longTasks": [],
+    "resources": [
+      {
+        "file": "/fonts/instrument-sans.ttf",
+        "bytes": 194336,
+        "transfer": 194636,
+        "duration": 8.599999999627471
+      },
+      {
+        "file": "/fonts/newsreader.ttf",
+        "bytes": 451664,
+        "transfer": 451964,
+        "duration": 10.200000000186265
+      },
+      {
+        "file": "/assets/index-DKmium-G.css",
+        "bytes": 21120,
+        "transfer": 21420,
+        "duration": 12.099999999627471
+      },
+      {
+        "file": "/assets/index-Bt84DfYW.js",
+        "bytes": 228141,
+        "transfer": 228441,
+        "duration": 29.700000000186265
+      },
+      {
+        "file": "/brand/tricolore.png",
+        "bytes": 153,
+        "transfer": 453,
+        "duration": 3.6000000005587935
+      },
+      {
+        "file": "/fonts/newsreader-italic.ttf",
+        "bytes": 495684,
+        "transfer": 495984,
+        "duration": 44.299999999813735
+      }
+    ],
+    "domReady": 61.299999999813735,
+    "unexpected": []
+  }
+]

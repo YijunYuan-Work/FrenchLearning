@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>
+body{margin:0;background:#E4E0D8;font-family:'Instrument Sans',system-ui,sans-serif;color:#2A241C;-webkit-font-smoothing:antialiased}
+a{color:#3F6670;text-decoration:underline;text-underline-offset:3px}
+a:hover{color:#8A5F32}
+button{font:inherit}
+</style>
+</helmet>
+
+<section style="padding:56px 56px 8px;display:flex;flex-direction:column;gap:18px;width:1710px">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span style="font:500 12px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F6656">French Desk · UI 2.0 · Stage 2 · Le Cahier · Bois</span>
+    <nav style="display:flex;gap:6px;font-size:14px">
+      <a href="Stage 2 - I Today.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;background:#2A241C;color:#EFE9DF;text-decoration:none">I. Today</a>
+      <a href="Stage 2 - II Study.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">II. Study</a>
+      <a href="Stage 2 - III Quiz.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">III. Quiz</a>
+      <a href="Stage 2 - IV System.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">IV. System &amp; motion</a>
+    </nav>
+  </div>
+  <div style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #2A241C;padding-bottom:16px">
+    <h1 style="margin:0;font:400 64px/1 'Newsreader',serif;letter-spacing:-.02em">Chapitre <span style="font-style:italic">I</span> — Today</h1>
+    <span style="font:italic 400 22px/1 'Newsreader',serif;color:#6F6656">aujourd'hui</span>
+  </div>
+</section>
+
+<section style="padding:32px 56px 0;display:flex;gap:40px;align-items:flex-start;width:1710px">
+  <div id="today-desktop" tabindex="-1" style="width:1280px;height:800px;display:grid;grid-template-columns:248px minmax(0,1fr);background:#EFE9DF;color:#2A241C;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 #DDD3C3,0 24px 60px -24px rgba(50,38,20,.25);flex-shrink:0">
+    <aside style="background:#E7ECED;border-right:1px solid #DDD3C3;padding:30px 20px 24px;display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;flex-direction:column;gap:8px;padding:0 8px">
+        <div style="display:flex;gap:3px"><span style="width:14px;height:3px;background:#23408E"></span><span style="width:14px;height:3px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #DDD3C3"></span><span style="width:14px;height:3px;background:#B43A2E"></span></div>
+        <span style="font:italic 500 28px/1 'Newsreader',serif;letter-spacing:-.01em">French Desk</span>
+        <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656">Learning Hub</span>
+      </div>
+      <nav style="display:flex;flex-direction:column;gap:2px;flex:1">
+        <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6F6656;padding:0 8px 8px">Pratique</span>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;background:#F8F5EF;box-shadow:0 1px 0 #DDD3C3;color:#3F6670"><span style="font:italic 400 14px/1 'Newsreader',serif">01</span><span style="font-weight:600;font-size:15px">Today</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#8A5F32">aujourd'hui</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;color:#4E4639" style-hover="background:#D5DEDF"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">02</span><span style="font-weight:500;font-size:15px">Study</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">étude</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;color:#4E4639" style-hover="background:#D5DEDF"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">03</span><span style="font-weight:500;font-size:15px">Quiz</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">dictée</span></div>
+        <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6F6656;padding:20px 8px 8px">Le cahier</span>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;color:#4E4639" style-hover="background:#D5DEDF"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">04</span><span style="font-weight:500;font-size:15px">Vocabulary</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">mots</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;color:#4E4639" style-hover="background:#D5DEDF"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">05</span><span style="font-weight:500;font-size:15px">Phrases</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">expressions</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;color:#4E4639" style-hover="background:#D5DEDF"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">06</span><span style="font-weight:500;font-size:15px">Grammar</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">grammaire</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr auto;align-items:baseline;gap:10px;padding:10px 8px;border-radius:6px;color:#4E4639" style-hover="background:#D5DEDF"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">07</span><span style="font-weight:500;font-size:15px">Pronunciation</span><span style="font:italic 400 13px/1 'Newsreader',serif;color:#958B7A">phonétique</span></div>
+        <span style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6F6656;padding:20px 8px 8px">Bureau</span>
+        <div style="display:grid;grid-template-columns:22px 1fr;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">08</span><span style="font-weight:500;font-size:15px">Import</span></div>
+        <div style="display:grid;grid-template-columns:22px 1fr;align-items:baseline;gap:10px;padding:10px 8px;color:#4E4639"><span style="font:italic 400 14px/1 'Newsreader',serif;color:#6F6656">09</span><span style="font-weight:500;font-size:15px">Settings</span></div>
+      </nav>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:0 8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;border:1px solid #CDBFA9;border-radius:999px;padding:3px;font-size:13px;font-weight:500"><span style="text-align:center;padding:6px 0;border-radius:999px;background:#2A241C;color:#EFE9DF">EN</span><span style="text-align:center;padding:6px 0;color:#4E4639;font-family:'Noto Sans SC'">中文</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#4E4639"><span>Demo</span><span style="color:#8A5F32">Sign out</span></div>
+      </div>
+    </aside>
+    <main style="padding:34px 60px 0;display:flex;flex-direction:column;min-width:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A5F32;font-weight:600">Personal French workspace</span>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span style="font:italic 400 15px/1 'Newsreader',serif;color:#4E4639;white-space:nowrap">lundi 19 octobre 2026</span>
+          <span style="width:1px;height:20px;background:#DDD3C3"></span>
+          <button style="display:flex;align-items:center;gap:8px;white-space:nowrap;height:40px;padding:0 18px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-weight:500;font-size:14px;cursor:pointer" style-hover="background:#3F6670" style-focus="outline:2px solid #3F6670;outline-offset:2px"><i class="icon-plus" style="font-size:16px"></i>Add note</button>
+        </div>
+      </div>
+      <div style="height:3px;border-top:2px solid #2A241C;border-bottom:1px solid #2A241C;margin:18px 0 26px"></div>
+
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:48px;align-items:end;opacity:{{ heroOp }};transform:{{ heroTr }};transition:{{ enterTrans }}">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <span style="font:italic 400 18px/1 'Newsreader',serif;color:#6F6656">Bonjour, Demo.</span>
+          <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#3F6670"><i class="icon-circle-check" style="font-size:15px"></i>Daily plan</span>
+          <h3 style="margin:0;font:400 56px/1.02 'Newsreader',serif;letter-spacing:-.025em">Finish today's <span style="font-style:italic">French</span> plan</h3>
+          <p style="margin:0;font-size:17px;line-height:1.6;color:#4E4639;max-width:560px;text-wrap:pretty">Three small tasks keep practice clear: capture one note, study your cards, then complete the quiz.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;padding-bottom:6px" role="status" aria-live="polite" aria-label="{{ progressAria }}">
+          <div style="display:flex;align-items:flex-end;gap:6px">
+            <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}"><span style="font:400 104px/120px 'Newsreader',serif;color:#958B7A;height:120px">–</span></sc-if>
+            <sc-if value="{{ notLoading }}" hint-placeholder-val="{{ true }}">
+              <div style="height:120px;overflow:hidden">
+                <div style="display:flex;flex-direction:column;transform:{{ odoTr }};transition:{{ odoTrans }}">
+                  <span style="height:120px;font:400 104px/120px 'Newsreader',serif;color:#3F6670;letter-spacing:-.04em">0</span>
+                  <span style="height:120px;font:400 104px/120px 'Newsreader',serif;color:#3F6670;letter-spacing:-.04em">1</span>
+                  <span style="height:120px;font:400 104px/120px 'Newsreader',serif;color:#3F6670;letter-spacing:-.04em">2</span>
+                  <span style="height:120px;font:400 104px/120px 'Newsreader',serif;color:#55703F;letter-spacing:-.04em">3</span>
+                </div>
+              </div>
+            </sc-if>
+            <span style="font:italic 400 40px/1 'Newsreader',serif;color:#6F6656;padding-bottom:22px">/ 3</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">
+            <sc-for list="{{ segs }}" as="s" hint-placeholder-count="3"><span style="height:4px;background:#DDD3C3;position:relative;overflow:hidden;display:block"><span style="position:absolute;inset:0;background:#55703F;transform-origin:left center;transform:{{ s.tr }};transition:{{ s.trans }}"></span></span></sc-for>
+          </div>
+          <span style="font-size:13px;color:#6F6656">{{ doneLabel }}</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;margin-top:30px;border-bottom:1px solid #DDD3C3">
+        <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="3">
+          <button onClick="{{ t.onClick }}" disabled="{{ t.disabled }}" aria-label="{{ t.aria }}" style="display:grid;grid-template-columns:72px minmax(0,1fr) auto 32px;gap:20px;align-items:center;padding:22px 16px 22px 0;border:0;border-top:1px solid #DDD3C3;text-align:left;width:100%;color:#2A241C;cursor:{{ t.cursor }};background:{{ t.bg }};opacity:{{ t.op }};transform:{{ t.tr }};transition:{{ t.trans }}" style-hover="background:#E8E1D4" style-focus="outline:2px solid #3F6670;outline-offset:-2px">
+            <span style="position:relative;width:56px;height:44px;display:block">
+              <span style="position:absolute;left:8px;top:0;font:italic 400 38px/44px 'Newsreader',serif;color:{{ t.numColor }};opacity:{{ t.numOp }};transform:{{ t.numTr }};transition:{{ t.markTrans }}">{{ t.n }}</span>
+              <span style="position:absolute;left:4px;top:2px;width:40px;height:40px;border-radius:50%;background:#55703F;color:#EFE9DF;display:grid;place-items:center;opacity:{{ t.chkOp }};transform:{{ t.chkTr }};transition:{{ t.markTrans }}"><i class="icon-check" style="font-size:20px"></i></span>
+            </span>
+            <span style="display:flex;flex-direction:column;gap:4px;min-width:0">
+              <span style="font:400 26px/1.15 'Newsreader',serif;color:{{ t.titleColor }}">{{ t.title }}</span>
+              <span style="font-size:15px;color:#4E4639">{{ t.copy }}</span>
+              <sc-if value="{{ t.hasReason }}" hint-placeholder-val="{{ false }}"><span style="font:italic 400 15px/1.3 'Newsreader',serif;color:#6F6656">{{ t.reason }}</span></sc-if>
+            </span>
+            <span style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:{{ t.chipColor }};box-shadow:inset 0 0 0 1px {{ t.chipBorder }};padding:6px 10px;border-radius:999px;white-space:nowrap">{{ t.chip }}</span>
+            <i class="icon-arrow-right" style="font-size:18px;color:{{ t.arrowColor }}"></i>
+          </button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ allDone }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:baseline;gap:16px;padding:22px 0;opacity:{{ celebOp }};transform:{{ celebTr }};transition:{{ celebTrans }}">
+          <span style="font:italic 400 30px/1 'Newsreader',serif;color:#55703F">Tout est fait.</span>
+          <span style="font-size:15px;color:#4E4639">All three tasks are done for today — à demain.</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isNew }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:72px minmax(0,1fr);gap:20px;padding:22px 0">
+          <span style="font:italic 400 15px/1.4 'Newsreader',serif;color:#8A5F32">N.B.</span>
+          <span style="font:italic 400 18px/1.45 'Newsreader',serif;color:#4E4639;max-width:560px">Your notebook is still empty. Start with <span style="font-style:normal;color:#2A241C">I</span> — every study card and quiz word grows from the notes you write.</span>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <div style="width:350px;display:flex;flex-direction:column;gap:20px;flex-shrink:0">
+    <div style="background:#F8F5EF;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Prototype · data state</span>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="5">
+          <button onClick="{{ s.onClick }}" style="display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 14px;border:0;border-radius:6px;cursor:pointer;text-align:left;background:{{ s.bg }};color:{{ s.fg }}" style-focus="outline:2px solid #3F6670;outline-offset:2px"><span style="font-weight:500;font-size:14px">{{ s.label }}</span><span style="font:italic 400 14px 'Newsreader',serif;opacity:.8">{{ s.note }}</span></button>
+        </sc-for>
+      </div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639;border-top:1px solid #DDD3C3;padding-top:12px">Click a ready task row to preview its completion transition. In the app the row navigates (Add note / Study / Quiz); the transition plays when you return to Today and that task is newly done.</p>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E3DACB;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.5;color:#433C31">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">What to look at</span>
+      <div><b style="font-weight:600">Odometer.</b> The big numeral rolls to the new count (480ms) — the page's single moment of emphasis.</div>
+      <div><b style="font-weight:600">Numeral → check.</b> "II." fades and tilts out (160ms) while the sage seal scales in from .6 (240ms).</div>
+      <div><b style="font-weight:600">Rule fill.</b> The matching segment draws left→right (420ms), staggered 80ms after the seal.</div>
+      <div><b style="font-weight:600">Next up.</b> The first ready, unfinished task gets the raised paper row. It moves down as tasks finish.</div>
+      <div><b style="font-weight:600">3/3.</b> "Tout est fait." fades in 450ms later. No confetti, no sound.</div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 0;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 28px/1 'Newsreader',serif">Task row — four states</span><span style="font-size:14px;color:#6F6656">Same component, driven by <code style="font-family:'JetBrains Mono';font-size:12px">isDone</code> / <code style="font-family:'JetBrains Mono';font-size:12px">isReady</code> and "first ready" ordering</span></div>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px">
+    <div style="display:flex;flex-direction:column;gap:10px"><span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">NOT STARTED · READY</span>
+      <div style="background:#EFE9DF;border-radius:10px;padding:0 18px"><div style="display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:14px;align-items:center;padding:20px 0;border-top:1px solid #DDD3C3;border-bottom:1px solid #DDD3C3"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#8A5F32">III.</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:400 21px/1.2 'Newsreader',serif">Complete daily quiz</span><span style="font-size:13px;color:#4E4639">Check recall and advance confidence.</span></div><span style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8A5F32;box-shadow:inset 0 0 0 1px #8A5F32;padding:5px 8px;border-radius:999px">18 words ready</span></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px"><span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">AVAILABLE · NEXT UP</span>
+      <div style="background:#EFE9DF;border-radius:10px;padding:0 18px"><div style="display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:14px;align-items:center;padding:20px 12px;margin:0 -12px;border-top:1px solid #DDD3C3;border-bottom:1px solid #DDD3C3;background:#F8F5EF"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">II.</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:400 21px/1.2 'Newsreader',serif">Complete daily study</span><span style="font-size:13px;color:#4E4639">Review cards that still feel new.</span></div><span style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#3F6670;box-shadow:inset 0 0 0 1px #3F6670;padding:5px 8px;border-radius:999px">24 cards ready</span></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px"><span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">COMPLETED</span>
+      <div style="background:#EFE9DF;border-radius:10px;padding:0 18px"><div style="display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:14px;align-items:center;padding:20px 0;border-top:1px solid #DDD3C3;border-bottom:1px solid #DDD3C3"><span style="width:34px;height:34px;border-radius:50%;background:#55703F;color:#EFE9DF;display:grid;place-items:center"><i class="icon-check" style="font-size:18px"></i></span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:400 21px/1.2 'Newsreader',serif;color:#4E4639">Add a note</span><span style="font-size:13px;color:#6F6656">Capture one useful word or phrase.</span></div><span style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#55703F;padding:5px 0">Done · Fait</span></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px"><span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">UNAVAILABLE · DISABLED</span>
+      <div style="background:#EFE9DF;border-radius:10px;padding:0 18px"><div style="display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:14px;align-items:center;padding:20px 0;border-top:1px solid #DDD3C3;border-bottom:1px solid #DDD3C3;opacity:.55"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#6F6656">II.</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:400 21px/1.2 'Newsreader',serif">Complete daily study</span><span style="font:italic 400 14px/1.3 'Newsreader',serif;color:#4E4639">No cards need study</span></div><span style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#4E4639;box-shadow:inset 0 0 0 1px #CDBFA9;padding:5px 8px;border-radius:999px">Not ready</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 0;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 28px/1 'Newsreader',serif">Tablet &amp; mobile</span><span style="font-size:14px;color:#6F6656">768–1023px: numbered rail. &lt;768px: bottom tab bar, Add note as header action. Mobile shown in 简体中文 and English.</span></div>
+  <div style="display:flex;gap:36px;align-items:flex-start">
+
+    <div style="width:834px;height:800px;display:grid;grid-template-columns:76px minmax(0,1fr);background:#EFE9DF;border-radius:28px;border:10px solid #2A241C;overflow:hidden;box-sizing:border-box;flex-shrink:0">
+      <aside style="background:#E7ECED;border-right:1px solid #DDD3C3;display:flex;flex-direction:column;align-items:center;padding:22px 0;gap:6px">
+        <div style="display:flex;gap:2px;margin-bottom:6px"><span style="width:9px;height:3px;background:#23408E"></span><span style="width:9px;height:3px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #DDD3C3"></span><span style="width:9px;height:3px;background:#B43A2E"></span></div>
+        <span style="font:italic 500 22px/1 'Newsreader',serif;margin-bottom:14px">FD</span>
+        <div style="width:56px;padding:9px 0;border-radius:6px;background:#F8F5EF;box-shadow:0 1px 0 #DDD3C3;display:flex;flex-direction:column;align-items:center;gap:3px;color:#3F6670"><span style="font:italic 400 15px/1 'Newsreader',serif">01</span><span style="font-size:10px;font-weight:600">Today</span></div>
+        <div style="width:56px;padding:9px 0;display:flex;flex-direction:column;align-items:center;gap:3px;color:#4E4639"><span style="font:italic 400 15px/1 'Newsreader',serif;color:#6F6656">02</span><span style="font-size:10px">Study</span></div>
+        <div style="width:56px;padding:9px 0;display:flex;flex-direction:column;align-items:center;gap:3px;color:#4E4639"><span style="font:italic 400 15px/1 'Newsreader',serif;color:#6F6656">03</span><span style="font-size:10px">Quiz</span></div>
+        <span style="width:28px;height:1px;background:#CDBFA9;margin:6px 0"></span>
+        <div style="width:56px;padding:9px 0;display:flex;flex-direction:column;align-items:center;gap:3px;color:#4E4639"><span style="font:italic 400 15px/1 'Newsreader',serif;color:#6F6656">04</span><span style="font-size:10px">Words</span></div>
+        <div style="width:56px;padding:9px 0;display:flex;flex-direction:column;align-items:center;gap:3px;color:#4E4639"><span style="font:italic 400 15px/1 'Newsreader',serif;color:#6F6656">05</span><span style="font-size:10px">Phrases</span></div>
+        <div style="width:56px;padding:9px 0;display:flex;flex-direction:column;align-items:center;gap:3px;color:#4E4639"><span style="font:italic 400 15px/1 'Newsreader',serif;color:#6F6656">06</span><span style="font-size:10px">Grammar</span></div>
+        <div style="width:56px;padding:9px 0;display:flex;flex-direction:column;align-items:center;gap:3px;color:#4E4639"><span style="font:italic 400 15px/1 'Newsreader',serif;color:#6F6656">07</span><span style="font-size:10px">Sounds</span></div>
+        <div style="flex:1"></div>
+        <div style="width:44px;height:44px;display:grid;place-items:center;color:#4E4639"><i class="icon-settings" style="font-size:20px"></i></div>
+      </aside>
+      <main style="padding:28px 40px;display:flex;flex-direction:column;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:italic 400 15px/1 'Newsreader',serif;color:#4E4639">lundi 19 octobre</span><button style="display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-weight:500;font-size:14px"><i class="icon-plus" style="font-size:16px"></i>Add note</button></div>
+        <div style="height:3px;border-top:2px solid #2A241C;border-bottom:1px solid #2A241C;margin:16px 0 26px"></div>
+        <span style="font:italic 400 17px/1 'Newsreader',serif;color:#6F6656">Bonjour, Demo.</span>
+        <h3 style="margin:10px 0 0;font:400 46px/1.04 'Newsreader',serif;letter-spacing:-.025em">Finish today's <span style="font-style:italic">French</span> plan</h3>
+        <p style="margin:12px 0 0;font-size:16px;line-height:1.6;color:#4E4639">Three small tasks keep practice clear: capture one note, study your cards, then complete the quiz.</p>
+        <div style="display:flex;align-items:center;gap:16px;margin-top:22px"><span style="font:400 64px/1 'Newsreader',serif;color:#3F6670">2<span style="font-style:italic;font-size:30px;color:#6F6656"> / 3</span></span><div style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:4px"><span style="height:4px;background:#55703F"></span><span style="height:4px;background:#55703F"></span><span style="height:4px;background:#DDD3C3"></span></div><span style="font-size:13px;color:#6F6656">tasks done</span></div>
+        <div style="display:flex;flex-direction:column;margin-top:24px;border-bottom:1px solid #DDD3C3">
+          <div style="display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:16px;align-items:center;padding:20px 0;border-top:1px solid #DDD3C3"><span style="width:36px;height:36px;border-radius:50%;background:#55703F;color:#EFE9DF;display:grid;place-items:center"><i class="icon-check" style="font-size:18px"></i></span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:400 22px/1.2 'Newsreader',serif;color:#4E4639">Add a note</span><span style="font-size:14px;color:#6F6656">Capture one useful word or phrase.</span></div><span style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#55703F">Done</span></div>
+          <div style="display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:16px;align-items:center;padding:20px 0;border-top:1px solid #DDD3C3"><span style="width:36px;height:36px;border-radius:50%;background:#55703F;color:#EFE9DF;display:grid;place-items:center"><i class="icon-check" style="font-size:18px"></i></span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:400 22px/1.2 'Newsreader',serif;color:#4E4639">Complete daily study</span><span style="font-size:14px;color:#6F6656">Review cards that still feel new.</span></div><span style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#55703F">Done</span></div>
+          <div style="display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:16px;align-items:center;padding:20px 12px;margin:0 -12px;border-top:1px solid #DDD3C3;background:#F8F5EF"><span style="font:italic 400 32px/1 'Newsreader',serif;color:#8A5F32">III.</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:400 22px/1.2 'Newsreader',serif">Complete daily quiz</span><span style="font-size:14px;color:#4E4639">Check recall and advance confidence.</span></div><span style="font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8A5F32;box-shadow:inset 0 0 0 1px #8A5F32;padding:6px 9px;border-radius:999px">18 words ready</span></div>
+        </div>
+      </main>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 12px;border-bottom:2px solid #2A241C;margin:0 20px">
+        <div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;gap:2px"><span style="width:10px;height:3px;background:#23408E"></span><span style="width:10px;height:3px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #DDD3C3"></span><span style="width:10px;height:3px;background:#B43A2E"></span></div><span style="font:italic 500 24px/1 'Newsreader',serif">French Desk</span></div>
+        <button aria-label="添加笔记" style="width:44px;height:44px;border-radius:50%;border:0;background:#2A241C;color:#EFE9DF;display:grid;place-items:center"><i class="icon-plus" style="font-size:20px"></i></button>
+      </div>
+      <div style="flex:1;padding:20px 20px 0;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+        <span style="font:italic 400 15px/1 'Newsreader',serif;color:#6F6656">Bonjour, Demo · 10月19日</span>
+        <span style="font-size:13px;font-weight:500;color:#3F6670">每日计划</span>
+        <h3 style="margin:0;font:700 30px/1.25 'Noto Serif SC',serif;letter-spacing:-.01em">完成今天的法语计划</h3>
+        <p style="margin:0;font-size:15px;line-height:1.7;color:#4E4639">三个小任务让练习更清楚：记一条笔记、学习卡片，然后完成测验。</p>
+        <div style="display:flex;align-items:center;gap:14px;padding:4px 0"><span style="font:400 48px/1 'Newsreader',serif;color:#3F6670">1<span style="font-style:italic;font-size:24px;color:#6F6656"> / 3</span></span><div style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:3px"><span style="height:4px;background:#55703F"></span><span style="height:4px;background:#DDD3C3"></span><span style="height:4px;background:#DDD3C3"></span></div><span style="font-size:12px;color:#6F6656">项已完成</span></div>
+        <div style="display:flex;flex-direction:column;border-bottom:1px solid #DDD3C3">
+          <div style="display:grid;grid-template-columns:40px 1fr 18px;gap:12px;align-items:center;padding:15px 0;border-top:1px solid #DDD3C3"><span style="width:30px;height:30px;border-radius:50%;background:#55703F;color:#EFE9DF;display:grid;place-items:center"><i class="icon-check" style="font-size:16px"></i></span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:500 18px/1.3 'Noto Serif SC',serif;color:#4E4639">添加一条笔记</span><span style="font-size:12px;color:#55703F;font-weight:500">已完成</span></div><i class="icon-chevron-right" style="color:#958B7A"></i></div>
+          <div style="display:grid;grid-template-columns:40px 1fr 18px;gap:12px;align-items:center;padding:15px 20px;border-top:1px solid #DDD3C3;background:#F8F5EF;margin:0 -20px"><span style="font:italic 400 26px/1 'Newsreader',serif;color:#3F6670">II.</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:500 18px/1.3 'Noto Serif SC',serif">完成每日学习</span><span style="font-size:12px;color:#3F6670;font-weight:500">24 张卡片待学习</span></div><i class="icon-chevron-right" style="color:#3F6670"></i></div>
+          <div style="display:grid;grid-template-columns:40px 1fr 18px;gap:12px;align-items:center;padding:15px 0;border-top:1px solid #DDD3C3"><span style="font:italic 400 26px/1 'Newsreader',serif;color:#8A5F32">III.</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:500 18px/1.3 'Noto Serif SC',serif">完成每日测验</span><span style="font-size:12px;color:#8A5F32;font-weight:500">18 个词待测验</span></div><i class="icon-chevron-right" style="color:#958B7A"></i></div>
+        </div>
+      </div>
+      <nav style="display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid #DDD3C3;background:#E7ECED;padding:8px 6px 26px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-height:44px;justify-content:center;color:#3F6670"><i class="icon-calendar-days" style="font-size:20px"></i><span style="font-size:11px;font-weight:700">今日</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-list-checks" style="font-size:20px"></i><span style="font-size:11px">学习</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-circle-help" style="font-size:20px"></i><span style="font-size:11px">测验</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-book-open" style="font-size:20px"></i><span style="font-size:11px">笔记</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-menu" style="font-size:20px"></i><span style="font-size:11px">更多</span></div>
+      </nav>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · IN PROGRESS · 中文</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 12px;border-bottom:2px solid #2A241C;margin:0 20px">
+        <div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;gap:2px"><span style="width:10px;height:3px;background:#23408E"></span><span style="width:10px;height:3px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #DDD3C3"></span><span style="width:10px;height:3px;background:#B43A2E"></span></div><span style="font:italic 500 24px/1 'Newsreader',serif">French Desk</span></div>
+        <button aria-label="Add note" style="width:44px;height:44px;border-radius:50%;border:0;background:#2A241C;color:#EFE9DF;display:grid;place-items:center"><i class="icon-plus" style="font-size:20px"></i></button>
+      </div>
+      <div style="flex:1;padding:20px 20px 0;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+        <span style="font:italic 400 15px/1 'Newsreader',serif;color:#6F6656">Bonjour, Demo · lundi 19 oct.</span>
+        <span style="font-size:13px;font-weight:600;color:#3F6670">Daily plan</span>
+        <h3 style="margin:0;font:400 34px/1.05 'Newsreader',serif;letter-spacing:-.02em">Finish today's <span style="font-style:italic">French</span> plan</h3>
+        <div style="display:flex;align-items:center;gap:14px;padding:4px 0"><span style="font:400 48px/1 'Newsreader',serif;color:#55703F">3<span style="font-style:italic;font-size:24px;color:#6F6656"> / 3</span></span><div style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:3px"><span style="height:4px;background:#55703F"></span><span style="height:4px;background:#55703F"></span><span style="height:4px;background:#55703F"></span></div></div>
+        <div style="display:flex;flex-direction:column;border-bottom:1px solid #DDD3C3">
+          <div style="display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:15px 0;border-top:1px solid #DDD3C3"><span style="width:30px;height:30px;border-radius:50%;background:#55703F;color:#EFE9DF;display:grid;place-items:center"><i class="icon-check" style="font-size:16px"></i></span><span style="font:400 19px/1.25 'Newsreader',serif;color:#4E4639">Add a note</span><span style="font-size:10px;font-weight:600;letter-spacing:.12em;color:#55703F">DONE</span></div>
+          <div style="display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:15px 0;border-top:1px solid #DDD3C3"><span style="width:30px;height:30px;border-radius:50%;background:#55703F;color:#EFE9DF;display:grid;place-items:center"><i class="icon-check" style="font-size:16px"></i></span><span style="font:400 19px/1.25 'Newsreader',serif;color:#4E4639">Complete daily study</span><span style="font-size:10px;font-weight:600;letter-spacing:.12em;color:#55703F">DONE</span></div>
+          <div style="display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:15px 0;border-top:1px solid #DDD3C3"><span style="width:30px;height:30px;border-radius:50%;background:#55703F;color:#EFE9DF;display:grid;place-items:center"><i class="icon-check" style="font-size:16px"></i></span><span style="font:400 19px/1.25 'Newsreader',serif;color:#4E4639">Complete daily quiz</span><span style="font-size:10px;font-weight:600;letter-spacing:.12em;color:#55703F">DONE</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding-top:10px"><span style="font:italic 400 28px/1 'Newsreader',serif;color:#55703F">Tout est fait.</span><span style="font-size:14px;line-height:1.5;color:#4E4639">All three tasks are done for today — à demain.</span></div>
+      </div>
+      <nav style="display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid #DDD3C3;background:#E7ECED;padding:8px 6px 26px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-height:44px;justify-content:center;color:#3F6670"><i class="icon-calendar-days" style="font-size:20px"></i><span style="font-size:11px;font-weight:700">Today</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-list-checks" style="font-size:20px"></i><span style="font-size:11px">Study</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-circle-help" style="font-size:20px"></i><span style="font-size:11px">Quiz</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-book-open" style="font-size:20px"></i><span style="font-size:11px">Notes</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-menu" style="font-size:20px"></i><span style="font-size:11px">More</span></div>
+      </nav>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · ALL DONE · EN</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 12px;border-bottom:2px solid #2A241C;margin:0 20px">
+        <div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;gap:2px"><span style="width:10px;height:3px;background:#23408E"></span><span style="width:10px;height:3px;background:#FFFFFF;box-shadow:inset 0 0 0 1px #DDD3C3"></span><span style="width:10px;height:3px;background:#B43A2E"></span></div><span style="font:italic 500 24px/1 'Newsreader',serif">French Desk</span></div>
+        <button aria-label="添加笔记" style="width:44px;height:44px;border-radius:50%;border:0;background:#2A241C;color:#EFE9DF;display:grid;place-items:center"><i class="icon-plus" style="font-size:20px"></i></button>
+      </div>
+      <div style="flex:1;padding:20px 20px 0;display:flex;flex-direction:column;gap:12px;overflow:hidden">
+        <span style="font:italic 400 15px/1 'Newsreader',serif;color:#6F6656">Bonjour · 10月19日</span>
+        <span style="font-size:13px;font-weight:500;color:#3F6670">每日计划</span>
+        <h3 style="margin:0;font:700 30px/1.25 'Noto Serif SC',serif">完成今天的法语计划</h3>
+        <div style="display:flex;align-items:center;gap:14px;padding:4px 0"><span style="font:400 48px/1 'Newsreader',serif;color:#3F6670">0<span style="font-style:italic;font-size:24px;color:#6F6656"> / 3</span></span><div style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:3px"><span style="height:4px;background:#DDD3C3"></span><span style="height:4px;background:#DDD3C3"></span><span style="height:4px;background:#DDD3C3"></span></div></div>
+        <div style="display:flex;flex-direction:column;border-bottom:1px solid #DDD3C3">
+          <div style="display:grid;grid-template-columns:40px 1fr 18px;gap:12px;align-items:center;padding:15px 20px;border-top:1px solid #DDD3C3;background:#F8F5EF;margin:0 -20px"><span style="font:italic 400 26px/1 'Newsreader',serif;color:#2A241C">I.</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:500 18px/1.3 'Noto Serif SC',serif">添加一条笔记</span><span style="font-size:12px;color:#3F6670;font-weight:500">可开始</span></div><i class="icon-chevron-right" style="color:#3F6670"></i></div>
+          <div style="display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:15px 0;border-top:1px solid #DDD3C3;opacity:.55"><span style="font:italic 400 26px/1 'Newsreader',serif;color:#6F6656">II.</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:500 18px/1.3 'Noto Serif SC',serif">完成每日学习</span><span style="font-size:12px;color:#4E4639">暂未准备好</span></div><span></span></div>
+          <div style="display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:15px 0;border-top:1px solid #DDD3C3;opacity:.55"><span style="font:italic 400 26px/1 'Newsreader',serif;color:#6F6656">III.</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font:500 18px/1.3 'Noto Serif SC',serif">完成每日测验</span><span style="font-size:12px;color:#4E4639">今天没有需要测验的词汇</span></div><span></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:40px 1fr;gap:12px;padding-top:8px"><span style="font:italic 400 14px/1.6 'Newsreader',serif;color:#8A5F32">N.B.</span><span style="font:500 15px/1.7 'Noto Serif SC',serif;color:#4E4639">笔记本还是空的。先从第 I 项开始——学习卡片和测验词汇都来自你写下的笔记。</span></div>
+      </div>
+      <nav style="display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid #DDD3C3;background:#E7ECED;padding:8px 6px 26px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-height:44px;justify-content:center;color:#3F6670"><i class="icon-calendar-days" style="font-size:20px"></i><span style="font-size:11px;font-weight:700">今日</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-list-checks" style="font-size:20px"></i><span style="font-size:11px">学习</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-circle-help" style="font-size:20px"></i><span style="font-size:11px">测验</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-book-open" style="font-size:20px"></i><span style="font-size:11px">笔记</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:center;color:#4E4639"><i class="icon-menu" style="font-size:20px"></i><span style="font-size:11px">更多</span></div>
+      </nav>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · NEW ACCOUNT · 中文</span>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 96px;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 28px/1 'Newsreader',serif">Transitions on Today</span></div>
+  <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border-top:2px solid #2A241C">
+    <div style="padding:18px 20px 0 0;display:flex;flex-direction:column;gap:8px;border-right:1px solid #DDD3C3"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">i.</span><b style="font-weight:600;font-size:15px">Enter page</b><span style="font-size:14px;line-height:1.5;color:#4E4639">Hero: opacity 0→1, y 8→0, 240ms ease-out. Rows follow, 50ms stagger, max 3.</span></div>
+    <div style="padding:18px 20px 0;display:flex;flex-direction:column;gap:8px;border-right:1px solid #DDD3C3"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">ii.</span><b style="font-weight:600;font-size:15px">Return with new progress</b><span style="font-size:14px;line-height:1.5;color:#4E4639">Compare <code style="font-family:'JetBrains Mono';font-size:12px">dailyProgress</code> to the last count shown (sessionStorage, UI only). Play iii–iv once; otherwise render final state.</span></div>
+    <div style="padding:18px 20px 0;display:flex;flex-direction:column;gap:8px;border-right:1px solid #DDD3C3"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">iii.</span><b style="font-weight:600;font-size:15px">Mark completes</b><span style="font-size:14px;line-height:1.5;color:#4E4639">Numeral: opacity→0, rotate −8°, 160ms. Seal: scale .6→1 + opacity, 240ms, 80ms delay.</span></div>
+    <div style="padding:18px 20px 0;display:flex;flex-direction:column;gap:8px;border-right:1px solid #DDD3C3"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">iv.</span><b style="font-weight:600;font-size:15px">Progress updates</b><span style="font-size:14px;line-height:1.5;color:#4E4639">Segment scaleX 0→1, 420ms. Odometer translateY one digit, 480ms. "Next up" paper moves to the next row, 200ms.</span></div>
+    <div style="padding:18px 0 0 20px;display:flex;flex-direction:column;gap:8px"><span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">v.</span><b style="font-weight:600;font-size:15px">Reduced motion</b><span style="font-size:14px;line-height:1.5;color:#4E4639">Everything renders in its final state. Odometer swaps the digit. No stagger. Toggle in Tweaks to compare.</span></div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;reducedMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { sc: 'progress', done: [true, false, false], enter: false, celeb: false };
+  scen = {
+    new: { label: 'New account', note: 'no notes yet', done: [false, false, false], study: 0, quiz: 0, isNew: true },
+    start: { label: 'Not started', note: '0 / 3', done: [false, false, false], study: 24, quiz: 18 },
+    progress: { label: 'In progress', note: '1 / 3', done: [true, false, false], study: 24, quiz: 18 },
+    almost: { label: 'One to go', note: '2 / 3', done: [true, true, false], study: 24, quiz: 18 },
+    done: { label: 'All done', note: '3 / 3', done: [true, true, true], study: 24, quiz: 18 },
+    loading: { label: 'Progress loading', note: '-- / 3', done: [false, false, false], study: 24, quiz: 18, loading: true },
+  };
+  componentDidMount() { this.setSc('progress'); }
+  componentWillUnmount() { clearTimeout(this.t1); }
+  setSc(k) {
+    const s = this.scen[k];
+    const all = s.done.every(Boolean);
+    this.setState({ sc: k, done: [...s.done], enter: true, celeb: false });
+    requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ enter: false, celeb: all })));
+  }
+  complete(i) {
+    const done = [...this.state.done];
+    done[i] = !done[i];
+    const all = done.every(Boolean);
+    this.setState({ done, celeb: false });
+    clearTimeout(this.t1);
+    if (all) this.t1 = setTimeout(() => this.setState({ celeb: true }), this.props.reducedMotion ? 0 : 450);
+  }
+  renderVals() {
+    const rm = !!this.props.reducedMotion;
+    const tr = (v) => (rm ? 'none' : v);
+    const sc = this.scen[this.state.sc];
+    const { done, enter } = this.state;
+    const loading = !!sc.loading;
+    const count = loading ? 0 : done.filter(Boolean).length;
+    const defs = [
+      { n: 'I.', title: 'Add a note', copy: 'Capture one useful word or phrase.', ready: true, readyLabel: 'Ready', reason: '', tone: '#2A241C', chipTone: '#3F6670' },
+      { n: 'II.', title: 'Complete daily study', copy: 'Review cards that still feel new.', ready: sc.study > 0, readyLabel: sc.study + ' cards ready', reason: 'No cards need study', tone: '#3F6670', chipTone: '#3F6670' },
+      { n: 'III.', title: 'Complete daily quiz', copy: 'Check recall and advance confidence.', ready: sc.quiz > 0, readyLabel: sc.quiz + ' words ready', reason: 'No vocabulary is due today', tone: '#8A5F32', chipTone: '#8A5F32' },
+    ];
+    const isDone = (i) => !loading && done[i];
+    const current = defs.findIndex((d, i) => !isDone(i) && d.ready);
+    const tasks = defs.map((d, i) => {
+      const dn = isDone(i);
+      const status = dn ? 'done' : d.ready ? 'ready' : 'off';
+      const cur = i === current;
+      return {
+        n: d.n, title: d.title, copy: d.copy,
+        hasReason: status === 'off', reason: d.reason,
+        chip: status === 'done' ? 'Done · Fait' : status === 'ready' ? d.readyLabel : 'Not ready',
+        chipColor: status === 'done' ? '#55703F' : status === 'ready' ? d.chipTone : '#4E4639',
+        chipBorder: status === 'done' ? 'transparent' : status === 'ready' ? d.chipTone : '#CDBFA9',
+        numColor: status === 'off' ? '#6F6656' : d.tone,
+        numOp: dn ? 0 : 1, numTr: dn ? 'rotate(-8deg) translateY(-4px)' : 'none',
+        chkOp: dn ? 1 : 0, chkTr: dn ? 'scale(1)' : 'scale(.6)',
+        markTrans: tr('opacity 200ms ease-out, transform 240ms cubic-bezier(.2,.7,.2,1)'),
+        titleColor: dn ? '#4E4639' : '#2A241C',
+        arrowColor: cur ? '#3F6670' : '#958B7A',
+        bg: cur ? '#F8F5EF' : 'transparent',
+        op: enter && !rm ? 0 : status === 'off' ? 0.55 : 1,
+        tr: enter && !rm ? 'translateY(8px)' : 'none',
+        trans: enter || rm ? 'none' : `opacity 260ms ease-out ${80 + i * 50}ms, transform 260ms ease-out ${80 + i * 50}ms, background 200ms ease`,
+        disabled: status === 'off',
+        cursor: status === 'off' ? 'not-allowed' : 'pointer',
+        aria: `${d.title}. ${status === 'done' ? 'Done' : status === 'ready' ? d.readyLabel : 'Not ready'}`,
+        onClick: () => status !== 'off' && this.complete(i),
+      };
+    });
+    const segs = [0, 1, 2].map((i) => ({
+      tr: isDone(i) ? 'scaleX(1)' : 'scaleX(0)',
+      trans: tr(`transform 420ms cubic-bezier(.2,.7,.2,1) ${80}ms`),
+    }));
+    const scenarios = Object.entries(this.scen).map(([k, s]) => ({
+      label: s.label, note: s.note,
+      bg: this.state.sc === k ? '#2A241C' : '#EFE9DF',
+      fg: this.state.sc === k ? '#EFE9DF' : '#2A241C',
+      onClick: () => this.setSc(k),
+    }));
+    const allDone = count === 3;
+    return {
+      tasks, segs, scenarios, loading, notLoading: !loading,
+      isNew: !!sc.isNew,
+      allDone,
+      celebOp: this.state.celeb || rm ? 1 : 0,
+      celebTr: this.state.celeb || rm ? 'none' : 'translateY(6px)',
+      celebTrans: tr('opacity 360ms ease-out, transform 360ms ease-out'),
+      odoTr: `translateY(-${count * 120}px)`,
+      odoTrans: tr('transform 480ms cubic-bezier(.2,.7,.2,1)'),
+      doneLabel: loading ? 'Progress not loaded' : 'tasks done',
+      progressAria: loading ? 'Progress not loaded' : `${count} of 3 tasks done`,
+      heroOp: enter && !rm ? 0 : 1,
+      heroTr: enter && !rm ? 'translateY(8px)' : 'none',
+      enterTrans: enter || rm ? 'none' : 'opacity 240ms ease-out, transform 240ms ease-out',
+    };
+  }
+}
+</script>
+</body>
+</html>

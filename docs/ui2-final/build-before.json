@@ -1,0 +1,848 @@
+{
+  "chunks": [
+    {
+      "file": "assets/index-DKmium-G.css",
+      "entry": false,
+      "bytes": 115114,
+      "gzip": 21135,
+      "modules": []
+    },
+    {
+      "file": "assets/index-Bt84DfYW.js",
+      "entry": true,
+      "bytes": 784795,
+      "gzip": 228141,
+      "modules": [
+        {
+          "path": "ROOT/node_modules/react-dom/cjs/react-dom-client.production.js",
+          "rendered": 552879
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/GoTrueClient.js",
+          "rendered": 253168
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/postgrest-js/dist/index.mjs",
+          "rendered": 134981
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/parser/index.js",
+          "rendered": 108639
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/storage-js/dist/index.mjs",
+          "rendered": 101673
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/tokenizer/index.js",
+          "rendered": 100783
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/phoenix/priv/static/phoenix.mjs",
+          "rendered": 54213
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/GoTrueAdminApi.js",
+          "rendered": 36217
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/supabase-js/dist/index.mjs",
+          "rendered": 34626
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/webauthn.js",
+          "rendered": 33385
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/RealtimeChannel.js",
+          "rendered": 30342
+        },
+        {
+          "path": "ROOT/src/components/EditorModal.jsx",
+          "rendered": 27771
+        },
+        {
+          "path": "ROOT/node_modules/entities/dist/decode.js",
+          "rendered": 26258
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/RealtimeClient.js",
+          "rendered": 25755
+        },
+        {
+          "path": "ROOT/src/views/SettingsView.jsx",
+          "rendered": 24900
+        },
+        {
+          "path": "ROOT/src/App.jsx",
+          "rendered": 23122
+        },
+        {
+          "path": "ROOT/src/components/QuizExperience.jsx",
+          "rendered": 20273
+        },
+        {
+          "path": "ROOT/src/views/ReviewView.jsx",
+          "rendered": 18853
+        },
+        {
+          "path": "ROOT/node_modules/entities/dist/generated/decode-data-html.js",
+          "rendered": 18696
+        },
+        {
+          "path": "ROOT/node_modules/react/cjs/react.production.js",
+          "rendered": 18321
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/common/html.js",
+          "rendered": 17329
+        },
+        {
+          "path": "ROOT/src/i18n/zhCN.js",
+          "rendered": 16825
+        },
+        {
+          "path": "ROOT/src/views/ImportView.jsx",
+          "rendered": 16225
+        },
+        {
+          "path": "ROOT/node_modules/iceberg-js/dist/index.mjs",
+          "rendered": 15836
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/helpers.js",
+          "rendered": 14299
+        },
+        {
+          "path": "ROOT/src/views/QuizView.jsx",
+          "rendered": 12710
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/functions-js/dist/module/FunctionsClient.js",
+          "rendered": 12566
+        },
+        {
+          "path": "ROOT/src/components/LearningCard.jsx",
+          "rendered": 12130
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/webauthn.errors.js",
+          "rendered": 11221
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/parser/open-element-stack.js",
+          "rendered": 11164
+        },
+        {
+          "path": "ROOT/node_modules/scheduler/cjs/scheduler.production.js",
+          "rendered": 11134
+        },
+        {
+          "path": "ROOT/src/hooks/useNotes.js",
+          "rendered": 10525
+        },
+        {
+          "path": "ROOT/src/components/StudyCard.jsx",
+          "rendered": 9755
+        },
+        {
+          "path": "ROOT/src/hooks/useImportJob.js",
+          "rendered": 9621
+        },
+        {
+          "path": "ROOT/src/utils/importParsers.js",
+          "rendered": 9491
+        },
+        {
+          "path": "ROOT/src/views/TodayView.jsx",
+          "rendered": 9134
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/errors.js",
+          "rendered": 8566
+        },
+        {
+          "path": "ROOT/src/pages/SignInPage.jsx",
+          "rendered": 8196
+        },
+        {
+          "path": "ROOT/node_modules/entities/dist/internal/decode-shared.js",
+          "rendered": 8175
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/lib/transformers.js",
+          "rendered": 8171
+        },
+        {
+          "path": "ROOT/src/utils/quiz.js",
+          "rendered": 7947
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/base64url.js",
+          "rendered": 7936
+        },
+        {
+          "path": "ROOT/src/utils/noteIntegrity.js",
+          "rendered": 7882
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/fetch.js",
+          "rendered": 7775
+        },
+        {
+          "path": "ROOT/src/hooks/useDailyLearningState.js",
+          "rendered": 7331
+        },
+        {
+          "path": "ROOT/src/components/Sidebar.jsx",
+          "rendered": 7283
+        },
+        {
+          "path": "ROOT/node_modules/react-dom/cjs/react-dom.production.js",
+          "rendered": 7216
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/lib/serializer.js",
+          "rendered": 7145
+        },
+        {
+          "path": "ROOT/src/data/demoData.js",
+          "rendered": 7002
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/tokenizer/preprocessor.js",
+          "rendered": 6908
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/common/foreign-content.js",
+          "rendered": 6457
+        },
+        {
+          "path": "ROOT/src/components/NotesToolbar.jsx",
+          "rendered": 6092
+        },
+        {
+          "path": "ROOT/src/views/VocabularyView.jsx",
+          "rendered": 6089
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js",
+          "rendered": 5319
+        },
+        {
+          "path": "ROOT/src/views/GrammarView.jsx",
+          "rendered": 5278
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/tree-adapters/default.js",
+          "rendered": 5173
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/common/error-codes.js",
+          "rendered": 4738
+        },
+        {
+          "path": "ROOT/src/api/notes.js",
+          "rendered": 4665
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/common/doctype.js",
+          "rendered": 4603
+        },
+        {
+          "path": "ROOT/src/api/preferences.js",
+          "rendered": 4289
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/parser/formatting-element-list.js",
+          "rendered": 4286
+        },
+        {
+          "path": "ROOT/src/components/RichTextEditor.jsx",
+          "rendered": 4055
+        },
+        {
+          "path": "ROOT/src/utils/richText.js",
+          "rendered": 3992
+        },
+        {
+          "path": "ROOT/src/hooks/useAuthSession.js",
+          "rendered": 3700
+        },
+        {
+          "path": "ROOT/src/components/AppHeader.jsx",
+          "rendered": 3697
+        },
+        {
+          "path": "ROOT/src/api/dailyLearning.js",
+          "rendered": 3668
+        },
+        {
+          "path": "ROOT/src/api/profile.js",
+          "rendered": 3431
+        },
+        {
+          "path": "ROOT/src/utils/vocabularyImport.js",
+          "rendered": 3260
+        },
+        {
+          "path": "ROOT/src/views/NotesView.jsx",
+          "rendered": 3157
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/phoenix/presenceAdapter.js",
+          "rendered": 3090
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/web3/ethereum.js",
+          "rendered": 3043
+        },
+        {
+          "path": "ROOT/src/lib/supabase.js",
+          "rendered": 2946
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/common/unicode.js",
+          "rendered": 2932
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/phoenix/channelAdapter.js",
+          "rendered": 2891
+        },
+        {
+          "path": "ROOT/src/components/LibraryOverview.jsx",
+          "rendered": 2807
+        },
+        {
+          "path": "ROOT/node_modules/entities/dist/internal/bin-trie-flags.js",
+          "rendered": 2797
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/phoenix/socketAdapter.js",
+          "rendered": 2697
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/functions-js/dist/module/types.js",
+          "rendered": 2694
+        },
+        {
+          "path": "ROOT/src/utils/dailyPersistence.js",
+          "rendered": 2627
+        },
+        {
+          "path": "ROOT/src/services/vocabularyAutofill.js",
+          "rendered": 2495
+        },
+        {
+          "path": "ROOT/src/data/wordFields.js",
+          "rendered": 2392
+        },
+        {
+          "path": "ROOT/src/utils/accountIdentity.js",
+          "rendered": 2340
+        },
+        {
+          "path": "ROOT/src/components/SelectionToolbar.jsx",
+          "rendered": 2273
+        },
+        {
+          "path": "ROOT/src/utils/languagePreference.js",
+          "rendered": 2226
+        },
+        {
+          "path": "ROOT/node_modules/tslib/tslib.es6.mjs",
+          "rendered": 2162
+        },
+        {
+          "path": "ROOT/src/components/PaginationControls.jsx",
+          "rendered": 1834
+        },
+        {
+          "path": "ROOT/node_modules/entities/dist/decode-codepoint.js",
+          "rendered": 1722
+        },
+        {
+          "path": "ROOT/src/components/LibraryDialog.jsx",
+          "rendered": 1687
+        },
+        {
+          "path": "ROOT/src/hooks/useLanguagePreference.js",
+          "rendered": 1642
+        },
+        {
+          "path": "ROOT/src/pages/SetupPage.jsx",
+          "rendered": 1636
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/RealtimePresence.js",
+          "rendered": 1409
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/constants.js",
+          "rendered": 1357
+        },
+        {
+          "path": "ROOT/node_modules/react/cjs/react-jsx-runtime.production.js",
+          "rendered": 1294
+        },
+        {
+          "path": "\u0000vite/modulepreload-polyfill.js",
+          "rendered": 1280
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/locks.js",
+          "rendered": 1271
+        },
+        {
+          "path": "ROOT/src/components/FrenchCharacterKeyboard.jsx",
+          "rendered": 1222
+        },
+        {
+          "path": "ROOT/src/i18n/LanguageContext.jsx",
+          "rendered": 1151
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/lib/normalizeChannelError.js",
+          "rendered": 1111
+        },
+        {
+          "path": "ROOT/src/data/categories.js",
+          "rendered": 1103
+        },
+        {
+          "path": "ROOT/src/hooks/useLocalLearningDay.js",
+          "rendered": 1017
+        },
+        {
+          "path": "ROOT/src/utils/editorAutofill.js",
+          "rendered": 971
+        },
+        {
+          "path": "ROOT/src/utils/learningSettings.js",
+          "rendered": 950
+        },
+        {
+          "path": "ROOT/src/utils/noteMutations.js",
+          "rendered": 909
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/Icon.js",
+          "rendered": 899
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/sliders-horizontal.js",
+          "rendered": 870
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/common/token.js",
+          "rendered": 819
+        },
+        {
+          "path": "ROOT/src/api/auth.js",
+          "rendered": 781
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/calendar-days.js",
+          "rendered": 737
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/sparkles.js",
+          "rendered": 723
+        },
+        {
+          "path": "ROOT/src/utils/studyState.js",
+          "rendered": 722
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/polyfills.js",
+          "rendered": 698
+        },
+        {
+          "path": "ROOT/src/components/LanguageToggle.jsx",
+          "rendered": 655
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/lib/constants.js",
+          "rendered": 615
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/mic-vocal.js",
+          "rendered": 588
+        },
+        {
+          "path": "ROOT/src/utils/importResults.js",
+          "rendered": 572
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/trash-2.js",
+          "rendered": 554
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/key-round.js",
+          "rendered": 548
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/createLucideIcon.js",
+          "rendered": 538
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/graduation-cap.js",
+          "rendered": 533
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/list-ordered.js",
+          "rendered": 530
+        },
+        {
+          "path": "ROOT/node_modules/react-dom/index.js",
+          "rendered": 520
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/save.js",
+          "rendered": 520
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/file-text.js",
+          "rendered": 519
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/languages.js",
+          "rendered": 513
+        },
+        {
+          "path": "ROOT/node_modules/react-dom/client.js",
+          "rendered": 512
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/refresh-cw.js",
+          "rendered": 499
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/feather.js",
+          "rendered": 495
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/list.js",
+          "rendered": 494
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/cloud-off.js",
+          "rendered": 483
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/list-checks.js",
+          "rendered": 467
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/book-open.js",
+          "rendered": 466
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/shared/src/utils.js",
+          "rendered": 464
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/pen-line.js",
+          "rendered": 464
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/flame.js",
+          "rendered": 454
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/eye.js",
+          "rendered": 443
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/realtime-js/dist/module/lib/version.js",
+          "rendered": 442
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/version.js",
+          "rendered": 442
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/lock-keyhole.js",
+          "rendered": 438
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/circle-alert.js",
+          "rendered": 437
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/download.js",
+          "rendered": 437
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/upload.js",
+          "rendered": 430
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/italic.js",
+          "rendered": 429
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/menu.js",
+          "rendered": 425
+        },
+        {
+          "path": "ROOT/src/components/Brand.jsx",
+          "rendered": 414
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/circle-help.js",
+          "rendered": 413
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/ellipsis.js",
+          "rendered": 407
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/defaultAttributes.js",
+          "rendered": 404
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/local-storage.js",
+          "rendered": 391
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/serializer/index.js",
+          "rendered": 390
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/square-check-big.js",
+          "rendered": 389
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/info.js",
+          "rendered": 373
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/rotate-ccw.js",
+          "rendered": 360
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/rotate-cw.js",
+          "rendered": 360
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/underline.js",
+          "rendered": 358
+        },
+        {
+          "path": "ROOT/src/utils/notePagination.js",
+          "rendered": 350
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/user-round.js",
+          "rendered": 346
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/circle-check.js",
+          "rendered": 344
+        },
+        {
+          "path": "ROOT/node_modules/parse5/dist/index.js",
+          "rendered": 343
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/bold.js",
+          "rendered": 336
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/search.js",
+          "rendered": 334
+        },
+        {
+          "path": "ROOT/src/utils/scroll.js",
+          "rendered": 333
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/arrow-right.js",
+          "rendered": 326
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/plus.js",
+          "rendered": 309
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/x.js",
+          "rendered": 307
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/square.js",
+          "rendered": 304
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/loader-circle.js",
+          "rendered": 298
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/chevron-right.js",
+          "rendered": 284
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/chevron-left.js",
+          "rendered": 283
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/play.js",
+          "rendered": 281
+        },
+        {
+          "path": "ROOT/node_modules/entities/dist/generated/decode-data-xml.js",
+          "rendered": 279
+        },
+        {
+          "path": "ROOT/src/utils/demoMode.js",
+          "rendered": 277
+        },
+        {
+          "path": "ROOT/src/data/frenchCharacters.js",
+          "rendered": 269
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/check.js",
+          "rendered": 268
+        },
+        {
+          "path": "ROOT/node_modules/lucide-react/dist/esm/icons/minus.js",
+          "rendered": 261
+        },
+        {
+          "path": "ROOT/node_modules/react/jsx-runtime.js",
+          "rendered": 239
+        },
+        {
+          "path": "ROOT/node_modules/scheduler/index.js",
+          "rendered": 226
+        },
+        {
+          "path": "ROOT/node_modules/react/index.js",
+          "rendered": 194
+        },
+        {
+          "path": "ROOT/src/main.jsx",
+          "rendered": 188
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/functions-js/dist/module/helper.js",
+          "rendered": 163
+        },
+        {
+          "path": "ROOT/src/utils/tags.js",
+          "rendered": 158
+        },
+        {
+          "path": "\u0000commonjsHelpers.js",
+          "rendered": 140
+        },
+        {
+          "path": "ROOT/src/utils/dailyProgress.js",
+          "rendered": 137
+        },
+        {
+          "path": "ROOT/src/views/PronunciationView.jsx",
+          "rendered": 110
+        },
+        {
+          "path": "ROOT/src/views/PhrasesView.jsx",
+          "rendered": 104
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react/index.js?commonjs-es-import",
+          "rendered": 100
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/lib/types.js",
+          "rendered": 54
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react/jsx-runtime.js?commonjs-es-import",
+          "rendered": 44
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react/cjs/react-jsx-runtime.production.js?commonjs-exports",
+          "rendered": 36
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react-dom/client.js?commonjs-es-import",
+          "rendered": 36
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react-dom/cjs/react-dom-client.production.js?commonjs-exports",
+          "rendered": 35
+        },
+        {
+          "path": "ROOT/node_modules/@supabase/auth-js/dist/module/AuthClient.js",
+          "rendered": 32
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react/jsx-runtime.js?commonjs-module",
+          "rendered": 31
+        },
+        {
+          "path": "\u0000ROOT/node_modules/scheduler/index.js?commonjs-module",
+          "rendered": 30
+        },
+        {
+          "path": "\u0000ROOT/node_modules/scheduler/cjs/scheduler.production.js?commonjs-exports",
+          "rendered": 30
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react-dom/index.js?commonjs-module",
+          "rendered": 29
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react-dom/cjs/react-dom.production.js?commonjs-exports",
+          "rendered": 29
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react-dom/client.js?commonjs-module",
+          "rendered": 27
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react/index.js?commonjs-module",
+          "rendered": 26
+        },
+        {
+          "path": "\u0000ROOT/node_modules/react/cjs/react.production.js?commonjs-exports",
+          "rendered": 26
+        },
+        {
+          "path": "ROOT/src/index.css",
+          "rendered": 0
+        },
+        {
+          "path": "ROOT/src/study.css",
+          "rendered": 0
+        },
+        {
+          "path": "ROOT/src/quiz.css",
+          "rendered": 0
+        },
+        {
+          "path": "ROOT/src/library.css",
+          "rendered": 0
+        },
+        {
+          "path": "ROOT/src/editor.css",
+          "rendered": 0
+        },
+        {
+          "path": "ROOT/src/bureau.css",
+          "rendered": 0
+        },
+        {
+          "path": "ROOT/index.html",
+          "rendered": 0
+        }
+      ]
+    }
+  ],
+  "fonts": {
+    "instrument-sans.ttf": 194336,
+    "newsreader.ttf": 451664,
+    "newsreader-italic.ttf": 495684
+  }
+}

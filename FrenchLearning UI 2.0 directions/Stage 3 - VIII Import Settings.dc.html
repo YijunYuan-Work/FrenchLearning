@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Noto+Sans:wght@400&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>
+body{margin:0;background:#E4E0D8;font-family:'Instrument Sans',system-ui,sans-serif;color:#2A241C;-webkit-font-smoothing:antialiased}
+a{color:#3F6670;text-decoration:underline;text-underline-offset:3px}
+a:hover{color:#8A5F32}
+button,select,input{font:inherit}
+input::placeholder{color:#958B7A;font-style:italic}
+input:focus{outline:none}
+@keyframes fl-spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+
+<section style="padding:56px 56px 8px;display:flex;flex-direction:column;gap:18px;width:1710px">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:20px">
+    <span style="font:500 12px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F6656;white-space:nowrap">French Desk · UI 2.0 · Stage 3 · Le Cahier · Bois</span>
+    <nav style="display:flex;gap:6px;font-size:14px;flex-wrap:wrap;justify-content:flex-end">
+      <a href="Stage 3 - V Vocabulary.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">V. Vocabulary</a>
+      <a href="Stage 3 - VI Notes.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">VI. Phrases · Grammar · Pronunciation</a>
+      <a href="Stage 3 - VII Editor.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">VII. Editor</a>
+      <a href="Stage 3 - VIII Import Settings.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;background:#2A241C;color:#EFE9DF;text-decoration:none">VIII. Import · Settings</a>
+      <a href="Stage 3 - IX Components.dc.html" style="padding:8px 14px;border-radius:999px;white-space:nowrap;color:#2A241C;text-decoration:none;box-shadow:inset 0 0 0 1px #CDBFA9">IX. Components &amp; handoff</a>
+    </nav>
+  </div>
+  <div style="display:flex;align-items:baseline;gap:20px;border-bottom:2px solid #2A241C;padding-bottom:16px">
+    <h1 style="margin:0;font:400 64px/1 'Newsreader',serif;letter-spacing:-.02em">Chapitre <span style="font-style:italic">VIII</span> — Import &amp; Settings</h1>
+    <span style="font:italic 400 22px/1 'Newsreader',serif;color:#6F6656">le bureau</span>
+  </div>
+</section>
+
+<section style="padding:32px 56px 0;display:flex;gap:40px;align-items:flex-start;width:1710px">
+  <div style="width:1280px;min-height:900px;display:grid;grid-template-columns:248px minmax(0,1fr);background:#EFE9DF;color:#2A241C;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 #DDD3C3,0 24px 60px -24px rgba(50,38,20,.25);flex-shrink:0">
+    <dc-import name="Cahier Sidebar" active="import" hint-size="248px,100%"></dc-import>
+    <main style="padding:30px 56px 44px;display:flex;flex-direction:column;min-width:0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A5F32;font-weight:600">Bureau · 08</span><span style="font:italic 400 15px/1 'Newsreader',serif;color:#4E4639;white-space:nowrap">lundi 19 octobre 2026</span></div>
+      <div style="height:3px;border-top:2px solid #2A241C;border-bottom:1px solid #2A241C;margin:16px 0 24px"></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:32px;align-items:end">
+        <div style="display:flex;flex-direction:column;gap:8px"><h2 style="margin:0;font:400 52px/1 'Newsreader',serif;letter-spacing:-.025em">Import <span style="font-style:italic;color:#6F6656;font-size:30px">· {{ modeGloss }}</span></h2><p style="margin:0;font-size:15px;line-height:1.6;color:#4E4639;max-width:560px">{{ modeCopy }}</p></div>
+        <div role="radiogroup" aria-label="Import mode" style="display:grid;grid-template-columns:1fr 1fr;height:44px;padding:3px;box-sizing:border-box;border-radius:6px;box-shadow:inset 0 0 0 1px #CDBFA9"><sc-for list="{{ modes }}" as="m" hint-placeholder-count="2"><button role="radio" aria-checked="{{ m.checked }}" onClick="{{ m.onClick }}" disabled="{{ busy }}" style="border:0;border-radius:4px;cursor:pointer;font-size:14px;font-weight:500;background:{{ m.bg }};color:{{ m.fg }};white-space:nowrap">{{ m.l }}</button></sc-for></div>
+      </div>
+
+      <ol style="list-style:none;margin:28px 0 0;padding:0;display:flex;flex-direction:column">
+        <li style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:20px;padding:20px 0;border-top:1px solid #DDD3C3">
+          <span style="font:italic 400 30px/1 'Newsreader',serif;color:{{ st1 }}">I.</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap"><div style="display:flex;flex-direction:column;gap:4px;max-width:620px"><span style="font:400 22px/1.2 'Newsreader',serif">{{ formatTitle }}</span><span style="font-size:14px;line-height:1.55;color:#4E4639">{{ formatCopy }}</span></div><sc-if value="{{ isVocabMode }}" hint-placeholder-val="{{ true }}"><button style="display:flex;align-items:center;gap:8px;height:40px;padding:0 16px;border:0;border-radius:4px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;color:#2A241C;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="background:#F8F5EF"><i class="icon-download" style="font-size:16px"></i>Download template</button></sc-if></div>
+        </li>
+        <li style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:20px;padding:20px 0;border-top:1px solid #DDD3C3">
+          <span style="font:italic 400 30px/1 'Newsreader',serif;color:{{ st2 }}">II.</span>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font:400 22px/1.2 'Newsreader',serif">Choose a CSV file</span>
+            <label style="display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:18px;align-items:center;padding:18px 20px;border-radius:10px;border:1.5px dashed {{ dropBorder }};background:{{ dropBg }};cursor:{{ dropCursor }};transition:background 200ms, border-color 200ms" style-hover="background:#F8F5EF">
+              <span style="width:48px;height:56px;border-radius:4px;background:#FCFAF6;box-shadow:0 1px 0 #CDBFA9,inset 0 0 0 1px #DDD3C3;display:grid;place-items:center;color:#3F6670"><i class="{{ fileIcon }}" style="font-size:22px;animation:{{ fileAnim }}"></i></span>
+              <span style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:15px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ fileTitle }}</span><span style="font-size:13px;color:#4E4639">{{ fileSub }}</span></span>
+              <button onClick="{{ pickFile }}" disabled="{{ busy }}" style="height:40px;padding:0 16px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;opacity:{{ busyOp }}">{{ pickLabel }}</button>
+            </label>
+            <sc-if value="{{ isDemo }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:#4E4639;display:flex;gap:6px;align-items:center"><i class="icon-info" style="font-size:14px"></i>Import is disabled in the public demo.</span></sc-if>
+            <sc-if value="{{ parseError }}" hint-placeholder-val="{{ false }}"><div role="alert" style="display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-radius:6px;background:#F2E7D9;box-shadow:inset 0 0 0 1px #DCC6A8;font-size:14px;line-height:1.5"><i class="icon-circle-alert" style="font-size:17px;color:#A0402F;margin-top:2px"></i><span>Missing required header: <b>part_of_speech</b>. Keep every template header, even when its cells are empty.</span></div></sc-if>
+          </div>
+        </li>
+        <sc-if value="{{ hasPreview }}" hint-placeholder-val="{{ false }}">
+        <li style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:20px;padding:20px 0;border-top:1px solid #DDD3C3">
+          <span style="font:italic 400 30px/1 'Newsreader',serif;color:{{ st3 }}">III.</span>
+          <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px"><span style="font:400 22px/1.2 'Newsreader',serif">Preview</span><span style="font-size:14px;color:#3F6670;font-weight:500">{{ readyCopy }}</span></div>
+            <div style="overflow-x:auto;border-radius:6px;box-shadow:inset 0 0 0 1px #DDD3C3;background:#FCFAF6">
+              <table style="width:100%;min-width:720px;border-collapse:collapse;font-size:14px">
+                <thead><tr style="text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#6F6656"><th style="padding:10px 14px;border-bottom:1px solid #2A241C;font-weight:600;width:40px">Row</th><sc-for list="{{ cols }}" as="c" hint-placeholder-count="5"><th style="padding:10px 14px;border-bottom:1px solid #2A241C;font-weight:600">{{ c }}</th></sc-for></tr></thead>
+                <tbody><sc-for list="{{ preview }}" as="r" hint-placeholder-count="5"><tr style="background:{{ r.bg }}"><td style="padding:10px 14px;border-bottom:1px solid #E3DACB;font:italic 400 14px 'Newsreader',serif;color:#6F6656">{{ r.row }}</td><sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="5"><td style="padding:10px 14px;border-bottom:1px solid #E3DACB;font:{{ c.font }};color:{{ c.fg }};max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.v }}</td></sc-for></tr></sc-for></tbody>
+              </table>
+            </div>
+            <p style="margin:0;font:italic 400 14px/1.5 'Newsreader',serif;color:#4E4639">Showing the first 5 of {{ total }} rows. <span style="color:#A0402F">Row 4 needs attention: “Chinese” is empty — it will be reported as failed.</span></p>
+          </div>
+        </li>
+        </sc-if>
+        <sc-if value="{{ hasRun }}" hint-placeholder-val="{{ false }}">
+        <li style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:20px;padding:20px 0;border-top:1px solid #DDD3C3">
+          <span style="font:italic 400 30px/1 'Newsreader',serif;color:{{ st4 }}">IV.</span>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px"><span style="font:400 22px/1.2 'Newsreader',serif">{{ runTitle }}</span><span role="status" style="font:italic 400 16px 'Newsreader',serif;color:#4E4639">{{ runLine }}</span></div>
+            <div style="display:flex;gap:2px;height:8px" aria-hidden="true"><sc-for list="{{ ticks }}" as="k" hint-placeholder-count="42"><span style="flex:1;background:{{ k.bg }};transition:background 240ms ease"></span></sc-for></div>
+            <dl style="margin:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid #DDD3C3;border-bottom:1px solid #DDD3C3"><sc-for list="{{ counters }}" as="c" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:4px;padding:12px 16px 12px {{ c.pl }};border-right:{{ c.br }}"><dt style="font-size:12px;color:#6F6656;order:2;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;background:{{ c.sw }};display:block"></span>{{ c.l }}</dt><dd style="margin:0;font:400 34px/1 'Newsreader',serif;color:{{ c.fg }}">{{ c.v }}</dd></div></sc-for></dl>
+          </div>
+        </li>
+        </sc-if>
+        <sc-if value="{{ hasResults }}" hint-placeholder-val="{{ false }}">
+        <li style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:20px;padding:20px 0;border-top:1px solid #DDD3C3">
+          <span style="font:italic 400 30px/1 'Newsreader',serif;color:#3F6670">V.</span>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:12px"><span style="width:34px;height:34px;border-radius:50%;background:{{ resColor }};color:#FCFAF6;display:grid;place-items:center"><i class="{{ resIcon }}" style="font-size:18px"></i></span><span style="font:italic 400 28px/1 'Newsreader',serif;color:{{ resColor }}">{{ resTitle }}</span></div>
+            <p role="status" style="margin:0;font-size:14px;color:#4E4639">{{ batchLine }}</p>
+            <sc-if value="{{ allOk }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font:italic 400 18px 'Newsreader',serif;color:#55703F">All parsed items were imported.</p></sc-if>
+            <sc-if value="{{ hasAttention }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column"><span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#6F6656;padding-bottom:8px;border-bottom:1px solid #2A241C">Items not imported</span>
+                <sc-for list="{{ attention }}" as="a" hint-placeholder-count="3"><div style="display:grid;grid-template-columns:70px minmax(0,1fr) minmax(0,1.6fr) 90px;gap:16px;align-items:baseline;padding:12px 0;border-bottom:1px solid #DDD3C3"><span style="font:italic 400 14px 'Newsreader',serif;color:#6F6656">row {{ a.row }}</span><span lang="fr" style="font:400 18px 'Newsreader',serif">{{ a.word }}</span><span style="font-size:14px;color:#4E4639">{{ a.reason }}</span><span style="justify-self:end;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:{{ a.fg }};box-shadow:inset 0 0 0 1px {{ a.fg }};padding:4px 8px;border-radius:999px">{{ a.status }}</span></div></sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </li>
+        </sc-if>
+      </ol>
+
+      <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;padding-top:18px;border-top:2px solid #2A241C">
+        <sc-if value="{{ showCancel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ cancel }}" disabled="{{ cancelling }}" style="height:44px;padding:0 18px;border:0;border-radius:4px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;color:#2A241C;font-size:14px;font-weight:500;cursor:pointer;opacity:{{ cancelOp }}">Cancel import</button></sc-if>
+        <sc-if value="{{ showRetry }}" hint-placeholder-val="{{ false }}"><button onClick="{{ retry }}" disabled="{{ isDemo }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 18px;border:0;border-radius:4px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;color:#2A241C;font-size:14px;font-weight:500;cursor:pointer"><i class="icon-rotate-cw" style="font-size:15px"></i>Retry failed only</button></sc-if>
+        <sc-if value="{{ showResume }}" hint-placeholder-val="{{ false }}"><button onClick="{{ resume }}" disabled="{{ isDemo }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:#2A241C;color:#EFE9DF;font-size:14px;font-weight:500;cursor:pointer"><i class="icon-play" style="font-size:15px"></i>Resume unprocessed rows</button></sc-if>
+        <sc-if value="{{ showStart }}" hint-placeholder-val="{{ true }}"><button onClick="{{ start }}" disabled="{{ startDis }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 22px;border:0;border-radius:4px;background:{{ startBg }};color:{{ startFg }};font-size:14px;font-weight:500;cursor:{{ startCursor }}"><sc-if value="{{ running }}" hint-placeholder-val="{{ false }}"><i class="icon-loader-circle" style="font-size:15px;animation:fl-spin 900ms linear infinite"></i></sc-if>{{ startLabel }}</button></sc-if>
+      </div>
+    </main>
+  </div>
+
+  <div style="width:350px;display:flex;flex-direction:column;gap:20px;flex-shrink:0">
+    <div style="background:#F8F5EF;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Import prototype · jump to state</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><sc-for list="{{ iScen }}" as="s" hint-placeholder-count="10"><button onClick="{{ s.onClick }}" style="height:40px;padding:0 10px;border:0;border-radius:6px;cursor:pointer;text-align:left;font-size:13px;font-weight:500;background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button></sc-for></div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639;border-top:1px solid #DDD3C3;padding-top:12px">Live: Choose file → Start import → Cancel mid-run → Resume. Two rows always fail and three are duplicates (skipped), so Retry failed appears at the end.</p>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E3DACB;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.5;color:#433C31">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Design notes</span>
+      <div><b style="font-weight:600">One page, five numbered steps.</b> Later steps appear as they become relevant; numerals turn river when active, sage when complete.</div>
+      <div><b style="font-weight:600">Row ledger.</b> One tick per row in this run, coloured by result as it lands — sage added, river skipped, rouge failed, rule unprocessed.</div>
+      <div><b style="font-weight:600">Unchanged semantics.</b> Cancel finishes the current row; Resume runs <code style="font-family:'JetBrains Mono';font-size:12px">"remaining"</code>; Retry runs <code style="font-family:'JetBrains Mono';font-size:12px">"failed"</code>; duplicates are skipped by existing rules.</div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 0;display:flex;gap:40px;align-items:flex-start;width:1710px">
+  <div style="width:1280px;min-height:900px;display:grid;grid-template-columns:248px minmax(0,1fr);background:#EFE9DF;color:#2A241C;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 #DDD3C3,0 24px 60px -24px rgba(50,38,20,.25);flex-shrink:0">
+    <dc-import name="Cahier Sidebar" active="settings" hint-size="248px,100%"></dc-import>
+    <main style="padding:30px 56px 44px;display:flex;flex-direction:column;min-width:0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A5F32;font-weight:600">Bureau · 09</span><span style="font:italic 400 15px/1 'Newsreader',serif;color:#4E4639;white-space:nowrap">lundi 19 octobre 2026</span></div>
+      <div style="height:3px;border-top:2px solid #2A241C;border-bottom:1px solid #2A241C;margin:16px 0 24px"></div>
+      <h2 style="margin:0;font:400 52px/1 'Newsreader',serif;letter-spacing:-.025em">Settings <span style="font-style:italic;color:#6F6656;font-size:30px">· réglages</span></h2>
+      <sc-if value="{{ sDemo }}" hint-placeholder-val="{{ false }}"><p role="status" style="margin:16px 0 0;display:flex;gap:8px;align-items:center;font-size:14px;color:#4E4639"><i class="icon-info" style="font-size:16px;color:#6F6656"></i>Demo changes are temporary and reset when you reload.</p></sc-if>
+
+      <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px;margin-top:28px">
+        <nav aria-label="Settings sections" style="display:flex;flex-direction:column;border-top:2px solid #2A241C;align-self:start">
+          <sc-for list="{{ sNav }}" as="n" hint-placeholder-count="4"><span style="display:grid;grid-template-columns:28px 1fr;gap:4px;align-items:baseline;padding:12px 0;border-bottom:1px solid #DDD3C3;color:{{ n.fg }};font-weight:{{ n.w }};font-size:14px"><i style="font:italic 400 15px 'Newsreader',serif;color:#8A5F32">{{ n.n }}</i>{{ n.l }}</span></sc-for>
+        </nav>
+        <div style="display:flex;flex-direction:column;gap:40px;min-width:0">
+
+          <form onSubmit="{{ saveProfile }}" style="display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #2A241C;padding-bottom:10px"><span style="font:italic 400 24px 'Newsreader',serif;color:#3F6670">i.</span><span style="font:400 28px/1 'Newsreader',serif">Profile details</span><span style="font-size:13px;color:#6F6656">Account</span></div>
+            <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:8px 24px;align-items:start">
+              <label style="font-size:14px;font-weight:600;padding-top:12px">Login username</label>
+              <div style="display:flex;flex-direction:column;gap:4px"><div style="height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:6px;background:#E8E1D4;color:#4E4639;font-size:15px"><i class="icon-lock" style="font-size:14px;color:#6F6656"></i>marie.dupont</div><span style="font-size:12px;color:#6F6656">Used to sign in and cannot be changed.</span></div>
+              <label for="s-name" style="font-size:14px;font-weight:600;padding-top:12px">Display name</label>
+              <div style="display:flex;flex-direction:column;gap:4px"><input id="s-name" value="{{ name }}" onChange="{{ onName }}" disabled="{{ pSaving }}" aria-invalid="{{ nameInvalid }}" style="height:44px;border:0;border-radius:6px;background:#F8F5EF;box-shadow:inset 0 0 0 1px {{ nameLine }};font-size:15px;padding:0 12px;color:#2A241C" style-focus="box-shadow:inset 0 0 0 2px #3F6670"><sc-if value="{{ nameErr }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:#A0402F;display:flex;gap:6px;align-items:center"><i class="icon-circle-alert" style="font-size:14px"></i>Display name is required.</span></sc-if></div>
+              <label for="s-mail" style="font-size:14px;font-weight:600;padding-top:12px">Recovery email <span style="font-weight:400;color:#6F6656">· optional</span></label>
+              <div style="display:flex;flex-direction:column;gap:4px"><input id="s-mail" type="email" value="{{ mail }}" onChange="{{ onMail }}" disabled="{{ pSaving }}" placeholder="john@example.com" style="height:44px;border:0;border-radius:6px;background:#F8F5EF;box-shadow:inset 0 0 0 1px {{ mailLine }};font-size:15px;padding:0 12px;color:#2A241C" style-focus="box-shadow:inset 0 0 0 2px #3F6670"><span style="font-size:12px;color:{{ mailHintFg }}">{{ mailHint }}</span></div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px">
+              <span role="status" style="flex:1;font-size:14px;color:{{ pMsgFg }};display:flex;gap:6px;align-items:center;opacity:{{ pMsgOp }};transition:opacity 240ms"><i class="{{ pMsgIcon }}" style="font-size:15px"></i>{{ pMsg }}</span>
+              <sc-if value="{{ pDirty }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ discardProfile }}" style="height:44px;padding:0 14px;border:0;background:transparent;color:#4E4639;font-size:14px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:4px;text-decoration-color:#CDBFA9">Discard changes</button></sc-if>
+              <button type="submit" disabled="{{ pSaveDis }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:{{ pSaveBg }};color:{{ pSaveFg }};font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap"><sc-if value="{{ pSaving }}" hint-placeholder-val="{{ false }}"><i class="icon-loader-circle" style="font-size:15px;animation:fl-spin 900ms linear infinite"></i></sc-if>{{ pSaveLabel }}</button>
+            </div>
+          </form>
+
+          <form onSubmit="{{ saveLimits }}" style="display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #2A241C;padding-bottom:10px"><span style="font:italic 400 24px 'Newsreader',serif;color:#3F6670">ii.</span><span style="font:400 28px/1 'Newsreader',serif">Daily quiz and study amounts</span><span style="font-size:13px;color:#6F6656">Learning</span></div>
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#4E4639;max-width:620px">These limits control how many cards are pulled into each new quiz or study cycle.</p>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 32px">
+              <sc-for list="{{ limits }}" as="l" hint-placeholder-count="4">
+                <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #DDD3C3">
+                  <div style="display:flex;flex-direction:column;gap:2px"><label for="{{ l.id }}" style="font-size:15px;font-weight:500">{{ l.label }}</label><span style="font-size:12px;color:{{ l.hintFg }}">{{ l.hint }}</span></div>
+                  <div style="display:grid;grid-template-columns:40px 64px 40px;height:44px;border-radius:6px;box-shadow:inset 0 0 0 1px {{ l.border }};background:#F8F5EF;overflow:hidden">
+                    <button type="button" onClick="{{ l.dec }}" disabled="{{ l.decDis }}" aria-label="{{ l.decAria }}" style="border:0;background:transparent;cursor:pointer;color:#2A241C;opacity:{{ l.decOp }}" style-hover="background:#E8E1D4"><i class="icon-minus" style="font-size:15px"></i></button>
+                    <input id="{{ l.id }}" type="number" inputmode="numeric" value="{{ l.v }}" onChange="{{ l.onChange }}" min="{{ l.min }}" max="{{ l.max }}" style="border:0;border-left:1px solid #DDD3C3;border-right:1px solid #DDD3C3;background:transparent;text-align:center;font:400 22px 'Newsreader',serif;color:#2A241C;width:100%;-moz-appearance:textfield" style-focus="box-shadow:inset 0 0 0 2px #3F6670">
+                    <button type="button" onClick="{{ l.inc }}" disabled="{{ l.incDis }}" aria-label="{{ l.incAria }}" style="border:0;background:transparent;cursor:pointer;color:#2A241C;opacity:{{ l.incOp }}" style-hover="background:#E8E1D4"><i class="icon-plus" style="font-size:15px"></i></button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px">
+              <span role="status" style="flex:1;font-size:14px;color:{{ lMsgFg }};display:flex;gap:6px;align-items:center;opacity:{{ lMsgOp }};transition:opacity 240ms"><i class="{{ lMsgIcon }}" style="font-size:15px"></i>{{ lMsg }}</span>
+              <sc-if value="{{ lDirty }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ discardLimits }}" style="height:44px;padding:0 14px;border:0;background:transparent;color:#4E4639;font-size:14px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:4px;text-decoration-color:#CDBFA9">Discard changes</button></sc-if>
+              <button type="submit" disabled="{{ lSaveDis }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:{{ lSaveBg }};color:{{ lSaveFg }};font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap"><sc-if value="{{ lSaving }}" hint-placeholder-val="{{ false }}"><i class="icon-loader-circle" style="font-size:15px;animation:fl-spin 900ms linear infinite"></i></sc-if>{{ lSaveLabel }}</button>
+            </div>
+          </form>
+
+          <section style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #2A241C;padding-bottom:10px"><span style="font:italic 400 24px 'Newsreader',serif;color:#3F6670">iii.</span><span style="font:400 28px/1 'Newsreader',serif">AI auto-fill</span><span style="font-size:13px;color:#6F6656">Subscription · {{ planLabel }}</span><span style="flex:1"></span><button onClick="{{ refreshQuota }}" disabled="{{ quotaDis }}" aria-label="Refresh quota" title="Refresh quota" style="width:36px;height:36px;border:0;border-radius:4px;background:transparent;color:#4E4639;cursor:pointer;display:grid;place-items:center;opacity:{{ quotaDisOp }}" style-hover="background:#E8E1D4"><i class="icon-refresh-cw" style="font-size:16px;animation:{{ quotaAnim }}"></i></button></div>
+            <sc-if value="{{ quotaShow }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:28px;align-items:center">
+                <div style="display:flex;align-items:baseline;gap:4px"><span style="font:400 64px/1 'Newsreader',serif;color:#3F6670;letter-spacing:-.03em">{{ remaining }}</span><span style="font:italic 400 28px 'Newsreader',serif;color:#6F6656">/ 10</span></div>
+                <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:14px;font-weight:500">Auto-fill remaining today</span><div style="display:flex;gap:3px"><sc-for list="{{ quotaTicks }}" as="k" hint-placeholder-count="10"><span style="flex:1;height:6px;background:{{ k.bg }}"></span></sc-for></div><span style="font-size:13px;color:#4E4639">{{ usedLine }}</span></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ quotaDemo }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font:italic 400 18px 'Newsreader',serif;color:#4E4639">AI auto-fill is unavailable in the public demo.</p></sc-if>
+          </section>
+
+          <form onSubmit="{{ savePw }}" style="display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #2A241C;padding-bottom:10px"><span style="font:italic 400 24px 'Newsreader',serif;color:#3F6670">iv.</span><span style="font:400 28px/1 'Newsreader',serif">Change password</span><span style="font-size:13px;color:#6F6656">Password</span></div>
+            <sc-if value="{{ sDemo }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:14px;color:#4E4639">Password changes are unavailable in the public demo.</p></sc-if>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+              <sc-for list="{{ pwFields }}" as="p" hint-placeholder-count="3"><label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">{{ p.label }}</span><input type="password" value="{{ p.v }}" onChange="{{ p.onChange }}" disabled="{{ pwDis }}" style="height:44px;border:0;border-radius:6px;background:{{ pwBg }};box-shadow:inset 0 0 0 1px {{ p.line }};font-size:15px;padding:0 12px;color:#2A241C" style-focus="box-shadow:inset 0 0 0 2px #3F6670"></label></sc-for>
+            </div>
+            <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px">
+              <span role="status" style="flex:1;font-size:14px;color:{{ pwMsgFg }};display:flex;gap:6px;align-items:center"><i class="{{ pwMsgIcon }}" style="font-size:15px"></i>{{ pwMsg }}</span>
+              <button type="submit" disabled="{{ pwDis }}" style="display:flex;align-items:center;gap:8px;height:44px;padding:0 20px;border:0;border-radius:4px;background:{{ pwBtnBg }};color:{{ pwBtnFg }};font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap"><i class="icon-key-round" style="font-size:15px"></i>Update password</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div style="width:350px;display:flex;flex-direction:column;gap:20px;flex-shrink:0">
+    <div style="background:#F8F5EF;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Settings prototype</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><sc-for list="{{ sScen }}" as="s" hint-placeholder-count="4"><button onClick="{{ s.onClick }}" style="height:40px;padding:0 10px;border:0;border-radius:6px;cursor:pointer;text-align:left;font-size:13px;font-weight:500;background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button></sc-for></div>
+      <button onClick="{{ toggleSFail }}" role="switch" aria-checked="{{ sFailAria }}" style="display:flex;justify-content:space-between;align-items:center;height:44px;padding:0 14px;border:0;border-radius:6px;cursor:pointer;background:transparent;box-shadow:inset 0 0 0 1px #CDBFA9;color:#2A241C"><span style="font-size:14px;font-weight:500">Next save fails</span><span style="width:34px;height:20px;border-radius:999px;background:{{ sFailTrack }};position:relative;display:block"><span style="position:absolute;top:2px;left:{{ sFailKnob }};width:16px;height:16px;border-radius:50%;background:#F8F5EF;transition:left 160ms"></span></span></button>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#4E4639;border-top:1px solid #DDD3C3;padding-top:12px">Edit the name (clear it to see validation), step the limits past their bounds, refresh the quota, submit mismatched passwords.</p>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E3DACB;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.5;color:#433C31">
+      <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6F6656;font-weight:600">Design notes</span>
+      <div><b style="font-weight:600">Four sections, four forms</b> — unchanged boundaries, so each saves independently exactly as today.</div>
+      <div><b style="font-weight:600">Save is quiet until dirty.</b> Disabled + muted when nothing changed; "Discard changes" restores the last saved values (client-only).</div>
+      <div><b style="font-weight:600">Steppers</b> wrap the existing number input; − / + respect <code style="font-family:'JetBrains Mono';font-size:12px">getLearningSettingLimits()</code> and the hint shows the range.</div>
+      <div><b style="font-weight:600">Quota</b> uses ten ticks instead of a progress bar so used/remaining is countable.</div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 96px;width:1710px;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #CDBFA9;padding-bottom:12px"><span style="font:italic 400 28px/1 'Newsreader',serif">Mobile</span><span style="font-size:14px;color:#6F6656">Import preview becomes stacked row cards (no sideways table); results list wraps; Settings sections become a single column with steppers full-width.</span></div>
+  <div style="display:flex;gap:36px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="padding:6px 20px 10px;border-bottom:2px solid #2A241C;margin:0;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:#8A5F32;font-weight:500">工作台 · 08</span><span style="font:400 30px/1 'Newsreader',serif">Import <span style="font:500 18px 'Noto Serif SC',serif;color:#6F6656">导入</span></span></div>
+      <div style="flex:1;overflow:hidden;padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;gap:10px"><i style="font:italic 400 24px 'Newsreader';color:#3F6670">IV.</i><span style="font:500 18px 'Noto Serif SC',serif">正在导入</span><span style="flex:1"></span><span style="font:italic 400 14px 'Newsreader';color:#4E4639">18 / 42</span></div>
+        <div style="display:flex;gap:1px;height:8px"><span style="flex:14;background:#55703F"></span><span style="flex:2;background:#3F6670"></span><span style="flex:1;background:#A0402F"></span><span style="flex:1;background:#55703F"></span><span style="flex:24;background:#DDD3C3"></span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #DDD3C3">
+          <div style="padding:12px 0;border-bottom:1px solid #DDD3C3;border-right:1px solid #DDD3C3;display:flex;flex-direction:column;gap:2px"><span style="font:400 30px/1 'Newsreader';color:#55703F">15</span><span style="font-size:12px;color:#6F6656">已添加</span></div>
+          <div style="padding:12px 0 12px 14px;border-bottom:1px solid #DDD3C3;display:flex;flex-direction:column;gap:2px"><span style="font:400 30px/1 'Newsreader';color:#3F6670">2</span><span style="font-size:12px;color:#6F6656">已跳过</span></div>
+          <div style="padding:12px 0;border-bottom:1px solid #DDD3C3;border-right:1px solid #DDD3C3;display:flex;flex-direction:column;gap:2px"><span style="font:400 30px/1 'Newsreader';color:#A0402F">1</span><span style="font-size:12px;color:#6F6656">失败</span></div>
+          <div style="padding:12px 0 12px 14px;border-bottom:1px solid #DDD3C3;display:flex;flex-direction:column;gap:2px"><span style="font:400 30px/1 'Newsreader';color:#4E4639">24</span><span style="font-size:12px;color:#6F6656">未处理</span></div>
+        </div>
+        <p role="status" style="margin:0;font-size:14px;line-height:1.7;color:#4E4639">本次已处理 42 行中的 18 行。可以离开此页，导入会继续进行。</p>
+      </div>
+      <div style="padding:10px 16px 30px;border-top:1px solid #DDD3C3"><button style="width:100%;height:52px;border:0;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 1px #2A241C;font-family:'Noto Sans SC';font-size:15px;font-weight:500">取消导入</button></div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · IMPORTING · 中文</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="padding:6px 20px 10px;border-bottom:2px solid #2A241C;display:flex;flex-direction:column;gap:4px"><span style="font-size:11px;color:#8A5F32;font-weight:600;letter-spacing:.14em">BUREAU · 08</span><span style="font:400 30px/1 'Newsreader',serif">Import</span></div>
+      <div style="flex:1;overflow:hidden;padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:30px;height:30px;border-radius:50%;background:#8A5F32;color:#FCFAF6;display:grid;place-items:center"><i class="icon-circle-alert" style="font-size:16px"></i></span><span style="font:italic 400 24px 'Newsreader',serif;color:#8A5F32">Complete with failures</span></div>
+        <p style="margin:0;font-size:14px;line-height:1.5;color:#4E4639">Batch: 42. Added: 37. Skipped: 3. Failed: 2. Unprocessed: 0.</p>
+        <span style="font-size:11px;letter-spacing:.14em;font-weight:600;color:#6F6656;border-bottom:1px solid #2A241C;padding-bottom:6px;margin-top:6px">ITEMS NOT IMPORTED</span>
+        <div style="display:flex;flex-direction:column;gap:4px;padding:10px 0;border-bottom:1px solid #DDD3C3"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:400 19px 'Newsreader'">la mairie</span><span style="font-size:10px;font-weight:600;letter-spacing:.12em;color:#A0402F;box-shadow:inset 0 0 0 1px #A0402F;padding:3px 7px;border-radius:999px">FAILED</span></div><span style="font-size:13px;color:#4E4639">Chinese is required. · <i style="font-family:'Newsreader'">row 4</i></span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;padding:10px 0;border-bottom:1px solid #DDD3C3"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:400 19px 'Newsreader'">le bureau</span><span style="font-size:10px;font-weight:600;letter-spacing:.12em;color:#3F6670;box-shadow:inset 0 0 0 1px #3F6670;padding:3px 7px;border-radius:999px">SKIPPED</span></div><span style="font-size:13px;color:#4E4639">Already in Vocabulary. · <i style="font-family:'Newsreader'">row 9</i></span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;padding:10px 0;border-bottom:1px solid #DDD3C3"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:400 19px 'Newsreader'">s'épanouir</span><span style="font-size:10px;font-weight:600;letter-spacing:.12em;color:#A0402F;box-shadow:inset 0 0 0 1px #A0402F;padding:3px 7px;border-radius:999px">FAILED</span></div><span style="font-size:13px;color:#4E4639">Network error while saving. · <i style="font-family:'Newsreader'">row 31</i></span></div>
+      </div>
+      <div style="padding:10px 16px 30px;border-top:1px solid #DDD3C3"><button style="width:100%;height:52px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-size:15px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px"><i class="icon-rotate-cw" style="font-size:15px"></i>Retry failed only</button></div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · RESULTS · EN</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+    <div style="width:390px;height:800px;border-radius:48px;border:10px solid #2A241C;background:#EFE9DF;overflow:hidden;display:flex;flex-direction:column;color:#2A241C;font-family:'Noto Sans SC','Instrument Sans',sans-serif;box-sizing:border-box">
+      <div style="height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font:600 14px/1 'Instrument Sans'"><span>9:41</span><span style="width:110px;height:30px;border-radius:20px;background:#2A241C"></span><span>100%</span></div>
+      <div style="padding:6px 20px 10px;border-bottom:2px solid #2A241C;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:#8A5F32;font-weight:500">工作台 · 09</span><span style="font:400 30px/1 'Newsreader',serif">Settings <span style="font:500 18px 'Noto Serif SC',serif;color:#6F6656">设置</span></span></div>
+      <div style="flex:1;overflow:hidden;padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:baseline;gap:8px;border-bottom:1px solid #2A241C;padding-bottom:8px"><i style="font:italic 400 20px 'Newsreader';color:#3F6670">ii.</i><span style="font:500 19px 'Noto Serif SC',serif">每日测验与学习数量</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:6px 0 12px;border-bottom:1px solid #DDD3C3"><span style="font-size:15px;font-weight:500">测验词汇题数</span><div style="display:grid;grid-template-columns:52px 1fr 52px;height:48px;border-radius:6px;box-shadow:inset 0 0 0 1px #CDBFA9;background:#F8F5EF"><span style="display:grid;place-items:center"><i class="icon-minus"></i></span><span style="display:grid;place-items:center;font:400 24px 'Newsreader';border-left:1px solid #DDD3C3;border-right:1px solid #DDD3C3">50</span><span style="display:grid;place-items:center"><i class="icon-plus"></i></span></div><span style="font-size:12px;color:#6F6656">范围 1–200</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:6px 0 12px;border-bottom:1px solid #DDD3C3"><span style="font-size:15px;font-weight:500">学习词汇卡片数</span><div style="display:grid;grid-template-columns:52px 1fr 52px;height:48px;border-radius:6px;box-shadow:inset 0 0 0 1px #3F6670;background:#F8F5EF"><span style="display:grid;place-items:center"><i class="icon-minus"></i></span><span style="display:grid;place-items:center;font:400 24px 'Newsreader';border-left:1px solid #DDD3C3;border-right:1px solid #DDD3C3">30</span><span style="display:grid;place-items:center"><i class="icon-plus"></i></span></div><span style="font-size:12px;color:#6F6656">范围 0–200</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:6px 0 12px"><span style="font-size:15px;font-weight:500">学习语法卡片数</span><div style="display:grid;grid-template-columns:52px 1fr 52px;height:48px;border-radius:6px;box-shadow:inset 0 0 0 1px #CDBFA9;background:#F8F5EF"><span style="display:grid;place-items:center"><i class="icon-minus"></i></span><span style="display:grid;place-items:center;font:400 24px 'Newsreader';border-left:1px solid #DDD3C3;border-right:1px solid #DDD3C3">20</span><span style="display:grid;place-items:center"><i class="icon-plus"></i></span></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:8px;padding:10px 16px 30px;border-top:1px solid #DDD3C3;background:#F8F5EF"><button style="height:52px;border:0;border-radius:6px;background:transparent;font-family:'Noto Sans SC';font-size:14px;text-decoration:underline;text-decoration-color:#CDBFA9;text-underline-offset:4px">放弃更改</button><button style="height:52px;border:0;border-radius:6px;background:#2A241C;color:#EFE9DF;font-family:'Noto Sans SC';font-size:15px;font-weight:500">保存学习设置</button></div>
+    </div>
+    <span style="font:500 11px 'JetBrains Mono';letter-spacing:.1em;color:#6F6656">MOBILE · SETTINGS · DIRTY · 中文</span>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;reducedMotion&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  TOTAL = 42;
+  failRows = [4, 31];
+  skipRows = [9, 17, 26];
+  limitDefs = [['quizVocabularyLimit', 'Quiz vocabulary questions', 1, 200], ['studyVocabularyLimit', 'Study vocabulary cards', 0, 200], ['studyGrammarLimit', 'Study grammar cards', 0, 100], ['studyPhraseLimit', 'Study short phrase cards', 0, 100]];
+  savedLimits = { quizVocabularyLimit: 50, studyVocabularyLimit: 50, studyGrammarLimit: 20, studyPhraseLimit: 20 };
+  saved = { name: 'Marie', mail: 'marie@example.com' };
+  state = {
+    mode: 'vocabulary', iSt: 'idle', results: {}, cursor: 0, runRows: [], iSc: 'idle', isDemo: false,
+    name: 'Marie', mail: 'marie@example.com', pSt: 'idle', lim: { ...this.savedLimits }, lSt: 'idle', quota: 'ok', used: 3, pw: ['', '', ''], pwSt: null, sDemo: false, sFail: false, sSc: 'normal',
+  };
+  componentWillUnmount() { clearInterval(this.iv); [this.t1, this.t2, this.t3].forEach(clearTimeout); }
+  rm() { return !!this.props.reducedMotion; }
+  outcome(r) { return this.failRows.includes(r) ? 'failed' : this.skipRows.includes(r) ? 'skipped' : 'added'; }
+  run(rows) {
+    clearInterval(this.iv);
+    this.setState({ iSt: 'importing', runRows: rows, cursor: 0 });
+    this.iv = setInterval(() => {
+      const s = this.state;
+      if (s.cursor >= s.runRows.length || s.iSt === 'cancelled') { clearInterval(this.iv); return; }
+      const r = s.runRows[s.cursor];
+      const res = { ...s.results, [r]: s.retrying ? 'added' : this.outcome(r) };
+      const next = s.cursor + 1;
+      if (s.iSt === 'cancelling') { clearInterval(this.iv); return this.setState({ results: res, cursor: next, iSt: 'cancelled' }); }
+      if (next >= s.runRows.length) { clearInterval(this.iv); return this.setState({ results: res, cursor: next, iSt: 'done', retrying: false }); }
+      this.setState({ results: res, cursor: next });
+    }, this.rm() ? 20 : 90);
+  }
+  rows() { return Array.from({ length: this.TOTAL }, (_, i) => i + 1); }
+  iGo(k) {
+    clearInterval(this.iv);
+    const all = this.rows();
+    const res = (n) => Object.fromEntries(all.slice(0, n).map((r) => [r, this.outcome(r)]));
+    const map = {
+      idle: { iSt: 'idle', results: {} }, reading: { iSt: 'reading', results: {} }, ready: { iSt: 'ready', results: {} }, error: { iSt: 'error', results: {} },
+      importing: { iSt: 'ready', results: {} }, cancelled: { iSt: 'cancelled', results: res(18), runRows: all, cursor: 18 },
+      failures: { iSt: 'done', results: res(42), runRows: all, cursor: 42 }, allok: { iSt: 'done', results: Object.fromEntries(all.map((r) => [r, 'added'])), runRows: all, cursor: 42 },
+      demo: { iSt: 'ready', results: {}, isDemo: true }, phrases: { iSt: 'ready', results: {}, mode: 'phrases' },
+    };
+    this.setState({ iSc: k, isDemo: false, mode: 'vocabulary', retrying: false, ...map[k] });
+    if (k === 'importing') setTimeout(() => this.run(all), 50);
+  }
+  pSave = (e) => {
+    e.preventDefault();
+    if (!this.state.name.trim()) return this.setState({ pSt: 'invalid' });
+    if (this.state.mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.state.mail)) return this.setState({ pSt: 'mail' });
+    this.setState({ pSt: 'saving' });
+    this.t1 = setTimeout(() => {
+      if (this.state.sFail) return this.setState({ pSt: 'error', sFail: false });
+      this.saved = { name: this.state.name, mail: this.state.mail };
+      this.setState({ pSt: 'saved' });
+    }, 1000);
+  };
+  lSave = (e) => {
+    e.preventDefault();
+    this.setState({ lSt: 'saving' });
+    this.t2 = setTimeout(() => {
+      if (this.state.sFail) return this.setState({ lSt: 'error', sFail: false });
+      this.savedLimits = { ...this.state.lim };
+      this.setState({ lSt: 'saved' });
+    }, 1000);
+  };
+  pwSave = (e) => {
+    e.preventDefault();
+    const [c, n, f] = this.state.pw;
+    if (!c) return this.setState({ pwSt: ['err', 'Enter your current password.', 0] });
+    if (n.length < 6) return this.setState({ pwSt: ['err', 'New password must be at least 6 characters.', 1] });
+    if (n !== f) return this.setState({ pwSt: ['err', 'New passwords do not match.', 2] });
+    this.setState({ pwSt: ['ok', 'Password updated.', -1], pw: ['', '', ''] });
+  };
+  renderVals() {
+    const s = this.state;
+    const vocab = s.mode === 'vocabulary';
+    const st = s.iSt;
+    const hasFile = !['idle', 'reading', 'error'].includes(st);
+    const busy = st === 'importing' || st === 'cancelling';
+    const R = s.results;
+    const vals = Object.values(R);
+    const sum = { added: vals.filter((v) => v === 'added').length, skipped: vals.filter((v) => v === 'skipped').length, failed: vals.filter((v) => v === 'failed').length };
+    sum.unprocessed = hasFile ? this.TOTAL - vals.length : 0;
+    const done = ['done', 'cancelled'].includes(st);
+    const river = '#3F6670', sage = '#55703F', mute = '#958B7A';
+    const vocabRows = [['la boulangerie', '面包店', 'noun', '/bu.lɑ̃ʒ.ʁi/', 'food'], ['apprendre', '学习', 'verb', '/a.pʁɑ̃dʁ/', 'verbs'], ['chaleureux', '热情的', 'adjective', '/ʃa.lø.ʁø/', 'people'], ['la mairie', '', 'noun', '/mɛ.ʁi/', 'city'], ['souvent', '经常', 'adverb', '/su.vɑ̃/', '']];
+    const phraseRows = [['avoir le cafard', 'to feel down', 'idiom'], ['Ça me dit quelque chose.', 'That rings a bell.', ''], ['Je vous en prie.', "You're welcome", 'politeness'], ['À tout à l’heure !', '', ''], ['On se tient au courant ?', 'Keep each other posted?', 'work']];
+    const pr = vocab ? vocabRows : phraseRows;
+    const statusText = { added: 'Added', skipped: 'Skipped', failed: 'Failed' };
+    const lim = s.lim;
+    const lDirty = JSON.stringify(lim) !== JSON.stringify(this.savedLimits);
+    const pDirty = s.name !== this.saved.name || s.mail !== this.saved.mail;
+    const pw = s.pwSt;
+    const msg = (stt, dirty) => stt === 'saving' ? ['', '', '#4E4639', 0] : stt === 'saved' && !dirty ? ['Saved.', 'icon-check', sage, 1] : stt === 'error' ? ['Could not save. Check your connection and try again.', 'icon-circle-alert', '#A0402F', 1] : ['', '', '#4E4639', 0];
+    const pm = s.pSt === 'mail' ? ['', '', '', 0] : msg(s.pSt, pDirty);
+    const lm = msg(s.lSt, lDirty);
+    const btn = (stt, dirty, label) => { const dis = stt === 'saving' || !dirty; return { dis, bg: dis && stt !== 'saving' ? '#DDD3C3' : '#2A241C', fg: dis && stt !== 'saving' ? '#6F6656' : '#EFE9DF', label: stt === 'saving' ? 'Saving…' : label }; };
+    const pb = btn(s.pSt, pDirty, 'Save profile');
+    const lb = btn(s.lSt, lDirty, 'Save learning settings');
+    const iScen = [['idle', 'No file'], ['reading', 'Reading CSV'], ['error', 'Invalid CSV'], ['ready', 'Ready · preview'], ['phrases', 'Phrases mode'], ['importing', 'Importing'], ['cancelled', 'Cancelled'], ['failures', 'Done · failures'], ['allok', 'All imported'], ['demo', 'Demo']];
+    return {
+      modeGloss: vocab ? 'vocabulary' : 'short phrases',
+      modeCopy: vocab ? 'Upload a prepared vocabulary CSV. Its meanings and learning details are saved directly without AI or Wiktionary calls.' : 'Upload a .csv file with French in the first column and translation in the second. An optional third column is saved as tags.',
+      modes: [['vocabulary', 'Vocabulary'], ['phrases', 'Short phrases']].map(([v, l]) => ({ l, checked: s.mode === v ? 'true' : 'false', bg: s.mode === v ? '#2A241C' : 'transparent', fg: s.mode === v ? '#EFE9DF' : '#2A241C', onClick: () => !busy && s.mode !== v && this.setState({ mode: v, iSt: 'idle', results: {} }) })),
+      busy, busyOp: busy ? 0.4 : 1, isDemo: s.isDemo, isVocabMode: vocab,
+      formatTitle: vocab ? 'Prepared vocabulary CSV' : 'Two or three columns',
+      formatCopy: vocab ? 'French, Chinese, and part of speech are required. Keep the remaining headers even when their cells are empty.' : 'French · translation · tags (optional). No header row needed.',
+      st1: hasFile ? sage : river, st2: hasFile ? sage : river, st3: st === 'ready' ? river : sage, st4: done ? sage : river,
+      dropBorder: st === 'error' ? '#A0402F' : hasFile ? '#55703F' : '#958B7A', dropBg: hasFile ? '#F8F5EF' : 'transparent', dropCursor: busy ? 'default' : 'pointer',
+      fileIcon: st === 'reading' ? 'icon-loader-circle' : hasFile ? 'icon-file-check' : 'icon-file-up', fileAnim: st === 'reading' ? 'fl-spin 900ms linear infinite' : 'none',
+      fileTitle: st === 'idle' ? 'Drop a .csv file here' : st === 'reading' ? 'Reading CSV…' : vocab ? 'vocabulaire-octobre.csv' : 'expressions.csv',
+      fileSub: st === 'idle' ? 'or choose one from your computer' : st === 'reading' ? 'Parsing rows' : st === 'error' ? 'This file could not be used.' : `${this.TOTAL} rows · 6 KB`,
+      pickLabel: hasFile || st === 'error' ? 'Choose another' : 'Choose file',
+      pickFile: (e) => { e.preventDefault(); if (busy) return; this.setState({ iSt: 'reading', results: {} }); this.t3 = setTimeout(() => this.setState({ iSt: 'ready' }), this.rm() ? 200 : 800); },
+      parseError: st === 'error',
+      hasPreview: hasFile,
+      readyCopy: vocab ? `${this.TOTAL} words ready to import.` : `${this.TOTAL} phrases ready to import.`,
+      cols: vocab ? ['French', 'Chinese', 'Part of speech', 'IPA', 'Tags'] : ['French', 'Translation', 'Tags'],
+      preview: pr.map((r, i) => ({ row: i + 1, bg: (vocab ? !r[1] : !r[1]) ? '#F6ECE2' : 'transparent', cells: r.map((v, j) => ({ v: v || '—', fg: v ? '#2A241C' : '#A0402F', font: j === 0 ? "400 17px 'Newsreader',serif" : j === 3 && vocab ? "400 14px 'Noto Sans',sans-serif" : "400 14px 'Instrument Sans',sans-serif" })) })),
+      total: this.TOTAL,
+      hasRun: busy || done,
+      runTitle: st === 'cancelling' ? 'Cancelling…' : busy ? 'Importing' : 'Run summary',
+      runLine: st === 'cancelling' ? 'Cancelling after the current row finishes…' : `Processed ${s.cursor} of ${s.runRows.length} rows in this run.`,
+      ticks: this.rows().map((r) => ({ bg: R[r] === 'added' ? sage : R[r] === 'skipped' ? river : R[r] === 'failed' ? '#A0402F' : '#DDD3C3' })),
+      counters: [['Parsed', this.TOTAL, '#2A241C', '#2A241C'], ['Added', sum.added, sage, sage], ['Skipped', sum.skipped, river, river], ['Failed', sum.failed, '#A0402F', '#A0402F'], ['Unprocessed', sum.unprocessed, '#4E4639', '#DDD3C3']].map(([l, v, fg, sw], k) => ({ l, v, fg, sw, br: k < 4 ? '1px solid #DDD3C3' : '0', pl: k ? '16px' : '0' })),
+      hasResults: done,
+      resTitle: st === 'cancelled' ? 'Import cancelled.' : sum.failed ? 'Import complete with failures.' : 'Import complete.',
+      resColor: st === 'cancelled' ? '#4E4639' : sum.failed ? '#8A5F32' : sage, resIcon: st === 'cancelled' ? 'icon-pause' : sum.failed ? 'icon-circle-alert' : 'icon-check',
+      batchLine: `Batch: ${this.TOTAL}. Added: ${sum.added}. Skipped: ${sum.skipped}. Failed: ${sum.failed}. Unprocessed: ${sum.unprocessed}.`,
+      allOk: st === 'done' && sum.added === this.TOTAL,
+      attention: Object.entries(R).filter(([, v]) => v !== 'added').map(([r, v]) => ({ row: r, word: { 4: 'la mairie', 31: "s'épanouir", 9: 'le bureau', 17: 'souvent', 26: 'heureux' }[r] || '—', reason: v === 'failed' ? (r === '4' ? 'Chinese is required.' : 'Network error while saving.') : 'Already in Vocabulary.', status: statusText[v], fg: v === 'failed' ? '#A0402F' : river })),
+      hasAttention: done && vals.some((v) => v !== 'added'),
+      showCancel: busy, cancelling: st === 'cancelling', cancelOp: st === 'cancelling' ? 0.4 : 1,
+      cancel: () => this.setState({ iSt: 'cancelling' }),
+      showResume: done && sum.unprocessed > 0, resume: () => this.run(this.rows().filter((r) => !R[r])),
+      showRetry: done && sum.failed > 0 && sum.unprocessed === 0, retry: () => { this.setState({ retrying: true }); this.run(Object.keys(R).filter((r) => R[r] === 'failed').map(Number)); },
+      showStart: !done, running: busy,
+      startDis: s.isDemo || busy || st !== 'ready', startBg: s.isDemo || st !== 'ready' && !busy ? '#DDD3C3' : '#2A241C', startFg: s.isDemo || st !== 'ready' && !busy ? '#6F6656' : '#EFE9DF', startCursor: s.isDemo || st !== 'ready' ? 'not-allowed' : 'pointer',
+      startLabel: busy ? 'Importing…' : 'Start import',
+      start: () => this.run(this.rows()),
+      iScen: iScen.map(([k, label]) => ({ label, bg: s.iSc === k ? '#2A241C' : '#EFE9DF', fg: s.iSc === k ? '#EFE9DF' : '#2A241C', onClick: () => this.iGo(k) })),
+
+      sDemo: s.sDemo,
+      sNav: [['i.', 'Profile'], ['ii.', 'Learning'], ['iii.', 'AI auto-fill'], ['iv.', 'Password']].map(([n, l], i) => ({ n, l, fg: i === 0 ? '#2A241C' : '#4E4639', w: i === 0 ? 600 : 500 })),
+      name: s.name, mail: s.mail, pSaving: s.pSt === 'saving',
+      onName: (e) => this.setState({ name: e.target.value, pSt: 'idle' }), onMail: (e) => this.setState({ mail: e.target.value, pSt: 'idle' }),
+      nameErr: s.pSt === 'invalid', nameInvalid: s.pSt === 'invalid' ? 'true' : 'false', nameLine: s.pSt === 'invalid' ? '#A0402F' : '#CDBFA9',
+      mailLine: s.pSt === 'mail' ? '#A0402F' : '#CDBFA9', mailHint: s.pSt === 'mail' ? 'Enter a valid recovery email.' : 'Leave blank if you do not want a recovery email yet.', mailHintFg: s.pSt === 'mail' ? '#A0402F' : '#6F6656',
+      saveProfile: this.pSave, pDirty: pDirty && s.pSt !== 'saving', discardProfile: () => this.setState({ name: this.saved.name, mail: this.saved.mail, pSt: 'idle' }),
+      pMsg: pm[0], pMsgIcon: pm[1], pMsgFg: pm[2], pMsgOp: pm[3],
+      pSaveDis: pb.dis, pSaveBg: pb.bg, pSaveFg: pb.fg, pSaveLabel: pb.label,
+      limits: this.limitDefs.map(([k, label, min, max], i) => {
+        const v = lim[k]; const out = v < min || v > max;
+        const setV = (nv) => this.setState((x) => ({ lim: { ...x.lim, [k]: nv }, lSt: 'idle' }));
+        return { id: 'lim' + i, label, v, min, max, hint: out ? `Will be saved as ${Math.min(max, Math.max(min, v))} (range ${min}–${max}).` : `Range ${min}–${max}`, hintFg: out ? '#8A5F32' : '#6F6656', border: v !== this.savedLimits[k] ? '#3F6670' : '#CDBFA9', dec: () => setV(Math.max(min, v - 1)), inc: () => setV(Math.min(max, v + 1)), decDis: v <= min, incDis: v >= max, decOp: v <= min ? 0.3 : 1, incOp: v >= max ? 0.3 : 1, decAria: `Decrease ${label}`, incAria: `Increase ${label}`, onChange: (e) => setV(Number(e.target.value)) };
+      }),
+      saveLimits: this.lSave, lDirty: lDirty && s.lSt !== 'saving', lSaving: s.lSt === 'saving', discardLimits: () => this.setState({ lim: { ...this.savedLimits }, lSt: 'idle' }),
+      lMsg: lm[0], lMsgIcon: lm[1], lMsgFg: lm[2], lMsgOp: lm[3],
+      lSaveDis: lb.dis, lSaveBg: lb.bg, lSaveFg: lb.fg, lSaveLabel: lb.label,
+      planLabel: s.sDemo ? 'Demo' : s.quota === 'loading' ? 'Loading…' : 'Free plan',
+      quotaShow: !s.sDemo, quotaDemo: s.sDemo, remaining: s.quota === 'loading' ? '–' : 10 - s.used,
+      quotaTicks: Array.from({ length: 10 }, (_, i) => ({ bg: s.quota === 'loading' ? '#E3DACB' : i < s.used ? '#CDBFA9' : '#3F6670' })),
+      usedLine: s.quota === 'loading' ? 'Loading…' : `${s.used} used today.`,
+      quotaDis: s.sDemo || s.quota === 'loading', quotaDisOp: s.sDemo ? 0.35 : 1, quotaAnim: s.quota === 'loading' ? 'fl-spin 900ms linear infinite' : 'none',
+      refreshQuota: () => { this.setState({ quota: 'loading' }); setTimeout(() => this.setState({ quota: 'ok' }), 900); },
+      pwFields: ['Current password', 'New password', 'Confirm new password'].map((label, i) => ({ label, v: s.pw[i], line: pw && pw[0] === 'err' && pw[2] === i ? '#A0402F' : '#CDBFA9', onChange: (e) => { const n = [...s.pw]; n[i] = e.target.value; this.setState({ pw: n, pwSt: null }); } })),
+      pwDis: s.sDemo, pwBg: s.sDemo ? '#E8E1D4' : '#F8F5EF', pwBtnBg: s.sDemo ? '#DDD3C3' : '#2A241C', pwBtnFg: s.sDemo ? '#6F6656' : '#EFE9DF',
+      savePw: this.pwSave, pwMsg: pw ? pw[1] : '', pwMsgFg: pw && pw[0] === 'ok' ? sage : '#A0402F', pwMsgIcon: pw ? (pw[0] === 'ok' ? 'icon-check' : 'icon-circle-alert') : '',
+      sScen: [['normal', 'Signed in'], ['demo', 'Demo account'], ['dirty', 'Unsaved changes'], ['invalid', 'Validation']].map(([k, label]) => ({ label, bg: s.sSc === k ? '#2A241C' : '#EFE9DF', fg: s.sSc === k ? '#EFE9DF' : '#2A241C', onClick: () => this.setState({ sSc: k, sDemo: k === 'demo', name: k === 'invalid' ? '' : k === 'dirty' ? 'Marie D.' : this.saved.name, pSt: k === 'invalid' ? 'invalid' : 'idle', lim: k === 'dirty' ? { ...this.savedLimits, studyVocabularyLimit: 30 } : { ...this.savedLimits }, lSt: 'idle', pwSt: null }) })),
+      toggleSFail: () => this.setState((x) => ({ sFail: !x.sFail })), sFailAria: s.sFail ? 'true' : 'false', sFailTrack: s.sFail ? '#A0402F' : '#CDBFA9', sFailKnob: s.sFail ? '16px' : '2px',
+    };
+  }
+}
+</script>
+</body>
+</html>

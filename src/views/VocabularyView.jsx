@@ -1,14 +1,12 @@
-import { ArrowUpDown } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { LearningCard } from "../components/LearningCard";
-import { Metric } from "../components/Metric";
+import { LibraryEmpty, LibraryOverview } from "../components/LibraryOverview";
 import { NotesToolbar } from "../components/NotesToolbar";
 import { PaginationControls } from "../components/PaginationControls";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { partOfSpeechOptions } from "../data/wordFields";
 import { useLanguage } from "../i18n/LanguageContext";
 import { scrollToPageTop } from "../utils/scroll";
-import { NotesView } from "./NotesView";
 
 const WORDS_PER_PAGE = 10;
 const frenchCollator = new Intl.Collator("fr", {
@@ -20,6 +18,18 @@ const vocabularyTabs = [
   ...partOfSpeechOptions.filter((option) => option.value),
   { value: "uncategorized", label: "Uncategorized", labelKey: "uncategorized" },
 ];
+
+function initial(item) {
+  return (
+    item.french
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[œŒ]/g, "o")
+      .replace(/[æÆ]/g, "a")
+      .at(0) ?? "#"
+  ).toLocaleUpperCase("fr");
+}
 
 export function VocabularyView(props) {
   const { t } = useLanguage();
@@ -41,7 +51,11 @@ export function VocabularyView(props) {
           const leftTime = Date.parse(left.item.createdAt ?? "");
           const rightTime = Date.parse(right.item.createdAt ?? "");
 
-          if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
+          if (
+            Number.isFinite(leftTime) &&
+            Number.isFinite(rightTime) &&
+            leftTime !== rightTime
+          ) {
             return rightTime - leftTime;
           }
 
@@ -49,19 +63,29 @@ export function VocabularyView(props) {
         }
 
         return (
-          frenchCollator.compare(left.item.french ?? "", right.item.french ?? "") ||
-          left.index - right.index
+          frenchCollator.compare(
+            left.item.french ?? "",
+            right.item.french ?? "",
+          ) || left.index - right.index
         );
       })
       .map(({ item }) => item);
   }, [activeWordType, props.filteredItems, sortOrder]);
 
-  const totalPages = Math.max(1, Math.ceil(vocabularyItems.length / WORDS_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(vocabularyItems.length / WORDS_PER_PAGE),
+  );
   const safePage = Math.min(page, totalPages);
   const visibleItems = vocabularyItems.slice(
     (safePage - 1) * WORDS_PER_PAGE,
-    safePage * WORDS_PER_PAGE
+    safePage * WORDS_PER_PAGE,
   );
+  const letterCounts = vocabularyItems.reduce((counts, item) => {
+    const letter = initial(item);
+    counts[letter] = (counts[letter] ?? 0) + 1;
+    return counts;
+  }, {});
 
   const typeCounts = useMemo(() => {
     return props.filteredItems.reduce(
@@ -71,27 +95,9 @@ export function VocabularyView(props) {
           (counts[item.partOfSpeech || "uncategorized"] ?? 0) + 1;
         return counts;
       },
-      { all: 0 }
+      { all: 0 },
     );
   }, [props.filteredItems]);
-  const vocabularyStats = useMemo(() => {
-    const confidenceTotal = props.filteredItems.reduce(
-      (sum, item) => sum + Number(item.confidence ?? 0),
-      0
-    );
-    const uniqueTags = new Set(
-      props.filteredItems.flatMap((item) => item.tags ?? [])
-    );
-
-    return {
-      average: props.filteredItems.length
-        ? Math.round((confidenceTotal / (props.filteredItems.length * 4)) * 100)
-        : 0,
-      tags: uniqueTags.size,
-      weak: props.filteredItems.filter((item) => Number(item.confidence) <= 2).length,
-    };
-  }, [props.filteredItems]);
-
   function selectWordType(type) {
     setActiveWordType(type);
     setPage(1);
@@ -109,130 +115,88 @@ export function VocabularyView(props) {
     scrollToPageTop();
   }
 
-  if (props.items.length === 0) {
-    return <NotesView {...props} />;
+  function resetFilters() {
+    props.setQuery("");
+    props.setSelectedTag("all");
+    selectWordType("all");
   }
-
   return (
-    <div className="min-w-0">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label={t("categoryVocabulary", "Vocabulary")} value={props.filteredItems.length} />
-        <Metric label={t("needsPractice", "Needs practice")} value={vocabularyStats.weak} tone="red" />
-        <Metric label={t("activeTags", "Active tags")} value={vocabularyStats.tags} tone="blue" />
-        <Metric label={t("confidence", "Confidence")} value={`${vocabularyStats.average}%`} tone="green" />
-      </div>
-
+    <div className="library-page library-vocabulary-page">
+      <LibraryOverview items={props.filteredItems} activeSection="vocabulary" />
       <NotesToolbar
-        query={props.query}
-        selectedTag={props.selectedTag}
-        setQuery={props.setQuery}
-        setSelectedTag={props.setSelectedTag}
-        tags={props.tags}
+        {...props}
+        sortOrder={sortOrder}
+        onSortChange={changeSortOrder}
       />
-
-      <div className="mt-5 rounded-xl border border-line bg-white/90 p-3 shadow-soft">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {vocabularyTabs.map((tab) => {
-              const isActive = activeWordType === tab.value;
-              const count = typeCounts[tab.value] ?? 0;
-              return (
-                <button
-                  className={`focus-ring inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-bold ${
-                    isActive
-                      ? "bg-frenchBlue text-white"
-                      : "border border-line bg-white text-slate-700 hover:border-frenchBlue/35 hover:text-frenchBlue"
-                  }`}
-                  key={tab.value}
-                  onClick={() => selectWordType(tab.value)}
-                  type="button"
-                >
-                  {t(tab.labelKey, tab.label)}
-                  <span
-                    className={`rounded px-1.5 py-0.5 text-xs ${
-                      isActive ? "bg-white/20" : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <label className="flex h-9 w-full shrink-0 items-center gap-2 rounded-lg border border-line bg-white px-3 shadow-sm lg:w-auto lg:min-w-[210px]">
-            <ArrowUpDown aria-hidden="true" className="text-slate-500" size={16} />
-            <span className="sr-only">{t("sortVocabulary", "Sort vocabulary")}</span>
-            <select
-              aria-label={t("sortVocabulary", "Sort vocabulary")}
-              className="focus-ring h-8 min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700"
-              onChange={(event) => changeSortOrder(event.target.value)}
-              value={sortOrder}
-            >
-              <option value="alphabetical">
-                {t("sortAlphabetical", "Alphabetical (A-Z)")}
-              </option>
-              <option value="dateAdded">
-                {t("sortDateAdded", "Date added (newest)")}
-              </option>
-            </select>
-          </label>
-        </div>
-      </div>
-
-      <div className="mt-5 grid gap-3">
-        <PaginationControls
-          itemLabel={t("words", "words")}
-          itemsPerPage={WORDS_PER_PAGE}
-          onNext={() => changePage(Math.min(totalPages, safePage + 1))}
-          onPrevious={() => changePage(Math.max(1, safePage - 1))}
-          page={safePage}
-          totalItems={vocabularyItems.length}
-          totalPages={totalPages}
-        />
-        <SelectionToolbar
-          isDeleting={props.isDeleting}
-          onClearSelection={props.onClearSelection}
-          onDeleteSelected={props.onDeleteSelected}
-          onSelectItems={props.onSelectItems}
-          selectedIds={props.selectedIds}
-          visibleItems={visibleItems}
-        />
-
-        {visibleItems.map((item) => (
-          <LearningCard
-            isDeleting={props.isDeleting}
-            isSelected={props.selectedIds.includes(item.id)}
-            item={item}
-            key={item.id}
-            markReviewed={props.markReviewed}
-            onDeleteItem={props.onDeleteItem}
-            onToggleSelected={props.onToggleSelected}
-            openEditItem={props.openEditItem}
-          />
+      <div
+        className="library-type-tabs"
+        role="group"
+        aria-label={t("wordType", "Word type")}
+      >
+        {vocabularyTabs.map((tab) => (
+          <button
+            aria-pressed={activeWordType === tab.value}
+            className={activeWordType === tab.value ? "is-active" : ""}
+            key={tab.value}
+            onClick={() => selectWordType(tab.value)}
+            type="button"
+          >
+            {t(tab.labelKey, tab.label)}
+            <i>{typeCounts[tab.value] ?? 0}</i>
+          </button>
         ))}
-
-        {visibleItems.length === 0 && (
-          <div className="rounded-xl border border-dashed border-frenchBlue/30 bg-sky/40 p-8 text-center">
-            <p className="font-black">{t("noWordsInType", "No words in this type yet.")}</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              {t("noWordsInTypeCopy", "Add a word or choose another word-type tab.")}
-            </p>
-          </div>
-        )}
       </div>
-
-      <div className="mt-4">
-        <PaginationControls
-          itemLabel={t("words", "words")}
-          itemsPerPage={WORDS_PER_PAGE}
-          onNext={() => changePage(Math.min(totalPages, safePage + 1))}
-          onPrevious={() => changePage(Math.max(1, safePage - 1))}
-          page={safePage}
-          totalItems={vocabularyItems.length}
-          totalPages={totalPages}
+      <SelectionToolbar {...props} visibleItems={visibleItems} />
+      <div
+        className="library-results"
+        key={`${props.query}:${props.selectedTag}:${sortOrder}:${activeWordType}:${safePage}`}
+      >
+        {visibleItems.map((item, index) => (
+          <Fragment key={item.id}>
+            {sortOrder === "alphabetical" &&
+              (index === 0 ||
+                initial(visibleItems[index - 1]) !== initial(item)) && (
+                <div className="library-letter">
+                  <span>{initial(item)}</span>
+                  <small>
+                    {t(
+                      letterCounts[initial(item)] === 1
+                        ? "libraryOneEntry"
+                        : "libraryEntryCount",
+                      letterCounts[initial(item)] === 1
+                        ? "1 entry"
+                        : "{count} entries",
+                      { count: letterCounts[initial(item)] },
+                    )}
+                  </small>
+                </div>
+              )}
+            <LearningCard
+              {...props}
+              item={item}
+              isSelected={props.selectedIds.includes(item.id)}
+              onTag={props.setSelectedTag}
+            />
+          </Fragment>
+        ))}
+      </div>
+      {!visibleItems.length && (
+        <LibraryEmpty
+          {...props}
+          activeSection="vocabulary"
+          isNew={props.items.length === 0}
+          onReset={resetFilters}
         />
-      </div>
+      )}
+      <PaginationControls
+        itemLabel={t("words", "words")}
+        itemsPerPage={WORDS_PER_PAGE}
+        onNext={() => changePage(Math.min(totalPages, safePage + 1))}
+        onPrevious={() => changePage(Math.max(1, safePage - 1))}
+        page={safePage}
+        totalItems={vocabularyItems.length}
+        totalPages={totalPages}
+      />
     </div>
   );
 }

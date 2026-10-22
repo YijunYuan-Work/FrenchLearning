@@ -33,7 +33,7 @@ test("vocabulary search filters demo notes", async ({ page }) => {
   ).toHaveCount(0);
 
   await search.fill("no-demo-note-matches-this");
-  await expect(page.getByText("No words in this type yet.")).toBeVisible();
+  await expect(page.getByText("No notes match this view.")).toBeVisible();
 
   await search.clear();
   await expect(
@@ -60,8 +60,8 @@ test("demo vocabulary can be created, edited, and deleted", async ({ page }) => 
   await editDialog.getByRole("button", { name: "Save note" }).click();
   await expect(page.getByText("updated quality check")).toBeVisible();
 
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: `Delete ${french}` }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Confirm deletion" }).click();
   await expect(page.getByRole("heading", { name: french })).toHaveCount(0);
 });
 

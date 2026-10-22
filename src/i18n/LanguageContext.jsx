@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import { zhCN } from "./zhCN";
 import { useLanguagePreference } from "../hooks/useLanguagePreference";
 
@@ -12,6 +12,10 @@ const LanguageContext = createContext(null);
 export function LanguageProvider({ children, isDemo = false, userId, isCurrentAccount }) {
   const { language, setLanguage, languagePreferenceStatus, retryLanguagePreference } =
     useLanguagePreference({ userId, isDemo, isCurrentAccount });
+
+  useEffect(() => {
+    document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
+  }, [language]);
 
   const value = useMemo(
     () => ({
