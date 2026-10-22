@@ -1,3 +1,5 @@
+<p><img src="public/brand/icon-192.png" alt="French Desk logo" width="72" height="72" /></p>
+
 # French Desk
 
 A personal French learning workspace that turns a growing notebook into focused daily practice.

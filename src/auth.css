@@ -5,7 +5,6 @@
 .auth-brand-compact { gap: 6px; }
 .auth-brand-compact .cahier-brand { gap: 6px; }
 .auth-brand-compact .cahier-brand-name { font-size: 22px; }
-.auth-brand-compact img { width: 42px; }
 .auth-mobile-header { display: none; }
 .auth-cover { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 40px; padding: 44px 72px 48px 120px; min-width: 0; }
 .auth-cover::before { content: ""; position: absolute; left: 84px; inset-block: 0; width: 4px; border-inline: 1px solid var(--rule-strong); }
