@@ -124,11 +124,11 @@ p {
 .cahier-workspace-label, .cahier-header time, .cahier-add-note span { display: none; }
 .cahier-add-note { width: 44px; height: 44px; border-radius: 50%; padding: 0; }
 .cahier-page-title { font-size: 32px; margin-bottom: 24px; }
-.cahier-brand { display: flex; flex-direction: column; gap: 8px; }
-.cahier-brand img { width: 48px; height: 3px; }
+.cahier-brand { display: flex; align-items: center; gap: 8px; }
+.cahier-brand-icon { display: block; width: 32px; height: 32px; flex-shrink: 0; object-fit: contain; }
 .cahier-brand-name { @apply font-serif; font-style: italic; font-weight: 500; font-size: 28px; line-height: 1; white-space: nowrap; }
 .cahier-brand--compact { gap: 5px; }
-.cahier-brand--compact img { width: 34px; }
+.cahier-brand--compact .cahier-brand-icon { width: 28px; height: 28px; }
 .cahier-brand--compact .cahier-brand-name { font-size: 24px; }
 .cahier-sidebar { display: none; }
 .cahier-mobile-nav { position: fixed; bottom: 0; inset-inline: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 8px 6px calc(8px + env(safe-area-inset-bottom)); background: var(--sky); border-top: 1px solid var(--rule); }
@@ -225,7 +225,7 @@ p {
   .cahier-workspace { padding-bottom: 0; }
   .cahier-sidebar { position: fixed; inset: 0 auto 0 0; width: var(--sidebar-width); z-index: 30; display: flex; flex-direction: column; gap: 28px; padding: 30px 8px 24px; background: var(--sky); border-right: 1px solid var(--rule); overflow-y: auto; }
   .cahier-sidebar-brand { display: flex; flex-direction: column; gap: 8px; padding: 0 8px; }
-  .cahier-rail-brand { @apply font-serif; font-size: 24px; font-style: italic; text-align: center; }
+  .cahier-rail-brand { margin-inline: auto; }
   .cahier-sidebar-brand .cahier-brand, .cahier-brand-caption, .cahier-nav-label, .cahier-sidebar .cahier-nav-gloss, .cahier-nav-group-title, .cahier-sidebar-account { display: none; }
   .cahier-desktop-nav { flex: 1; display: flex; flex-direction: column; gap: 20px; }
   .cahier-nav-group { display: flex; flex-direction: column; gap: 2px; }

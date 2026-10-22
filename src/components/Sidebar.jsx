@@ -78,7 +78,7 @@ export function Sidebar({ activeSection, setActiveSection, isDemo, onSignOut, us
       <aside className="cahier-sidebar">
         <div className="cahier-sidebar-brand">
           <Brand />
-          <span className="cahier-rail-brand" aria-hidden="true">FD</span>
+          <img className="cahier-rail-brand cahier-brand-icon" alt="French Desk" src="/brand/icon-192.png" width="32" height="32" />
           <span className="eyebrow cahier-brand-caption">{t("learningHub", "Learning Hub")}</span>
         </div>
         <nav className="cahier-desktop-nav" aria-label={t("mainNavigation", "Main navigation")}>
