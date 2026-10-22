@@ -1,10 +1,12 @@
 # UI 2.0 Final Audit
 
-Baseline: `ef8597e1a07441fc06baa4dfd38239e761ec721c` on `UI_2.0` (PR #24). Implementation branch: `codex/ui2-final-audit`. Scope: approved-design-compatible polish, accessibility, measured loading improvements, proven dead paths and documentation. No production operations or learning/data-layer redesign.
+Current cleanup baseline: `2e9f111` on `UI_2.0`, after approved Authentication/Setup PR #26. [Auth/Setup evidence and verification](docs/ui2-auth.md) close the former UI7-08 design gap; the latest implementation record reports 114 Node tests and 162 serial Chromium cases passing. The [test review](UI2_TEST_REVIEW.md) retains the CI follow-up and acceptance limits.
+
+The Phase 7 audit below is historical: baseline `ef8597e1a07441fc06baa4dfd38239e761ec721c` (PR #24), implementation branch `codex/ui2-final-audit`. Its measurements and run counts describe that revision, not a new production certification. Scope: design-compatible polish, accessibility, measured loading improvements, proven dead paths and documentation. No production operations or learning/data-layer redesign.
 
 ## Prioritized Audit Before Implementation
 
-Fresh baseline evidence: `docs/ui2-final/before/runtime.json` and page captures in that directory. The audit opened every feature, login/signup and the editor in EN/ZH at 320, 370, 390, 768 and 1280 CSS pixels: 110 combinations, no measured horizontal document overflow, unnamed visible form controls or console/page errors. This is not a claim of complete accessibility compliance.
+The original baseline captures and per-viewport diagnostics are recoverable from Git revision `2e9f111`; representative comparisons remain below. The audit opened every feature, login/signup and the editor in EN/ZH at 320, 370, 390, 768 and 1280 CSS pixels: 110 combinations, no measured horizontal document overflow, unnamed visible form controls or console/page errors. This is not a claim of complete accessibility compliance.
 
 | ID | Priority | Evidence / affected files | Impact | Proposed action |
 | --- | --- | --- | --- | --- |
@@ -33,15 +35,15 @@ Protected paths have no changes: `api/`, `src/api/`, `src/hooks/`, `src/utils/`,
 
 ## Visual And Accessibility Review
 
-The source-left/current-right overviews below use fresh captures of the approved HTML and current implementation at 1280px. They are review contact sheets, not a claim of pixel parity with static sample data. Source desktop frames can be shorter than the 900px app viewport; images are proportionately reduced only for these overview sheets. Full captures remain in `reference/`, `before/`, `after/`.
+The source-left/current-right overviews below use Phase 7 captures of the approved HTML and implementation at 1280px. They are review contact sheets, not a claim of pixel parity with static sample data. Source desktop frames can be shorter than the 900px app viewport; images are proportionately reduced only for these overview sheets. Redundant individual captures were consolidated during cleanup; the complete historical set remains in Git revision `2e9f111`. Later Auth/Setup comparisons are linked separately.
 
 ![Today, Study, Quiz, Vocabulary and Phrases](docs/ui2-final/design-comparison-1.jpg)
 ![Grammar, Pronunciation, Editor, Import and Settings](docs/ui2-final/design-comparison-2.jpg)
 
 | Step | Surface / current health | Evidence and decisions |
 | --- | --- | --- |
-| 1 | Login / signup: functional, design gap | EN/ZH captures; selected mode, input labels/autocomplete, loading and failed-submit alert checked. Existing navy mark/blue borders and marketing layout have no approved replacement. |
-| 2 | Setup: narrow-width defect fixed | Before/after `setup-en-390.png`; both languages at all five widths. The long environment example scrolls within its own block rather than widening the document. |
+| 1 | Login / signup: approved design implemented after Phase 7 | [Auth comparisons](docs/ui2-auth.md#visual-evidence) cover desktop/mobile, EN/ZH, validation and connection recovery. Submission is now inline without discarding the draft. |
+| 2 | Setup: approved design implemented, width constraint retained | [Desktop](docs/ui2-auth/comparison/setup-desktop.png) and [Chinese mobile](docs/ui2-auth/comparison/setup-mobile.png). The environment example scrolls within its own block rather than widening the document. |
 | 3 | Today / shell: consistent | Three real goals, notebook typography, compact navigation. Desktop sidebar, tablet rail, mobile sheets, keyboard dismissal and selected state checked. |
 | 4 | Study: consistent | Paper/stack, category ledger, hidden faces/inertness, reveal/return, confidence controls, long-content internal scroll, swipe/keyboard and reduced motion retained. Random word/count differs from prototype fixtures, intentionally. |
 | 5 | Quiz: consistent | Writing line, noun-gender controls, answer feedback/retry, completion, large queue ledger and focused mobile layout. No scoring or confidence-rule changes. |
@@ -55,11 +57,9 @@ The source-left/current-right overviews below use fresh captures of the approved
 ![English mobile overview](docs/ui2-final/mobile-en.jpg)
 ![Simplified Chinese mobile overview](docs/ui2-final/mobile-zh.jpg)
 
-![Setup at 390px before and after the width constraint](docs/ui2-final/setup-comparison.jpg)
-
 - Baseline main-page probe: **110 combinations**. Final probe: **120 combinations**, adding signup at every width. EN/ZH at 320, 370, 390, 768 and 1280px; no horizontal document overflow, unnamed visible native controls or console/page errors in those checked states. Setup is separately checked at ten combinations, including its newly discovered/fixed overflow; do not infer that it passed the initial 110-case baseline.
-- [Runtime before](docs/ui2-final/before/runtime.json), [runtime after](docs/ui2-final/after/runtime.json), [supplementary production/setup checks](docs/ui2-final/additional-checks.json).
-- [Visual preservation](docs/ui2-final/visual-preservation.json): 38 of 46 common initial screenshots are pixel-identical; four Study screenshots differ in the randomized word and four others have only 13-44 changed raster pixels each. All common image dimensions match. This supports no intentional redesign, not global screenshot-test coverage.
+- Raw before/after runtime and supplementary Setup checks are recoverable at Git revision `2e9f111`; their measured outcomes are summarized here rather than retaining every viewport dump.
+- Historical pixel comparison: 38 of 46 common initial screenshots were pixel-identical; four Study screenshots differed in the randomized word and four others had only 13-44 changed raster pixels each. All common image dimensions matched. This supports no intentional Phase 7 redesign, not global screenshot-test coverage. The original comparison report is recoverable at the same Git revision.
 - Core ink/paper contrast is 12.72:1; secondary text 7.70:1; muted text 4.69:1; river/wood/sage text at least 4.61:1 on paper (all higher on sheet). These sampled opaque token pairs pass 4.5:1; disabled/alpha/native/error combinations are not universally certified by this measurement.
 - Visible focus, native dialogs, labelled controls, current/pressed/checked state, live feedback and boolean flashcard inertness were inspected alongside the existing interaction tests. Editor siblings now resist programmatic focus and are restored on repeated close/reopen. Reduced-motion rules in all six stylesheets remain. Phone primary controls are approximately 44px or larger; compact character/format controls are 36/40px and meet the 24px minimum, not a blanket 44px claim.
 - Chromium reduced visual-viewport tests exercise focused fields and footer reachability; real OS keyboards, touch assistive technology and screen-reader pronunciation remain manual acceptance. The in-app Demo was also visually inspected, not just the CLI captures.
@@ -97,7 +97,7 @@ The >500kB warning **remains**. React DOM, Supabase and parse5 are required init
 
 ## Verification
 
-| Gate | Final result |
+| Gate | Phase 7 result (historical) |
 | --- | --- |
 | `npm run lint` (via `npm run check`) | Passed, no lint errors. |
 | `npm run test` (via `npm run check`) | **114 passed**, none failed/skipped. |
@@ -113,8 +113,16 @@ No GitHub CI, live deployment, real database/RLS, provider or physical-device ac
 ## Remaining Priorities And Readiness
 
 - **P0/P1:** no unresolved confirmed defect in the reviewed final UI states; all local regression gates passed.
-- **P2 UI7-08:** login/signup/setup need an approved Le Cahier authentication design before claiming complete visual migration of every public surface. Current functionality remains usable; the visual gap is explicitly not silently approved.
+- **UI7-08 resolved after Phase 7:** approved login/signup/setup references and implementation are recorded in [Auth/Setup](docs/ui2-auth.md). The original finding above is retained as history, not a current design blocker.
 - **P2 FD-19:** freeform backend/Auth error localization and the language of existing note meanings need a separate product/presentation decision. No automatic translation or content migration was introduced.
 - **P3:** remaining initial bundle warning, optional CI failure-artifact upload, and protected unused Auth export. No measured reason for a data-layer rewrite.
 
-Recommendation: this focused Phase 7 branch is ready for review into UI_2.0 with local gates passed. Merging UI_2.0 into main is reasonable only with explicit acceptance or resolution of the authentication-design and localization gaps, plus normal CI/reviewer approval. Live RLS/provider verification and physical keyboard/screen-reader checks are not established by local synthetic tests. **No PR or merge is performed.**
+Release review still requires acceptance of the localization limitations and normal CI/reviewer approval. Live RLS/provider verification and physical keyboard/screen-reader checks are not established by local synthetic tests. Repository cleanup does not merge `UI_2.0` or modify the existing Draft release PR #27.
+
+## Repository Evidence Cleanup
+
+The cleanup retains 19 representative review images across final desktop/bilingual mobile overviews and distinct Study, Quiz, library, editor, import, Settings and Auth recovery states. Phase implementation notes, measured build/font/performance reports, test inventory/parity and run history remain. Repeated reference/app captures, identical before/after images and per-viewport diagnostic dumps are recoverable at `2e9f111` rather than duplicated in the active tree. Approved design sources and dependencies are unchanged.
+
+The standalone `FrenchLearning UI 2.0 directions/French Desk - Phrases Grammar Pronunciation.html` export remains untouched at 19,111,891 bytes. It bundles 232 resources (225 WOFF2 font resources) and overlaps the retained Stage 3 VI Notes reference, but its authored markup/scripts are not identical. No application code or other retained design prototype depends on the export; documentation mentions it only for this evaluation. Consider archiving it as an external/release asset only after separate approval and review of those authored differences; preserve the complete export and checksum. Removing it later would not erase its bytes from Git history. No history rewrite is proposed.
+
+Cleanup verification: lint, all 114 Node tests and production build passed; the existing bundle-size warning remains. All 18 tracked Markdown documents have valid local link/image targets and checked heading anchors (57 references); all 91 local design dependency references resolve. Application, test, configuration and approved-design files are unchanged, with no runtime references to removed evidence. E2E was not rerun for this documentation/assets-only change; the 162-case result above remains historical. External websites and GitHub-rendered presentation were not revalidated.

@@ -19,32 +19,23 @@ No hooks, API/service modules, learning utilities, auth, database/schema, depend
 
 ## Visual Comparisons
 
-Visual authority: `Stage 2 - II Study.dc.html`, with System, Components, Today and Sidebar references reviewed for consistency. Source is on the left; implementation is on the right.
+Visual authority: `Stage 2 - II Study.dc.html`, with the shared System and
+Components references. The [final desktop overview](ui2-final/design-comparison-1.jpg)
+includes Study's front. Two distinct reading examples are retained:
 
-Desktop captures are 1280 x 800 CSS pixels at device scale factor 1. The source's presentation canvas is excluded. Both sides use the same French noun and note details, but the real queue remains randomized: the card number and reviewed segments can differ. Actual settings remain 50/20/20, rather than the prototype's 3/3/3. The nine-item visual fixture exercises a smaller available notebook without changing the queue algorithm.
+![Long grammar on a desktop Study card](ui2-phase2/comparison-desktop-long.png)
+![Chinese phrase details and confidence on mobile](ui2-phase2/comparison-mobile-back.png)
 
-![Desktop front](ui2-phase2/comparison-desktop-front.png)
+Source is left and implementation right, DPR 1. Desktop is 1280 x 800;
+mobile content is 370 x 736, excluding the prototype bezel/status bar. Queue
+order, configured limits and available records remain real; matching visual
+fixtures do not change the randomized queue algorithm.
 
-![Desktop back](ui2-phase2/comparison-desktop-back.png)
-
-![Desktop completion](ui2-phase2/comparison-desktop-complete.png)
-
-Mobile comparisons are 370 x 736 CSS/pixel regions, also at scale factor 1. The source's 390 x 800 phone frame is cropped to remove its 10px bezel and simulated 44px status bar. Captures are not resized. The web app does not recreate device chrome or rounded phone corners.
-
-![Mobile front](ui2-phase2/comparison-mobile-front.png)
-
-![Mobile back](ui2-phase2/comparison-mobile-back.png)
-
-![Mobile completion](ui2-phase2/comparison-mobile-complete.png)
-
-Additional evidence:
-
-- [Focused desktop heading/progress comparison](ui2-phase2/comparison-heading.png).
-- [Long grammar comparison](ui2-phase2/comparison-desktop-long.png), plus individual [desktop](ui2-phase2/implementation-desktop-long.png) and [mobile](ui2-phase2/implementation-mobile-long.png) captures, using the same detailed rule as the approved long-note scenario.
-- [Chinese completion](ui2-phase2/implementation-desktop-complete-zh.png).
-- [Measured geometry and console observations](ui2-phase2/observations.json). No app page errors or console errors were recorded during these captures.
-
-Visual review corrected an initial desktop vertical offset, mobile back progress spacing, bottom action spacing, completion title wrapping, confidence-row geometry and short-viewport overflow caused by excess content padding. The long-note comparison also corrected a missing visible italic face by using the existing Newsreader italic font for Study rich-text emphasis, with indented standalone examples. The editor and shared sanitizer are unchanged. Final combined full-view and focused comparisons were inspected after those fixes.
+Repeated front/completion/header crops and raw observations were consolidated
+into the final overview. Their history remains available at cleanup baseline
+`2e9f111`. Review corrected vertical alignment, progress/action spacing,
+confidence geometry, short-viewport overflow and long-note emphasis/indentation.
+These are historical checks, not a new device or live-backend certification.
 
 ## Fidelity Notes
 

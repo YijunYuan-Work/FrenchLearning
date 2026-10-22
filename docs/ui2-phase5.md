@@ -20,34 +20,24 @@ No changes to `App.jsx`, note hooks/mutations, API routes/wrappers, AI services,
 
 ## Visual Evidence
 
-Primary source: `FrenchLearning UI 2.0 directions/Stage 3 - VII Editor.dc.html`. Components IX, System IV and the Phase 4 library supply supporting typography, tokens and interaction conventions.
+Source: `Stage 3 - VII Editor.dc.html`, with Components IX and System IV.
+The [final desktop overview](ui2-final/design-comparison-2.jpg) includes the editor.
+Two distinct boundary states are retained:
 
-Combined images place the rendered source on the left and actual React interface on the right, at DPR 1 without resizing. Desktop page captures are 1280 x 900. Dialog detail captures retain their natural sizes; short forms may have different heights because the app retains all existing fields/characters and real content. The actual AI/Save captures come from mocked HTTP requests through the normal Auth, service, note hooks and App editor session.
+![Save failure preserves the draft and exposes retry](ui2-phase5/comparison-desktop-save-failure.png)
+![Chinese editor in a keyboard-reduced viewport](ui2-phase5/comparison-mobile-keyboard-chinese.png)
 
-![Vocabulary](ui2-phase5/comparison-desktop-vocabulary.png)
-![Verb](ui2-phase5/comparison-desktop-verb.png)
-![Adjective](ui2-phase5/comparison-desktop-adjective.png)
-![Phrases](ui2-phase5/comparison-desktop-phrases.png)
-![Grammar](ui2-phase5/comparison-desktop-grammar.png)
-![Pronunciation](ui2-phase5/comparison-desktop-pronunciation.png)
+Source is left and React right, DPR 1 without rescaling. Original desktop
+captures were 1280 x 900. Mobile source content is 370 x 736; the reduced
+editing viewport is 370 x 472, excluding the prototype keyboard/phone chrome.
+HTTP-backed AI/Save states use the real hooks and editor session with mocked
+services. This is not a physical-device or paid-provider test.
 
-![AI loading](ui2-phase5/comparison-desktop-ai-loading.png)
-![AI success](ui2-phase5/comparison-desktop-ai-success.png)
-![AI failure](ui2-phase5/comparison-desktop-ai-error.png)
-![Required fields](ui2-phase5/comparison-desktop-validation.png)
-![Save pending](ui2-phase5/comparison-desktop-save-pending.png)
-![Save failure](ui2-phase5/comparison-desktop-save-failure.png)
-
-![Field and morphology detail](ui2-phase5/comparison-detail-desktop-adjective.png)
-![Rich editor detail](ui2-phase5/comparison-detail-desktop-grammar.png)
-
-Mobile comparisons exclude the source phone's bezel, status bar and illustrated keyboard. The source phone's content area is 370 x 736. Its keyboard-open example leaves a measured 370 x 472 editing viewport; the regression emulates that browser-visible height, rather than drawing a keyboard. This is geometry verification, not a physical iOS/Android keyboard test.
-
-![Chinese keyboard-reduced viewport](ui2-phase5/comparison-mobile-keyboard-chinese.png)
-![English mobile morphology](ui2-phase5/comparison-mobile-verb.png)
-![Chinese long-form scrolling](ui2-phase5/mobile-long-form-chinese.png)
-
-[Runtime measurements](ui2-phase5/runtime.json) cover all four categories in both languages at widths 320, 370, 390, 768, 900, 1280 and 1440. All 56 combinations have no measured document/dialog overflow or clipped category, confidence, gender or field-heading text. Capture contexts recorded no console/page errors or backend/AI requests.
+Historical checks covered all four categories in both languages at seven widths
+(56 combinations), without measured document/dialog overflow, clipped field
+headings or app errors. Per-category/AI-success/detail duplicates and raw runtime
+records were consolidated into the final overview; complete history remains at
+cleanup baseline `2e9f111`. All content-preservation decisions remain below.
 
 ## Fidelity Decisions
 
