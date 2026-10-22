@@ -1,9 +1,0 @@
-{
-  "baselineStaticTestDefinitions": 84,
-  "finalOriginalDefinitions": 84,
-  "missing": [],
-  "changed": [
-    "\"demo bulk deletion changes only temporary notes, not the ambient account or storage\""
-  ],
-  "note": "Expanded counts are separately recorded in test-inventory.json. The only changed original callback adds a visible-article wait before its existing count assertion; every other callback AST is identical."
-}
