@@ -36,8 +36,20 @@ complete coverage.
 
 The browser suite is organized around behavior:
 
-- [account-lifecycle.spec.js](../e2e/account-lifecycle.spec.js): account transitions,
-  editor safety, note mutations, Quiz recovery and import races.
+- [account-lifecycle.spec.js](../e2e/account-lifecycle.spec.js): account transitions
+  and late cross-account work, including pending learning, editor, import and profile operations.
+- [language-preference.spec.js](../e2e/language-preference.spec.js): language hydration,
+  rapid changes, persistence failures and account ownership.
+- [quiz-confidence.spec.js](../e2e/quiz-confidence.spec.js): saved queue eligibility,
+  confidence/edit ordering, uncertain writes, recovery and Quiz interaction.
+- [library-mutations.spec.js](../e2e/library-mutations.spec.js): library filters/readers,
+  selection, partial deletion, retry and pending mutation interactions.
+- [editor-autofill.spec.js](../e2e/editor-autofill.spec.js): category-specific forms,
+  editor identity, manual edits, AI errors/cancellation and Save ordering.
+- [note-integrity.spec.js](../e2e/note-integrity.spec.js): draft-preserving validation,
+  safe rich-text round trips and malformed legacy data.
+- [import-recovery.spec.js](../e2e/import-recovery.spec.js): CSV structure/Unicode,
+  duplicates, cancellation, failed-only retry, batch accounting and overnight resume.
 - [daily-learning.spec.js](../e2e/daily-learning.spec.js): failed hydration, delayed
   notes/settings, local/cloud persistence, cross-tab conflicts and day rollover.
 - [auth.spec.js](../e2e/auth.spec.js) and [demo-isolation.spec.js](../e2e/demo-isolation.spec.js):
@@ -75,6 +87,14 @@ definition, escapes cells, uploads buffers and checks reconciled batch totals.
 [library-data.js](../e2e/fixtures/library-data.js) supplies rich and long-content
 records without rewriting production Demo data.
 
+Shared operations are deliberately small: [editor.js](../e2e/helpers/editor.js)
+opens a vocabulary draft, [quiz.js](../e2e/helpers/quiz.js) submits an answer, and
+[backend-state.js](../e2e/helpers/backend-state.js) selects note PATCHes, Account A's
+stored note or AI requests from the backend passed by the test. They create no
+shared state and hide no setup, gates or recovery assertions. Single-spec helpers
+stay beside their tests; specs never import another spec. Account/backend ownership
+remains in `setupAccounts()` and Playwright's per-test browser fixtures, not the helpers.
+
 | Control | Technique demonstrated |
 | --- | --- |
 | `hold(key)` / `waitFor(key)` | Deferred gates establish that a specific request started before switching accounts, cancelling or releasing a response. |
@@ -100,7 +120,7 @@ configured pixel-diff baseline for the entire application.
 
 ### Cross-Account Async Isolation
 
-**Existing test:** [pending A progress, Quiz, and Study writes remain owned by A](../e2e/account-lifecycle.spec.js#L233).
+**Existing test:** [pending A progress, Quiz, and Study writes remain owned by A](../e2e/account-lifecycle.spec.js#L37).
 
 **Risk:** late work from one account could overwrite another account's daily state
 after an Auth switch, even while the UI shows the correct new username.
@@ -120,7 +140,7 @@ assertions. A rendered heading alone would miss the corruption risk.
 
 ### Quiz Persistence and Recovery
 
-**Existing tests:** [a committed confidence update with a lost response resumes target 2 after refresh](../e2e/account-lifecycle.spec.js#L863)
+**Existing tests:** [a committed confidence update with a lost response resumes target 2 after refresh](../e2e/quiz-confidence.spec.js#L210)
 and the same parameterized test with `target 4` (initial confidence 1 or 3).
 
 **Risk:** retrying a correct answer after an uncertain write could award confidence
@@ -144,8 +164,8 @@ strict exactly-once scoring across independent devices.
 
 ### CSV Import Failure Recovery
 
-**Existing test family:** [vocabulary cancel and repeated resume preserve the original batch and never resubmit successes](../e2e/account-lifecycle.spec.js#L2161)
-and [vocabulary retries failed rows independently and retains untouched failures if retry is cancelled](../e2e/account-lifecycle.spec.js#L2199).
+**Existing test family:** [vocabulary cancel and repeated resume preserve the original batch and never resubmit successes](../e2e/import-recovery.spec.js#L23)
+and [vocabulary retries failed rows independently and retains untouched failures if retry is cancelled](../e2e/import-recovery.spec.js#L61).
 Both scenarios are also generated with the `phrases` prefix.
 
 **Risk:** a partially completed import could report false success, repeat saved
@@ -186,7 +206,7 @@ Focused runs and discovery:
 node --test src/utils/dailyPersistence.test.js
 node --test api/autofill-vocabulary.test.js
 npm run test:e2e -- --list
-npm run test:e2e -- e2e/account-lifecycle.spec.js --grep "committed confidence update with a lost response" --workers=1 --retries=0
+npm run test:e2e -- e2e/quiz-confidence.spec.js --grep "committed confidence update with a lost response" --workers=1 --retries=0
 ```
 
 Playwright starts Vite on `http://127.0.0.1:5173` and reuses an existing server only
