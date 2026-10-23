@@ -61,6 +61,7 @@ recoverability and observable outcomes, not only successful navigation.
   responses and post-commit failures, asserting both UI feedback and mocked persisted data.
 - **Isolated fixtures and CI** provide synthetic accounts, request ledgers and
   per-test browser contexts; GitHub Actions runs lint, Node tests, build and Chromium tests.
+  CI publishes a test summary and downloadable HTML/JUnit reports with attached failure diagnostics.
 
 Explore three representative scenarios: [cross-account async isolation](docs/TESTING.md#cross-account-async-isolation),
 [Quiz persistence and recovery](docs/TESTING.md#quiz-persistence-and-recovery), and

@@ -201,15 +201,90 @@ Open an actual trace with `npx playwright show-trace path/to/trace.zip`, replaci
 the example path. Some specs attach geometry data or capture extra states for
 local inspection. No generated evidence needs to be committed.
 
+### Reports and Failure Diagnostics
+
+Ordinary local runs keep the `list` console reporter. To opt into CI-style reports
+without changing local workers or retries, set `PLAYWRIGHT_REPORTS=1` before running
+the tests. For example, in PowerShell:
+
+```powershell
+$env:PLAYWRIGHT_REPORTS = "1"
+npm run test:e2e
+Remove-Item Env:PLAYWRIGHT_REPORTS
+```
+
+CI enables the same built-in reporters automatically:
+
+| Output | Purpose |
+| --- | --- |
+| Console `list` | Readable progress and failures in the Actions logs. |
+| `playwright-report/` | HTML results on success or failure, including errors, retry attempts and attached diagnostics in its `data/` directory. |
+| `test-results/junit.xml` | Machine-readable JUnit output for external tools; not a separate GitHub test-check publisher. |
+| `test-results/results.json` | Structured input to the [summary script](../scripts/playwright-summary.js); not uploaded as another redundant report. |
+
+In GitHub, open **Actions > CI > the relevant run**, read the job summary, then
+download **playwright-results** from **Artifacts**. Unzip the entire artifact,
+keeping its directory structure. From the repository root (so `npx` uses the
+project's installed Playwright version), pass the path to the extracted report:
+
+```bash
+npx playwright show-report path/to/extracted/playwright-report
+```
+
+Replace the example path with your extraction location. Keep `playwright-report/data/`
+and the report's other files together, not just
+`index.html`. The HTML reporter copies attached screenshots, traces and existing
+attachments (such as geometry JSON) into this portable folder. CI uploads it once
+alongside `test-results/junit.xml`, not another copy of the raw diagnostics.
+Ad hoc screenshots saved by tests without `testInfo.attach()` are not included.
+
+Select a failed test and its attempt to inspect the error, screenshot and trace.
+Trace Viewer can also open a downloaded trace directly:
+
+```bash
+npx playwright show-trace path/to/trace.zip
+```
+
+Replace the example with an actual `.zip` in `playwright-report/data/` (downloaded)
+or `test-results/` (local). Traces include actions, DOM snapshots and network
+activity. Screenshots are automatic only on failure; traces are retained for failed
+attempts, including an earlier failure when a retry later passes. Existing explicit
+test attachments can still be present for passing cases.
+
+The summary counts final test outcomes from Playwright JSON, not console logs or
+individual attempts. **Passed** means the expected outcome (including any intentional
+expected-failure test); **flaky** means a test needed a retry to reach its expected
+outcome. Skipped tests are shown separately from executed tests. HTML retains the
+attempt history; JUnit is useful for interchange but its failure count alone is
+not the flaky-test summary. Runner-level errors are reported separately: counts
+alone cannot prove a run succeeded.
+
+The [official upload action](https://github.com/actions/upload-artifact) retains
+artifacts for **7 days**; downloading requires GitHub access. Reports
+are not a permanent hosted dashboard. All report paths are already ignored by
+[.gitignore](../.gitignore). Use only synthetic fixture data: screenshots/traces
+can expose DOM content, request headers and bodies. Do not reuse real sessions,
+credentials or personal notes in reporting runs; there is no automatic secret
+redaction guarantee.
+
 ## CI and Current Limits
 
 [GitHub Actions](../.github/workflows/ci.yml) runs on PRs and pushes to `main`:
 Ubuntu, Node.js 22, npm cache, `npm ci`, `npm run check`, Chromium installation
 with system dependencies, then `npm run test:e2e`. The job has a 20-minute timeout.
 [Playwright configuration](../playwright.config.js) forbids focused tests in CI,
-uses one worker there and allows two retries. Its current reporter is `list`;
-screenshots are configured on failure and traces retained on failure. The workflow
-does not upload these files or publish downloadable HTML/JUnit reports.
+uses one worker there and allows two retries. A 10-minute CI-only global test
+timeout gives the runner an opportunity to finalize reports before the job limit;
+dependency/browser installation also consumes job time, so forced termination can
+still prevent reporting. Per-test timeouts and local execution limits are unchanged.
+
+Summary and artifact steps run after successful or failed E2E execution, without
+`continue-on-error`. A failed test still fails CI; a flaky test that passes a retry
+retains the existing retry-assisted success behavior and is identified in reports.
+If E2E was skipped, no report is claimed. If it started but produced no files, the
+summary says so and upload tolerates missing files. Cancellation/forced termination
+does not guarantee an artifact. GitHub upload availability must be checked in the
+actual run, not inferred from local report generation.
 
 - **Live integration:** mocked Auth/REST/provider behavior cannot establish deployed
   Supabase RLS/grants, real quota concurrency, email delivery or provider availability.
@@ -221,9 +296,9 @@ does not upload these files or publish downloadable HTML/JUnit reports.
 - **Mock fidelity:** synthetic JWTs/routes are not a security engine. Fixtures and
   Vite-module interception must evolve with real client contracts; they do not
   validate every production network boundary or deployment behavior.
-- **Diagnostics and measurement:** CI artifact upload and coverage reporting are
-  possible improvements, not configured capabilities. No coverage percentage is
-  claimed; test counts are deliberately not used as a quality target.
+- **Measurement:** code coverage reporting and historical flaky-test trend tracking
+  remain future work. No coverage percentage is claimed; test counts are deliberately
+  not used as a quality target.
 - **Maintainability:** explicit Node test enumeration can omit a newly added file
   unless the script is updated. Preserve focused regression intent as fixtures
   evolve instead of expanding an unbounded test matrix or generic framework.
