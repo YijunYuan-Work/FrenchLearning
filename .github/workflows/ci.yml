@@ -33,4 +33,20 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run critical-flow tests
+        id: e2e
         run: npm run test:e2e
+
+      - name: Summarize browser tests
+        if: ${{ !cancelled() && steps.e2e.outcome != 'skipped' }}
+        run: node scripts/playwright-summary.js
+
+      - name: Upload browser report and diagnostics
+        if: ${{ !cancelled() && steps.e2e.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-results
+          path: |
+            playwright-report/
+            test-results/junit.xml
+          if-no-files-found: ignore
+          retention-days: 7

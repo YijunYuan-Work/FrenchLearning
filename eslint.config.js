@@ -47,6 +47,7 @@ export default [
     files: [
       "api/**/*.js",
       "e2e/**/*.js",
+      "scripts/**/*.js",
       "*.config.js",
       "src/**/*.test.js",
     ],
