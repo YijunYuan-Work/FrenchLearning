@@ -5,7 +5,7 @@ import { openDraft } from "./helpers/editor.js";
 import { aiRequests } from "./helpers/backend-state.js";
 
 for (const demo of [false, true]) {
-  test(`${demo ? "demo" : "authenticated"} editor validates category requirements and duplicates without losing drafts`, async ({ page, context, baseURL }) => {
+  test(`preserves ${demo ? "Demo" : "authenticated"} Editor drafts after invalid or duplicate Notes`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     await page.goto(demo ? "/#/demo" : "/");
     const editor = await openDraft(page, "   ");
@@ -48,7 +48,7 @@ for (const demo of [false, true]) {
   });
 }
 
-test("grammar paste is safe and preserves spacing, lists, tables and entities after Save Reload Edit", async ({ page, context, baseURL }) => {
+test("preserves safe grammar formatting through paste, save, refresh and edit", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const failures = [];
   page.on("pageerror", (error) => failures.push(error.message));
@@ -87,7 +87,7 @@ test("grammar paste is safe and preserves spacing, lists, tables and entities af
   expect(failures).toEqual([]);
 });
 
-test("malformed legacy rows are isolated without mutating stored data or crashing learning views", async ({ page, context, baseURL }) => {
+test("isolates malformed legacy Notes without writes or workspace crashes", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.accounts[ids.A].notes.push(
     { id: "bad-category", user_id: ids.A, category: "unknown", french: "unknown-category", english: "meaning" },
@@ -115,7 +115,7 @@ test("malformed legacy rows are isolated without mutating stored data or crashin
   expect(failures).toEqual([]);
 });
 
-test("note API rejects invalid writes before the backend and confidence patches remain narrow", async ({ page, context, baseURL }) => {
+test("rejects invalid Note API writes and keeps confidence updates narrow", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Bonjour, Account A/ })).toBeVisible();

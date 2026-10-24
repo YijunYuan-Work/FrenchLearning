@@ -7,11 +7,11 @@ async function editorCapture(page, testInfo, name) {
   await page.evaluate(() => globalThis.document.fonts.ready);
   if (!name.includes("long-form")) await page.locator(".editor-scroll-body").evaluate((el) => { el.scrollTop = 0; });
   await page.mouse.move(0, 0);
-  await page.screenshot({ path: testInfo.outputPath(`${name}.png`) });
-  await page.getByRole("dialog").screenshot({ path: testInfo.outputPath(`detail-${name}.png`) });
+  await page.screenshot({ path: testInfo.outputPath(`editor-${name}.png`) });
+  await page.getByRole("dialog").screenshot({ path: testInfo.outputPath(`editor-detail-${name}.png`) });
 }
 
-test("editor notebook layout creates and edits every category with conditional fields and cursor insertion", async ({ page, context, baseURL }, testInfo) => {
+test("creates and edits every Note category with Editor controls and character insertion", async ({ page, context, baseURL }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
@@ -89,7 +89,7 @@ test("editor notebook layout creates and edits every category with conditional f
   expect(aiRequests(backend)).toHaveLength(0);
 });
 
-test("editor AI and Save feedback reflect real requests and keep manual edits, failures and retries safe", async ({ page, context, baseURL }, testInfo) => {
+test("preserves manual Editor edits through Auto-fill and Save retries", async ({ page, context, baseURL }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
@@ -136,7 +136,7 @@ test("editor AI and Save feedback reflect real requests and keep manual edits, f
   expect(backend.accounts[ids.A].notes.filter((note) => note.french === "chaleureux")).toHaveLength(1);
 });
 
-test("mobile editor keeps its footer in a reduced visual viewport, scrolls long forms, and restores focus", async ({ page, context, baseURL }, testInfo) => {
+test("keeps the mobile Editor usable with a reduced viewport and restores focus", async ({ page, context, baseURL }, testInfo) => {
   await page.setViewportSize({ width: 370, height: 736 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   const backend = await setupAccounts({ page, context, baseURL });
@@ -159,7 +159,7 @@ test("mobile editor keeps its footer in a reduced visual viewport, scrolls long 
   const bounds = await footer.boundingBox();
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(473);
   await expect(editor.getByRole("button", { name: "保存笔记", exact: true })).toBeVisible();
-  await editorCapture(page, testInfo, "mobile-keyboard-chinese");
+  await editorCapture(page, testInfo, "mobile-keyboard-zh");
   await french.fill("cafe");
   await french.press("End");
   await french.press("Shift+ArrowLeft");
@@ -173,7 +173,7 @@ test("mobile editor keeps its footer in a reduced visual viewport, scrolls long 
   });
   await editor.getByLabel("词性", { exact: true }).selectOption("verb");
   await editor.getByLabel("ils/elles", { exact: true }).fill("organisent");
-  await editorCapture(page, testInfo, "mobile-long-form-chinese");
+  await editorCapture(page, testInfo, "mobile-long-form-zh");
   for (const width of [320, 390, 768]) {
     await page.setViewportSize({ width, height: 736 });
     expect(await editor.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
@@ -197,7 +197,7 @@ test("mobile editor keeps its footer in a reduced visual viewport, scrolls long 
   expect(backend.writes(ids.A).filter((entry) => entry.resource === "notes")).toHaveLength(0);
 });
 
-test("an obsolete word's uncancellable response cannot replace a new request or its loading state", async ({ page, context, baseURL }) => {
+test("ignores obsolete Auto-fill responses while a newer request is pending", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
   const first = backend.hold(`${ids.A}:ai:POST`);
   await page.goto("/");
@@ -223,7 +223,7 @@ test("an obsolete word's uncancellable response cannot replace a new request or 
   expect(backend.writes(ids.A).filter((entry) => entry.resource === "notes")).toEqual([]);
 });
 
-test("manual field edits during autofill survive in both the form and saved note", async ({ page, context, baseURL }) => {
+test("preserves manual Auto-fill edits in the Editor and saved Note", async ({ page, context, baseURL }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
@@ -259,7 +259,7 @@ test("manual field edits during autofill survive in both the form and saved note
 });
 
 for (const change of ["word", "category", "language"]) {
-  test(`changing the ${change} invalidates pending autofill, even when returning to the original context`, async ({ page, context, baseURL }) => {
+  test(`invalidates pending Auto-fill after a ${change} change, even when reverted`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
     const gate = backend.hold(`${ids.A}:ai:POST`);
     await page.goto("/");
@@ -288,7 +288,7 @@ for (const change of ["word", "category", "language"]) {
   });
 }
 
-test("closing and reopening the same word discards uncancellable AI errors and allows a Chinese retry", async ({ page, context, baseURL }) => {
+test("discards old Auto-fill errors after reopening the Editor and allows a Chinese retry", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
   backend.transport.aiError = { error: "AI daily limit reached", code: "daily_limit_reached" };
   const gate = backend.hold(`${ids.A}:ai:POST`);
@@ -312,7 +312,7 @@ test("closing and reopening the same word discards uncancellable AI errors and a
   expect(aiRequests(backend).map((entry) => entry.body.language)).toEqual(["en", "zh"]);
 });
 
-test("switching directly between notes creates a fresh editor identity for pending AI", async ({ page, context, baseURL }) => {
+test("isolates pending Auto-fill when the Editor switches Notes", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
   const gate = backend.hold(`${ids.A}:ai:POST`);
   await page.goto("/");
@@ -333,7 +333,7 @@ test("switching directly between notes creates a fresh editor identity for pendi
 });
 
 for (const editing of [false, true]) {
-  test(`rapid repeated ${editing ? "edit" : "create"} submissions perform one write and show saving state`, async ({ page, context, baseURL }) => {
+  test(`saves once during repeated Editor ${editing ? "edit" : "create"} submissions`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     const method = editing ? "PATCH" : "POST";
     const gate = backend.hold(`${ids.A}:notes:${method}`);
@@ -360,7 +360,7 @@ for (const editing of [false, true]) {
   });
 }
 
-test("failed Save keeps the draft, unlocks controls, and allows one successful retry", async ({ page, context, baseURL }) => {
+test("preserves an Editor draft after Save failure and allows retry", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.transport.failNextCreate = true;
   await page.goto("/");
@@ -379,7 +379,7 @@ test("failed Save keeps the draft, unlocks controls, and allows one successful r
 });
 
 for (const fails of [false, true]) {
-  test(`a late same-account save ${fails ? "failure" : "success"} cannot affect a different editor's pending save`, async ({ page, context, baseURL }) => {
+  test(`protects a new Editor save from a late same-account save ${fails ? "failure" : "success"}`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     const oldGate = backend.hold(`${ids.A}:notes:POST`);
     if (fails) backend.failures.add(`${ids.A}:notes:POST`);
@@ -411,7 +411,7 @@ for (const fails of [false, true]) {
   });
 }
 
-test("saving cancels pending autofill and persists only the submitted draft", async ({ page, context, baseURL }) => {
+test("cancels pending Auto-fill and saves only the submitted Editor draft", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { ignoreAiCancellation: true });
   const aiGate = backend.hold(`${ids.A}:ai:POST`);
   const saveGate = backend.hold(`${ids.A}:notes:POST`);
@@ -432,7 +432,7 @@ test("saving cancels pending autofill and persists only the submitted draft", as
   expect(backend.accounts[ids.A].notes.find((note) => note.french === "bonjour")).toMatchObject({ english: "submitted meaning", notes: "" });
 });
 
-test("cancelling autofill during delayed Auth preflight sends no AI request", async ({ page, context, baseURL }) => {
+test("cancels Auto-fill during authentication preflight without an AI request", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
   await go(page, "Vocabulary");
@@ -460,7 +460,7 @@ test("cancelling autofill during delayed Auth preflight sends no AI request", as
   expect(aiRequests(backend).map((entry) => entry.body.word)).toEqual(["merci"]);
 });
 
-test("AI quota errors remain actionable without automatic retry or changing the draft", async ({ page, context, baseURL }) => {
+test("preserves Editor drafts after quota errors without automatic Auto-fill retries", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.transport.aiError = { error: "Daily AI auto-fill limit reached", code: "daily_limit_reached" };
   await page.goto("/");
@@ -478,7 +478,7 @@ test("AI quota errors remain actionable without automatic retry or changing the 
 });
 
 for (const failure of ["timeout", "invalid-response", "non-json", "null-json", "connection"]) {
-  test(`AI ${failure} preserves the draft and allows one explicit retry`, async ({ page, context, baseURL }) => {
+  test(`preserves the Editor draft after Auto-fill ${failure} and allows explicit retry`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     const timeout = failure === "timeout";
     backend.transport.aiStatus = timeout ? 504 : 502;
@@ -513,7 +513,7 @@ for (const failure of ["timeout", "invalid-response", "non-json", "null-json", "
   });
 }
 
-test("Chinese editor localizes upstream errors and keeps a manual retry available", async ({ page, context, baseURL }) => {
+test("localizes Auto-fill timeout feedback in the Chinese Editor and allows retry", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.accounts[ids.A].preferences.language = "zh";
   backend.transport.aiStatus = 504;

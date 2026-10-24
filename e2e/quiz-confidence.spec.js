@@ -14,7 +14,7 @@ async function changeQuizNoteCategory(page, french, category) {
 }
 
 for (const category of ["phrases", "grammar", "pronunciation"]) {
-  test(`saved Quiz removes a Vocabulary note moved to ${category} and resumes the valid order`, async ({ page, context, baseURL }) => {
+  test(`removes Notes moved to ${category} from saved Quiz queues without reshuffling`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     await page.goto("/");
     await go(page, "Quiz");
@@ -40,7 +40,7 @@ for (const category of ["phrases", "grammar", "pronunciation"]) {
   });
 }
 
-test("Quiz retains completed history and counts after moves and deletion while pruning mixed invalid questions", async ({ page, context, baseURL }) => {
+test("preserves answered Quiz history while pruning invalid or deleted questions", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.accounts[ids.A].daily.quiz_state.queueIds.push("missing", "broken", "mastered", "A-2");
   backend.accounts[ids.A].notes.push(
@@ -76,7 +76,7 @@ test("Quiz retains completed history and counts after moves and deletion while p
   expect(backend.accounts[ids.A].daily.quiz_state.answered).toEqual(state.answered);
 });
 
-test("a category edit before pending answer intent is acknowledged prevents any Quiz confidence write", async ({ page, context, baseURL }) => {
+test("prevents Quiz confidence writes after a category change during answer persistence", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:daily_learning_state:PATCH`);
   await page.goto("/");
@@ -97,7 +97,7 @@ test("a category edit before pending answer intent is acknowledged prevents any 
   expect(backend.accounts[ids.A].daily.quiz).toBe(false);
 });
 
-test("a Quiz answer queued behind a category save is rejected before its confidence PATCH starts", async ({ page, context, baseURL }) => {
+test("rejects a Quiz answer queued behind a Note category change", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
   await page.goto("/");
@@ -123,7 +123,7 @@ test("a Quiz answer queued behind a category save is rejected before its confide
 });
 
 for (const switchAccount of [false, true]) {
-  test(`an in-flight Quiz update cannot advance a remotely reclassified note${switchAccount ? " across account switching" : ""}`, async ({ page, context, baseURL }) => {
+  test(`rejects confidence updates to remotely reclassified Notes${switchAccount ? " after switching accounts" : " during Quiz submission"}`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
     const originalB = structuredClone(backend.accounts[ids.B]);
@@ -155,7 +155,7 @@ for (const switchAccount of [false, true]) {
   });
 }
 
-test("demo Quiz reconciles reclassified questions without account or backend writes", async ({ page, context, baseURL }) => {
+test("reconciles reclassified Demo Quiz Notes without account writes", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const originalA = structuredClone(backend.accounts[ids.A]);
   await page.addInitScript(() => { Math.random = () => 0; });
@@ -175,7 +175,7 @@ test("demo Quiz reconciles reclassified questions without account or backend wri
 });
 
 for (const manual of [false, true]) {
-  test(`${manual ? "manual correction" : "correct answer"} waits for confidence persistence and retries without double advancement`, async ({ page, context, baseURL }) => {
+  test(`retries ${manual ? "manually corrected" : "correct"} Quiz answers without duplicate confidence gains`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     backend.failures.add(`${ids.A}:notes:PATCH`);
     await page.goto("/");
@@ -207,7 +207,7 @@ for (const manual of [false, true]) {
 }
 
 for (const initialConfidence of [1, 3]) {
-test(`a committed confidence update with a lost response resumes target ${initialConfidence + 1} after refresh`, async ({ page, context, baseURL }) => {
+test(`restores Quiz confidence target ${initialConfidence + 1} after a committed write loses its response`, async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const target = initialConfidence + 1;
   storedNote(backend, "A-2").confidence = initialConfidence;
@@ -232,7 +232,7 @@ test(`a committed confidence update with a lost response resumes target ${initia
 });
 }
 
-test("rapid submissions and consecutive Quiz answers advance each note only once", async ({ page, context, baseURL }) => {
+test("advances confidence once per Note during repeated Quiz submissions", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
   await page.goto("/");
@@ -255,7 +255,7 @@ test("rapid submissions and consecutive Quiz answers advance each note only once
 });
 
 for (const confidenceFirst of [true, false]) {
-  test(`${confidenceFirst ? "confidence then edit" : "edit then confidence"} saves do not replace newer fields`, async ({ page, context, baseURL }) => {
+  test(`preserves newer Note fields when saving ${confidenceFirst ? "confidence before an edit" : "an edit before confidence"}`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
     await page.goto("/");
@@ -298,7 +298,7 @@ for (const confidenceFirst of [true, false]) {
   });
 }
 
-test("different note confidence responses can finish out of order without losing edits", async ({ page, context, baseURL }) => {
+test("preserves confidence changes when different Note responses arrive out of order", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:notes:PATCH:A-1`);
   await page.goto("/");
@@ -315,7 +315,7 @@ test("different note confidence responses can finish out of order without losing
   await expect(card("A-word-2").getByText("Learning", { exact: true })).toBeVisible();
 });
 
-test("a failed confidence operation cannot roll back the edit queued behind it", async ({ page, context, baseURL }) => {
+test("preserves a queued Note edit after a failed confidence update", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
   backend.failNoteOnce.add(`${ids.A}:A-2`);
@@ -338,7 +338,7 @@ test("a failed confidence operation cannot roll back the edit queued behind it",
   expect(storedNote(backend, "A-2").english).toBe("edit survives failed confidence");
 });
 
-test("switching accounts cancels a queued note edit and preserves the old account's pending Quiz target", async ({ page, context, baseURL }) => {
+test("cancels queued edits on account switch while preserving pending Quiz targets", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const originalB = structuredClone(backend.accounts[ids.B]);
   const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
@@ -368,7 +368,7 @@ test("switching accounts cancels a queued note edit and preserves the old accoun
   expect(backend.accounts[ids.B]).toEqual(originalB);
 });
 
-test("a failed final Quiz write recovers after refresh without increasing confirmed confidence again", async ({ page, context, baseURL }) => {
+test("recovers a failed Quiz result save after refresh without another confidence gain", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.transport.failCompletedQuiz = true;
   await page.goto("/");
@@ -391,7 +391,7 @@ test("a failed final Quiz write recovers after refresh without increasing confir
   expect(backend.accounts[ids.A].daily.quiz_state.answered["A-2"].status).toBe("complete");
 });
 
-test("Quiz notebook keyboard flow preserves real saves, feedback and completion", async ({ page, context, baseURL }, testInfo) => {
+test("completes keyboard-driven Quiz with save retry, manual correction and answer reveal", async ({ page, context, baseURL }, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   const backend = await setupAccounts({ page, context, baseURL });
   const account = backend.accounts[ids.A];
@@ -412,7 +412,7 @@ test("Quiz notebook keyboard flow preserves real saves, feedback and completion"
   const shot = async (name) => {
     await page.evaluate(() => globalThis.document.fonts.ready);
     await page.mouse.move(0, 0);
-    await page.screenshot({ path: testInfo.outputPath(`${name}.png`), animations: "disabled" });
+    await page.screenshot({ path: testInfo.outputPath(`quiz-${name}.png`), animations: "disabled" });
   };
   await page.goto("/");
   await go(page, "Quiz");
@@ -490,16 +490,16 @@ test("Quiz notebook keyboard flow preserves real saves, feedback and completion"
   await shot("desktop-complete");
   await expect(page.getByRole("button", { name: "Start a new quiz", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "简体中文", exact: true }).click();
-  await shot("desktop-complete-chinese");
+  await shot("desktop-complete-zh");
   await page.setViewportSize({ width: 370, height: 736 });
-  await shot("mobile-complete-chinese");
+  await shot("mobile-complete-zh");
   await page.getByRole("button", { name: "开始新的测验", exact: true }).click();
   await expect(page.getByTestId("quiz-word")).toContainText("inédit-");
   await expect.poll(() => account.daily.quiz_state.queueIds.every((id) => id.startsWith("unseen-"))).toBe(true);
   expect(errors).toEqual([]);
 });
 
-test("mobile Quiz follows the visible viewport, bilingual controls and reduced motion", async ({ page, context, baseURL }, testInfo) => {
+test("keeps mobile Quiz usable with Chinese controls, viewport changes and reduced motion", async ({ page, context, baseURL }, testInfo) => {
   await page.setViewportSize({ width: 370, height: 736 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   const backend = await setupAccounts({ page, context, baseURL });
@@ -511,7 +511,7 @@ test("mobile Quiz follows the visible viewport, bilingual controls and reduced m
   const answer = page.getByLabel("你的答案", { exact: true });
   await expect(answer).toBeFocused();
   await page.evaluate(() => globalThis.document.fonts.ready);
-  await page.screenshot({ path: testInfo.outputPath("mobile-question-chinese.png") });
+  await page.screenshot({ path: testInfo.outputPath("quiz-mobile-question-zh.png") });
   await page.evaluate(() => {
     Object.defineProperties(globalThis.visualViewport, { height: { configurable: true, value: 452 }, offsetTop: { configurable: true, value: 0 } });
     globalThis.visualViewport.dispatchEvent(new Event("resize"));
@@ -524,7 +524,7 @@ test("mobile Quiz follows the visible viewport, bilingual controls and reduced m
   const bounds = await check.boundingBox();
   expect(bounds.y + bounds.height).toBeLessThanOrEqual(452);
   await page.evaluate(() => globalThis.document.fonts.ready);
-  await page.screenshot({ path: testInfo.outputPath("mobile-keyboard-chinese.png"), clip: { x: 0, y: 0, width: 370, height: 452 } });
+  await page.screenshot({ path: testInfo.outputPath("quiz-mobile-keyboard-zh.png"), clip: { x: 0, y: 0, width: 370, height: 452 } });
   await check.click();
   const next = page.getByRole("button", { name: "下一个词", exact: true });
   await expect(next).toBeFocused();
@@ -533,7 +533,7 @@ test("mobile Quiz follows the visible viewport, bilingual controls and reduced m
     Object.defineProperty(globalThis.visualViewport, "height", { configurable: true, value: 736 });
     globalThis.visualViewport.dispatchEvent(new Event("resize"));
   });
-  await page.screenshot({ path: testInfo.outputPath("mobile-correct-chinese.png") });
+  await page.screenshot({ path: testInfo.outputPath("quiz-mobile-correct-zh.png") });
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await expect.poll(() => page.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
@@ -552,7 +552,7 @@ test("mobile Quiz follows the visible viewport, bilingual controls and reduced m
   expect(notePatches(backend, "A-2")).toHaveLength(1);
 });
 
-test("the maximum configured Quiz fits its complete segmented ledger on a narrow phone", async ({ page, context, baseURL }) => {
+test("fits the maximum Quiz question ledger on a narrow viewport", async ({ page, context, baseURL }) => {
   await page.setViewportSize({ width: 320, height: 736 });
   const backend = await setupAccounts({ page, context, baseURL });
   const account = backend.accounts[ids.A];
@@ -568,7 +568,7 @@ test("the maximum configured Quiz fits its complete segmented ledger on a narrow
   expect(last.x + last.width).toBeLessThanOrEqual(300);
 });
 
-test("a pending intent in local daily storage survives a committed note response failure", async ({ page, context, baseURL }) => {
+test("restores pending Quiz intent from local storage after a committed write loses its response", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { sync: false });
   backend.lostNoteResponses.add(`${ids.A}:A-2`);
   await page.goto("/");
@@ -586,7 +586,7 @@ test("a pending intent in local daily storage survives a committed note response
   expect(backend.writes(ids.A).filter((entry) => entry.resource === "daily_learning_state")).toEqual([]);
 });
 
-test("a correct demo Quiz answer changes only disposable demo confidence", async ({ page, context, baseURL }) => {
+test("updates only temporary confidence after a correct Demo Quiz answer", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const original = structuredClone(backend.accounts);
   await page.goto("/#/demo");

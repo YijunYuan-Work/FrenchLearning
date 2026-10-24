@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { go, ids, origin, sessionFor, setupAccounts } from "./fixtures/accounts.js";
+import { setupAccounts, go, ids, origin, sessionFor } from "./fixtures/accounts.js";
 
 async function signedOut(fixture) {
   const backend = await setupAccounts(fixture);
@@ -9,7 +9,7 @@ async function signedOut(fixture) {
   return backend;
 }
 
-test("auth validation, keyboard tabs, password visibility and mode changes preserve the draft", async ({ page, context, baseURL }) => {
+test("preserves Authentication drafts through validation and keyboard mode changes", async ({ page, context, baseURL }) => {
   const backend = await signedOut({ page, context, baseURL });
   const username = page.getByLabel("Username", { exact: true });
   const password = page.getByLabel("Password", { exact: true });
@@ -54,7 +54,7 @@ test("auth validation, keyboard tabs, password visibility and mode changes prese
   expect(backend.ledger).toEqual([]);
 });
 
-test("network failure keeps the form mounted; explicit retry signs in with the existing username contract", async ({ page, context, baseURL }) => {
+test("retries sign-in after network failure without changing credentials", async ({ page, context, baseURL }) => {
   const backend = await signedOut({ page, context, baseURL });
   // Passwords are opaque: even whitespace-only values must reach Auth unchanged.
   const rawPassword = "      ";
@@ -91,7 +91,7 @@ test("network failure keeps the form mounted; explicit retry signs in with the e
 });
 
 for (const email of ["", "marie@example.test"]) {
-  test(`sign up ${email ? "with" : "without"} recovery email retains metadata-only recovery and handles a taken username`, async ({ page, context, baseURL }) => {
+  test(`recovers sign-up from a taken username ${email ? "with" : "without"} recovery-email metadata`, async ({ page, context, baseURL }) => {
     const backend = await signedOut({ page, context, baseURL });
     const requests = [];
     let release;
@@ -133,7 +133,7 @@ for (const email of ["", "marie@example.test"]) {
   });
 }
 
-test("auth stays scrollable at desktop, tablet and narrow mobile widths in both languages and reduced motion", async ({ page, context, baseURL }) => {
+test("keeps Authentication scrollable across viewports, languages and reduced motion", async ({ page, context, baseURL }) => {
   await signedOut({ page, context, baseURL });
   await page.setViewportSize({ width: 768, height: 844 });
   await page.setViewportSize({ width: 1440, height: 844 });
@@ -161,4 +161,51 @@ test("auth stays scrollable at desktop, tablet and narrow mobile widths in both 
     await expect(page.locator(".auth-cover")).toBeVisible();
   }
   expect(errors).toEqual([]);
+});
+
+test("exposes sign-in selection, pending state and credential errors accessibly", async ({ page, context, baseURL }) => {
+  await setupAccounts({ page, context, baseURL });
+  await context.clearCookies();
+  let release;
+  let requestCount = 0;
+  const gate = new Promise((resolve) => { release = resolve; });
+  await page.route(`${origin}/auth/v1/token**`, async (route) => {
+    requestCount += 1;
+    await gate;
+    await route.fulfill({ status: 400, json: { msg: "Invalid login credentials", code: "invalid_credentials" } });
+  });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Sign in to your workspace.", exact: true })).toBeVisible();
+  const signIn = page.getByRole("tab", { name: "Sign in", exact: true });
+  await expect(signIn).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: "Create account", exact: true }).click();
+  await expect(signIn).toHaveAttribute("aria-selected", "false");
+  await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("autocomplete", "new-password");
+  await signIn.click();
+  await page.getByLabel("Username", { exact: true }).fill("synthetic-user");
+  await page.getByLabel("Password", { exact: true }).fill("synthetic-invalid-password");
+  const tokenRequest = page.waitForRequest(`${origin}/auth/v1/token**`);
+  await page.getByRole("button", { name: "Sign in", exact: true }).last().click();
+  const request = await tokenRequest;
+  expect(request.method()).toBe("POST");
+  expect(new URL(request.url()).searchParams.get("grant_type")).toBe("password");
+  expect(request.postDataJSON()).toMatchObject({
+    email: `synthetic-user@${new URL(origin).hostname}`,
+    password: "synthetic-invalid-password",
+  });
+  await expect(page.getByRole("status")).toContainText("Signing in");
+  await expect(page.locator("form")).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByLabel("Username", { exact: true })).toHaveValue("synthetic-user");
+  await expect(page.getByLabel("Password", { exact: true })).toHaveJSProperty("readOnly", true);
+  await expect(signIn).toBeDisabled();
+  release();
+  await expect(page.getByRole("alert")).toContainText("username or password is incorrect");
+  await expect(page.getByRole("status")).toHaveCount(0);
+  await expect(page.locator("form")).toHaveAttribute("aria-busy", "false");
+  await expect(page.getByLabel("Password", { exact: true })).toBeFocused();
+  await expect(page.getByLabel("Password", { exact: true })).toHaveValue("synthetic-invalid-password");
+  await expect(page.getByRole("button", { name: "Sign in", exact: true }).last()).toBeEnabled();
+  expect(requestCount).toBe(1);
+  await go(page, "简体中文");
+  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
 });

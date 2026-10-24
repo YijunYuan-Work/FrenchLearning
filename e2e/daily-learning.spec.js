@@ -166,7 +166,7 @@ async function openSession(page, name) {
   await page.getByRole("button", { name, exact: true }).click();
 }
 
-test("a failed daily read cannot write defaults and Retry restores saved progress", async ({ page, context, baseURL }) => {
+test("restores Daily Learning after a failed read without writing defaults", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   const original = structuredClone(backend.saved);
   backend.failDaily = true;
@@ -196,7 +196,7 @@ test("a failed daily read cannot write defaults and Retry restores saved progres
 });
 
 for (const name of ["Quiz", "Study"]) {
-  test(`${name} waits for delayed notes, survives note failure, and resumes after refresh`, async ({ page, context, baseURL }) => {
+  test(`restores ${name} after delayed or failed Notes loading and refresh`, async ({ page, context, baseURL }) => {
     const backend = await setupLearning({ page, context, baseURL });
     const original = structuredClone(backend.saved);
     backend.notesGate = deferred();
@@ -237,7 +237,7 @@ for (const name of ["Quiz", "Study"]) {
   });
 }
 
-test("an unanswered Quiz waits for learning settings instead of regenerating its saved queue", async ({ page, context, baseURL }) => {
+test("preserves an unanswered Quiz queue while learning settings load", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   backend.saved.quiz_state.answered = {};
   const original = structuredClone(backend.saved);
@@ -260,7 +260,7 @@ test("an unanswered Quiz waits for learning settings instead of regenerating its
 });
 
 for (const keepHistory of [false, true]) {
-test(`successfully loaded empty notes ${keepHistory ? "retain completed Quiz history" : "allow an empty Quiz without earning completion"} and allow empty Study`, async ({ page, context, baseURL }) => {
+test(`handles empty Notes with ${keepHistory ? "completed Quiz history" : "an incomplete Quiz"} and no Study cards`, async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   backend.notes = [];
   if (!keepHistory) backend.saved.quiz_state.answered = {};
@@ -278,7 +278,7 @@ test(`successfully loaded empty notes ${keepHistory ? "retain completed Quiz his
 });
 }
 
-test("local storage read failure preserves the saved state and recovers without a write", async ({ page, context, baseURL }) => {
+test("recovers a failed local Daily Learning read without overwriting saved state", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL }, { sync: false, failLocalRead: true });
   await page.goto("/");
   const error = page.getByRole("alert").filter({ hasText: "Your saved learning progress could not be loaded." });
@@ -298,7 +298,7 @@ test("local storage read failure preserves the saved state and recovers without 
   expect(backend.writes).toEqual([]);
 });
 
-test("a missing cloud table still restores local progress without a cloud write", async ({ page, context, baseURL }) => {
+test("restores local Daily Learning when the cloud table is missing", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   backend.missingDailyTable = true;
   await page.goto("/");
@@ -308,7 +308,7 @@ test("a missing cloud table still restores local progress without a cloud write"
   expect(await page.evaluate(() => globalThis.dailyStorageWrites)).toEqual([]);
 });
 
-test("an Add Note goal earned during a failed read merges with saved progress after retry", async ({ page, context, baseURL }) => {
+test("merges an Add Note goal after retrying a failed Daily Learning read", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   backend.saved.add_note = false;
   backend.failDaily = true;
@@ -332,7 +332,7 @@ test("an Add Note goal earned during a failed read merges with saved progress af
   expect(backend.saved.study_state.cardIndex).toBe(1);
 });
 
-test("local midnight resets Today, Quiz and Study without rewriting yesterday", async ({ page, context, baseURL }) => {
+test("resets Today, Quiz and Study at local midnight without rewriting yesterday", async ({ page, context, baseURL }) => {
   const beforeMidnight = new Date();
   beforeMidnight.setHours(23, 59, 0, 0);
   await page.clock.install({ time: beforeMidnight });
@@ -359,7 +359,7 @@ test("local midnight resets Today, Quiz and Study without rewriting yesterday", 
 });
 
 for (const event of ["visibilitychange", "pageshow"]) {
-  test(`overnight resume via ${event} hydrates the new day and preserves a pending old-day save`, async ({ page, context, baseURL }) => {
+  test(`loads a new learning day on ${event} while preserving a pending old-day save`, async ({ page, context, baseURL }) => {
     await page.clock.install();
     const backend = await setupLearning({ page, context, baseURL });
     backend.saveGate = deferred();
@@ -385,7 +385,7 @@ for (const event of ["visibilitychange", "pageshow"]) {
 }
 
 for (const name of ["Quiz", "Study"]) {
-  test(`${name} coalesces newer state behind a delayed save instead of racing it`, async ({ page, context, baseURL }) => {
+  test(`coalesces ${name} changes behind a delayed save`, async ({ page, context, baseURL }) => {
     const backend = await setupLearning({ page, context, baseURL });
     backend.saveGate = deferred();
     await page.goto("/");
@@ -411,7 +411,7 @@ for (const name of ["Quiz", "Study"]) {
 }
 
 for (const failure of ["read", "write"]) {
-  test(`local storage ${failure} failure during saving is observable and retries the latest state`, async ({ page, context, baseURL }) => {
+  test(`reports a local ${failure} failure and retries the latest Daily Learning state`, async ({ page, context, baseURL }) => {
     const backend = await setupLearning({ page, context, baseURL }, { sync: false });
     await page.goto("/");
     await openSession(page, "Study");
@@ -429,7 +429,7 @@ for (const failure of ["read", "write"]) {
   });
 }
 
-test("cloud save failure retains pending changes and recovers explicitly", async ({ page, context, baseURL }) => {
+test("retains Daily Learning changes after a cloud save failure for explicit retry", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   backend.failWrites = true;
   await page.goto("/");
@@ -445,7 +445,7 @@ test("cloud save failure retains pending changes and recovers explicitly", async
   await expect.poll(() => backend.saved.study_state.cardIndex).toBe(2);
 });
 
-test("rapid independent task completions merge in cloud storage", async ({ page, context, baseURL }) => {
+test("merges rapid independent Daily Learning goals in cloud storage", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   backend.saved.add_note = false;
   backend.saved.study = false;
@@ -459,7 +459,7 @@ test("rapid independent task completions merge in cloud storage", async ({ page,
   expect(backend.writes.every((patch) => !Object.values(patch).includes(false))).toBe(true);
 });
 
-test("two local tabs preserve independent goals and reject a stale session overwrite", async ({ page, context, baseURL }) => {
+test("merges goals across local tabs while rejecting stale session writes", async ({ page, context, baseURL }) => {
   await setupLearning({ page, context, baseURL }, { sync: false });
   const other = await context.newPage();
   await setupLearning({ page: other, context, baseURL }, { sync: false });
@@ -487,7 +487,7 @@ test("two local tabs preserve independent goals and reject a stale session overw
   await expect(other.getByRole("alert")).toHaveCount(0);
 });
 
-test("cloud compare-and-set refuses a different device's changed session", async ({ page, context, baseURL }) => {
+test("rejects a cloud session write after another device changes the saved state", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   await page.goto("/");
   await openSession(page, "Study");
@@ -499,7 +499,7 @@ test("cloud compare-and-set refuses a different device's changed session", async
   expect(backend.saved.study_state).toEqual(remote);
 });
 
-test("a lost cloud response is acknowledged before retrying newer Study changes", async ({ page, context, baseURL }) => {
+test("acknowledges an uncertain cloud save before saving newer Study changes", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   backend.loseSaveResponse = true;
   await page.goto("/");
@@ -514,7 +514,7 @@ test("a lost cloud response is acknowledged before retrying newer Study changes"
   await expect.poll(() => backend.saved.study_state.cardIndex).toBe(2);
 });
 
-test("concurrent creation of a cloud day preserves goals and both session fields", async ({ page, context, baseURL }) => {
+test("preserves goals and both sessions when a cloud learning day is created concurrently", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   const initial = structuredClone(backend.saved);
   backend.saved = null;
@@ -532,7 +532,7 @@ test("concurrent creation of a cloud day preserves goals and both session fields
   expect(backend.saved).toMatchObject({ add_note: true, quiz_state: initial.quiz_state, study_state: initial.study_state });
 });
 
-test("Today distinguishes pending or failed notes from an empty notebook and recovers its task rows", async ({ page, context, baseURL }) => {
+test("distinguishes unavailable Notes from an empty notebook on Today", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   backend.saved.add_note = false;
   backend.saved.study = false;
@@ -559,7 +559,7 @@ test("Today distinguishes pending or failed notes from an empty notebook and rec
   expect(backend.writes).toEqual([]);
 });
 
-test("Today renders a genuinely empty notebook and completed goals from saved state without inventing progress", async ({ page, context, baseURL }) => {
+test("shows empty Notes and saved completed goals on Today without new writes", async ({ page, context, baseURL }) => {
   const backend = await setupLearning({ page, context, baseURL });
   backend.notes = [];
   backend.saved.add_note = false;

@@ -52,18 +52,37 @@ The browser suite is organized around behavior:
   duplicates, cancellation, failed-only retry, batch accounting and overnight resume.
 - [daily-learning.spec.js](../e2e/daily-learning.spec.js): failed hydration, delayed
   notes/settings, local/cloud persistence, cross-tab conflicts and day rollover.
-- [auth.spec.js](../e2e/auth.spec.js) and [demo-isolation.spec.js](../e2e/demo-isolation.spec.js):
+- [authentication.spec.js](../e2e/authentication.spec.js) and [demo-isolation.spec.js](../e2e/demo-isolation.spec.js):
   authentication forms and separation of disposable Demo from real-account services.
-- [demo.spec.js](../e2e/demo.spec.js), [today-shell.spec.js](../e2e/today-shell.spec.js),
-  [study.spec.js](../e2e/study.spec.js) and [bureau.spec.js](../e2e/bureau.spec.js):
-  learning/library entry flows, navigation, imports and Settings presentation.
-- [ui2-final.spec.js](../e2e/ui2-final.spec.js) and [branding.spec.js](../e2e/branding.spec.js):
-  focused accessibility/loading regressions, responsive branding and asset integrity.
+- [demo.spec.js](../e2e/demo.spec.js), [today-navigation.spec.js](../e2e/today-navigation.spec.js)
+  and [study.spec.js](../e2e/study.spec.js): Demo workflows, Today goals, navigation
+  and Study interaction.
+- [settings.spec.js](../e2e/settings.spec.js): section drafts, profile/learning saves,
+  password validation and plan-aware quota feedback.
+- [workspace.spec.js](../e2e/workspace.spec.js): Setup, document language/focus,
+  lazy-view recovery and cross-page Settings/Import layouts.
+- [branding.spec.js](../e2e/branding.spec.js): responsive branding and asset integrity.
 
 The authoritative Node suite list is the explicit `test` script in
 [package.json](../package.json). Playwright discovers specs under `e2e/` through
 [playwright.config.js](../playwright.config.js). New Node files must be added to
 the script; discovery should not be assumed.
+
+### Naming Convention
+
+Browser specs use stable, kebab-case feature/workflow or risk names with `.spec.js`;
+Node/API tests retain source-matching `.test.js` filenames. Titles state an expected
+outcome and the condition that matters, using consistent feature names such as
+Editor, Quiz, Study, Import, Demo and Daily Learning. Parameter labels must distinguish
+every variation; titles must describe assertions, not claim live integration.
+Keep useful terms such as hydration, confidence and retry, but avoid phase numbers,
+design codenames and unexplained abbreviations. Do not add `should` mechanically.
+
+Screenshot/attachment names identify the feature and state, optionally adding a
+viewport or locale (`editor-desktop-validation.png`, `quiz-mobile-correct-zh.png`,
+`settings-import-layout.json`). Name full-page and viewport captures distinctly.
+Keep titles unique and update showcase links and `--grep` commands when renaming:
+Playwright IDs and historical report paths include filenames/titles and can change.
 
 ## Fixtures, Mocks and Isolation
 
@@ -94,6 +113,8 @@ stored note or AI requests from the backend passed by the test. They create no
 shared state and hide no setup, gates or recovery assertions. Single-spec helpers
 stay beside their tests; specs never import another spec. Account/backend ownership
 remains in `setupAccounts()` and Playwright's per-test browser fixtures, not the helpers.
+The shared [screenshots.js](../e2e/helpers/screenshots.js) helper retains the existing
+capture sequence and transition wait for Import, Settings and workspace evidence.
 
 | Control | Technique demonstrated |
 | --- | --- |
@@ -120,7 +141,7 @@ configured pixel-diff baseline for the entire application.
 
 ### Cross-Account Async Isolation
 
-**Existing test:** [pending A progress, Quiz, and Study writes remain owned by A](../e2e/account-lifecycle.spec.js#L37).
+**Existing test:** [keeps pending Daily Learning, Quiz and Study writes owned by Account A](../e2e/account-lifecycle.spec.js#L37).
 
 **Risk:** late work from one account could overwrite another account's daily state
 after an Auth switch, even while the UI shows the correct new username.
@@ -140,7 +161,7 @@ assertions. A rendered heading alone would miss the corruption risk.
 
 ### Quiz Persistence and Recovery
 
-**Existing tests:** [a committed confidence update with a lost response resumes target 2 after refresh](../e2e/quiz-confidence.spec.js#L210)
+**Existing tests:** [restores Quiz confidence target 2 after a committed write loses its response](../e2e/quiz-confidence.spec.js#L210)
 and the same parameterized test with `target 4` (initial confidence 1 or 3).
 
 **Risk:** retrying a correct answer after an uncertain write could award confidence
@@ -164,9 +185,9 @@ strict exactly-once scoring across independent devices.
 
 ### CSV Import Failure Recovery
 
-**Existing test family:** [vocabulary cancel and repeated resume preserve the original batch and never resubmit successes](../e2e/import-recovery.spec.js#L23)
-and [vocabulary retries failed rows independently and retains untouched failures if retry is cancelled](../e2e/import-recovery.spec.js#L61).
-Both scenarios are also generated with the `phrases` prefix.
+**Existing test family:** [preserves the vocabulary Import batch across repeated cancel and resume](../e2e/import-recovery.spec.js#L94)
+and [retries only failed vocabulary Import rows and preserves failures after cancellation](../e2e/import-recovery.spec.js#L132).
+Both scenarios also run for `phrases` Imports.
 
 **Risk:** a partially completed import could report false success, repeat saved
 rows, lose failed rows or confuse unprocessed rows with retryable failures.
@@ -206,7 +227,7 @@ Focused runs and discovery:
 node --test src/utils/dailyPersistence.test.js
 node --test api/autofill-vocabulary.test.js
 npm run test:e2e -- --list
-npm run test:e2e -- e2e/quiz-confidence.spec.js --grep "committed confidence update with a lost response" --workers=1 --retries=0
+npm run test:e2e -- e2e/quiz-confidence.spec.js --grep "restores Quiz confidence target" --workers=1 --retries=0
 ```
 
 Playwright starts Vite on `http://127.0.0.1:5173` and reuses an existing server only

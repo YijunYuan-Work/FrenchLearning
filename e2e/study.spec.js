@@ -18,7 +18,7 @@ async function next(page) {
   await expect(page.locator(".study-moving.is-leaving")).toHaveCount(0);
 }
 
-test("Study flip, keyboard, rapid navigation and hidden faces remain coherent", async ({ page }) => {
+test("keeps Study card faces and focus consistent during rapid keyboard navigation", async ({ page }) => {
   const errors = [];
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
   page.on("pageerror", (error) => errors.push(error.message));
@@ -50,7 +50,7 @@ test("Study flip, keyboard, rapid navigation and hidden faces remain coherent", 
   expect(errors).toEqual([]);
 });
 
-test("Study preserves detail fields, phrase/grammar confidence and editor access", async ({ page }) => {
+test("preserves Study details, confidence controls and Editor access through completion", async ({ page }) => {
   await openStudy(page, { reducedMotion: true });
   let sawForms = false;
   for (let index = 0; index < 7; index += 1) {
@@ -107,7 +107,7 @@ test("Study preserves detail fields, phrase/grammar confidence and editor access
   await expect(page.getByText("You reviewed 1 cards.", { exact: true })).toBeVisible();
 });
 
-test("mobile focused Study supports swipe, tap, internal scroll and an exit", async ({ page }) => {
+test("supports mobile Study gestures, scrolling and return navigation", async ({ page }) => {
   await openStudy(page, { mobile: true });
   await expect(page.locator(".cahier-mobile-nav")).toBeHidden();
   await expect(page.getByRole("button", { name: "Back to Today" })).toBeVisible();
@@ -130,7 +130,7 @@ test("mobile focused Study supports swipe, tap, internal scroll and an exit", as
   await expect(page.getByRole("button", { name: "Show front", exact: true })).toBeVisible();
 });
 
-test("Study is bilingual, reduced-motion aware and fits responsive viewports", async ({ page }) => {
+test("keeps Chinese Study controls usable across viewports with reduced motion", async ({ page }) => {
   await openStudy(page, { chinese: true, reducedMotion: true });
   for (const width of [320, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 800 });

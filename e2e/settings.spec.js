@@ -1,0 +1,148 @@
+import { expect, test } from "@playwright/test";
+import { ids, setupAccounts, go } from "./fixtures/accounts.js";
+import { capturePage } from "./helpers/screenshots.js";
+
+test("isolates Settings drafts and recovers failed profile and learning saves", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "Settings");
+  const profile = page.getByRole("form", { name: "Profile details", exact: true });
+  const learning = page.getByRole("form", { name: "Daily quiz and study amounts", exact: true });
+  const password = page.getByRole("form", { name: "Change password", exact: true });
+  await expect(page.locator(".settings-quota-number")).toHaveText("7/ 10");
+  await expect(profile.getByRole("button", { name: "Save profile" })).toBeDisabled();
+  await capturePage(page, testInfo, "settings-desktop", true);
+  const writes = backend.writes(ids.A).length;
+  await profile.getByLabel("Display name", { exact: true }).fill("Draft name");
+  await learning.getByLabel("Quiz vocabulary questions", { exact: true }).fill("42");
+  await password.getByLabel("Current password", { exact: true }).fill("old-test-password");
+  await capturePage(page, testInfo, "settings-dirty", true);
+  await profile.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await expect(profile.getByLabel("Display name", { exact: true })).toHaveValue("Account A");
+  await expect(learning.getByLabel("Quiz vocabulary questions", { exact: true })).toHaveValue("42");
+  await expect(password.getByLabel("Current password", { exact: true })).toHaveValue("old-test-password");
+  expect(backend.writes(ids.A)).toHaveLength(writes);
+
+  await profile.getByLabel("Display name", { exact: true }).fill("  ");
+  await go(page, "Save profile");
+  await expect(profile.getByRole("alert")).toContainText("Display name is required.");
+  await capturePage(page, testInfo, "settings-validation", true);
+  await profile.getByLabel("Display name", { exact: true }).fill("Confirmed name");
+  await profile.getByLabel("Recovery email optional", { exact: true }).fill("bad-email");
+  await go(page, "Save profile");
+  await expect(profile.getByRole("alert")).toContainText("Enter a valid recovery email.");
+  await profile.getByLabel("Recovery email optional", { exact: true }).fill("");
+  const key = `${ids.A}:user:PUT`;
+  backend.failures.add(key);
+  await go(page, "Save profile");
+  await expect(profile.getByRole("alert")).toContainText("Late account A failure");
+  await capturePage(page, testInfo, "settings-failure", true);
+  await expect(profile.getByLabel("Display name", { exact: true })).toHaveValue("Confirmed name");
+  backend.failures.delete(key);
+  const gate = backend.hold(key);
+  await go(page, "Save profile");
+  await backend.waitFor(key);
+  await expect(profile.getByLabel("Display name", { exact: true })).toBeDisabled();
+  await expect(profile.getByText("Profile updated.", { exact: true })).toHaveCount(0);
+  await capturePage(page, testInfo, "settings-saving", true);
+  gate.resolve();
+  await expect(profile.getByText("Profile updated.", { exact: true })).toBeVisible();
+  expect(backend.accounts[ids.A].user.user_metadata).toMatchObject({ username: "a", name: "Confirmed name", recoveryEmail: "" });
+  await profile.getByLabel("Display name", { exact: true }).fill("Discard me");
+  await profile.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await expect(profile.getByLabel("Display name", { exact: true })).toHaveValue("Confirmed name");
+  await expect(learning.getByLabel("Quiz vocabulary questions", { exact: true })).toHaveValue("42");
+  await learning.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await expect(learning.getByLabel("Quiz vocabulary questions", { exact: true })).toHaveValue("23");
+
+  for (const [label, min, max] of [
+    ["Quiz vocabulary questions", 1, 200], ["Study vocabulary cards", 0, 200],
+    ["Study grammar cards", 0, 100], ["Study short phrase cards", 0, 100],
+  ]) {
+    const input = learning.getByLabel(label, { exact: true });
+    await input.fill(String(min));
+    await expect(learning.getByRole("button", { name: `Decrease ${label}`, exact: true })).toBeDisabled();
+    await input.fill(String(max));
+    await expect(learning.getByRole("button", { name: `Increase ${label}`, exact: true })).toBeDisabled();
+  }
+  await learning.getByLabel("Quiz vocabulary questions", { exact: true }).fill("201");
+  await go(page, "Save learning settings");
+  expect(backend.accounts[ids.A].preferences.quiz_vocabulary_limit).toBe(23);
+  await learning.getByLabel("Quiz vocabulary questions", { exact: true }).fill("200");
+  const settingsKey = `${ids.A}:user_preferences:POST:quiz_vocabulary_limit,study_vocabulary_limit,study_grammar_limit,study_phrase_limit`;
+  backend.failures.add(settingsKey);
+  await go(page, "Save learning settings");
+  await expect(learning.getByRole("alert")).toContainText("Late account A failure");
+  backend.failures.delete(settingsKey);
+  await go(page, "Save learning settings");
+  await expect(learning.getByText("Learning settings updated.", { exact: true })).toBeVisible();
+  expect(backend.accounts[ids.A].preferences).toMatchObject({ quiz_vocabulary_limit: 200, study_vocabulary_limit: 200, study_grammar_limit: 100, study_phrase_limit: 100 });
+  await expect(password.getByLabel("Current password", { exact: true })).toHaveValue("old-test-password");
+  await password.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await expect(password.getByLabel("Current password", { exact: true })).toHaveValue("");
+  await capturePage(page, testInfo, "settings-saved", true);
+});
+
+test("shows subscriber allowance and recovers failed quota refreshes in Settings", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  backend.accounts[ids.A].subscriptionTier = "subscriber";
+  backend.accounts[ids.A].autofillUsed = 250;
+  const key = `${ids.A}:ai_autofill_usage:GET`;
+  const gate = backend.hold(key);
+  await page.goto("/");
+  await go(page, "Settings");
+  await backend.waitFor(key);
+  await expect(page.locator(".settings-quota")).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByRole("button", { name: "Refresh quota", exact: true })).toBeDisabled();
+  await capturePage(page, testInfo, "settings-quota-loading", true);
+  gate.resolve();
+  await expect(page.locator(".settings-quota-number")).toHaveText("750/ 1000");
+  await expect(page.locator(".settings-quota-ticks span")).toHaveCount(10);
+  await expect(page.locator(".settings-quota-ticks .is-remaining")).toHaveCount(7);
+  await expect(page.locator(".settings-heading").filter({ hasText: "AI auto-fill" })).toContainText("Subscriber");
+  await capturePage(page, testInfo, "settings-quota-subscriber", true);
+  backend.failures.add(key);
+  await go(page, "Refresh quota");
+  await expect(page.getByRole("alert")).toContainText("Late account A failure");
+  await capturePage(page, testInfo, "settings-quota-failure", true);
+  backend.failures.delete(key);
+  backend.accounts[ids.A].autofillUsed = 1000;
+  await page.getByRole("alert").getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(page.locator(".settings-quota-number")).toHaveText("0/ 1000");
+  await expect(page.locator(".settings-quota-ticks .is-remaining")).toHaveCount(0);
+  expect(backend.writes(ids.A).filter((entry) => ["ai_autofill_usage", "user_subscription_roles", "ai"].includes(entry.resource))).toEqual([]);
+});
+
+test("preserves other Settings drafts during password validation and retry", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "Settings");
+  const password = page.getByRole("form", { name: "Change password", exact: true });
+  await page.getByLabel("Display name", { exact: true }).fill("Unsaved profile");
+  await go(page, "Update password");
+  await expect(password.getByRole("alert")).toContainText("Enter your current password.");
+  await password.getByLabel("Current password", { exact: true }).fill("old-test-password");
+  await password.getByLabel("New password", { exact: true }).fill("short");
+  await go(page, "Update password");
+  await expect(password.getByRole("alert")).toContainText("at least 6 characters");
+  await password.getByLabel("New password", { exact: true }).fill("new-test-password");
+  await password.getByLabel("Confirm new password", { exact: true }).fill("different");
+  await go(page, "Update password");
+  await expect(password.getByRole("alert")).toContainText("do not match");
+  await capturePage(page, testInfo, "settings-password-validation", true);
+  await password.getByLabel("Confirm new password", { exact: true }).fill("new-test-password");
+  backend.failures.add(`${ids.A}:user:PUT`);
+  await go(page, "Update password");
+  await expect(password.getByRole("alert")).toContainText("Late account A failure");
+  await expect(password.getByLabel("New password", { exact: true })).toHaveValue("new-test-password");
+  backend.failures.clear();
+  await go(page, "Update password");
+  await expect(password.getByText("Password updated.", { exact: true })).toBeVisible();
+  await expect(password.locator('input[type="password"]')).toHaveCount(3);
+  await expect(password.getByLabel("New password", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Display name", { exact: true })).toHaveValue("Unsaved profile");
+  expect(backend.accounts[ids.A].passwordChanged).toBe(true);
+});

@@ -6,7 +6,7 @@ const languageRequests = (backend, id, method) => backend.ledger.filter((entry) 
 
 const languageCache = (page, id) => page.evaluate((id) => localStorage.getItem(`french-learning-language:${id}`), id);
 
-test("delayed language hydration loads once across navigation and same-account refresh", async ({ page, context, baseURL }) => {
+test("hydrates language once across navigation and same-account refresh", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.accounts[ids.A].preferences.language = "zh";
   const gate = backend.hold(`${ids.A}:user_preferences:GET:language`);
@@ -26,7 +26,7 @@ test("delayed language hydration loads once across navigation and same-account r
   expect(languageRequests(backend, ids.A, "GET")).toHaveLength(1);
 });
 
-test("choices made during hydration win, including returning to the initial displayed language", async ({ page, context, baseURL }) => {
+test("preserves language choices made during delayed hydration", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.accounts[ids.A].preferences.language = "zh";
   const gate = backend.hold(`${ids.A}:user_preferences:GET:language`);
@@ -41,7 +41,7 @@ test("choices made during hydration win, including returning to the initial disp
   expect(languageRequests(backend, ids.A, "POST").map((entry) => entry.body.language)).toEqual(["en"]);
 });
 
-test("rapid toggles cannot produce out-of-order writes and the final choice survives refresh", async ({ page, context, baseURL }) => {
+test("persists the latest language after rapid toggles and refresh", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
   await expect.poll(() => languageCache(page, ids.A)).toBe("en");
@@ -67,7 +67,7 @@ test("rapid toggles cannot produce out-of-order writes and the final choice surv
   expect(languageRequests(backend, ids.A, "POST")).toHaveLength(3);
 });
 
-test("a delayed language auth check does not trigger another preference hydration", async ({ page, context, baseURL }) => {
+test("avoids rehydrating language during a delayed authentication check", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
   await expect.poll(() => languageCache(page, ids.A)).toBe("en");
@@ -83,7 +83,7 @@ test("a delayed language auth check does not trigger another preference hydratio
   expect(languageRequests(backend, ids.A, "GET")).toHaveLength(1);
 });
 
-test("a failed language read keeps user intent and retries without a destructive default save", async ({ page, context, baseURL }) => {
+test("preserves language intent after a failed read and retries without default writes", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const key = `${ids.A}:user_preferences:GET:language`;
   backend.failures.add(key);
@@ -101,7 +101,7 @@ test("a failed language read keeps user intent and retries without a destructive
   expect(languageRequests(backend, ids.A, "POST")).toHaveLength(1);
 });
 
-test("a failed language save keeps the current choice and retries only the latest selection", async ({ page, context, baseURL }) => {
+test("retries only the latest language choice after a failed save", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
   await expect.poll(() => languageCache(page, ids.A)).toBe("en");
@@ -122,7 +122,7 @@ test("a failed language save keeps the current choice and retries only the lates
 });
 
 for (const operation of ["read", "auth-check", "write"]) {
-  test(`a pending A language ${operation} cannot affect B's language, cache, or saved preference`, async ({ page, context, baseURL }) => {
+  test(`protects Account B language state from a pending Account A ${operation}`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     backend.accounts[ids.B].preferences.language = "zh";
     const key = `${ids.A}:${operation === "read" ? "user_preferences:GET:language" : operation === "write" ? "user_preferences:POST:language" : "user:GET"}`;
@@ -161,7 +161,7 @@ for (const operation of ["read", "auth-check", "write"]) {
   });
 }
 
-test("demo language stays temporary with an authenticated account in the browser", async ({ page, context, baseURL }) => {
+test("keeps Demo language changes temporary for signed-in visitors", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const cookies = await context.cookies();
   await page.goto("/#/demo");
@@ -178,7 +178,7 @@ test("demo language stays temporary with an authenticated account in the browser
   expect(backend.ledger).toEqual([]);
 });
 
-test("returning to A waits for its old in-flight language write before hydrating and saving a new choice", async ({ page, context, baseURL }) => {
+test("waits for an old language write before rehydrating a returning Account A", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
   await expect.poll(() => languageCache(page, ids.A)).toBe("en");
