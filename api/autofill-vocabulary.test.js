@@ -101,7 +101,7 @@ test("method, authentication and missing configuration retain safe structured er
 
 for (const service of ["wiki", "openai"]) {
   const codePrefix = service === "wiki" ? "WIKTIONARY" : "OPENAI";
-  test(`${service} connection failure returns safe JSON with the correct quota boundary`, async (t) => {
+  test(`returns safe JSON and preserves quota boundaries after ${service === "wiki" ? "Wiktionary" : "OpenAI"} connection failure`, async (t) => {
     const { run, calls } = await setup(t, { [service]: () => { throw new Error("secret upstream test-private stack trace"); } });
     const result = await run();
     assert.equal(result.status, 502);
@@ -112,7 +112,7 @@ for (const service of ["wiki", "openai"]) {
   });
 
   for (const stage of ["connection", "body"]) {
-    test(`${service} ${stage} timeout is bounded even if transport ignores abort`, async (t) => {
+    test(`bounds ${service === "wiki" ? "Wiktionary" : "OpenAI"} ${stage} timeouts when transport ignores cancellation`, async (t) => {
       let reached;
       const started = new Promise((resolve) => { reached = resolve; });
       let rejectLate;
@@ -137,7 +137,7 @@ for (const service of ["wiki", "openai"]) {
     });
   }
 
-  test(`${service} non-JSON and incomplete payloads are not treated as valid results`, async (t) => {
+  test(`rejects unreadable or incomplete ${service === "wiki" ? "Wiktionary" : "OpenAI"} responses`, async (t) => {
     let reply;
     const { run, calls } = await setup(t, { [service]: () => reply() });
     const payloads = service === "wiki" ? [null, [], {}, { query: { pages: {} } }, { query: { pages: [] } }, { query: { pages: [null] } }, { query: { pages: [{}] } }] :

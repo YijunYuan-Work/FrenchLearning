@@ -95,7 +95,7 @@ async function attemptAccountOperations(page) {
 }
 
 for (const signedIn of [false, true]) {
-  test(`demo is disposable and blocks account operations (${signedIn ? "existing login" : "signed out"})`, async ({ page, context, baseURL }) => {
+  test(`keeps Demo disposable and blocks account operations when ${signedIn ? "signed in" : "signed out"}`, async ({ page, context, baseURL }) => {
     const requests = await configureBackend(page);
     if (signedIn) await seedAccountSession(context, baseURL);
     const cookiesBefore = await context.cookies();
@@ -158,7 +158,7 @@ for (const signedIn of [false, true]) {
   });
 }
 
-test("switching between account and demo resets workspace ownership", async ({ page, context, baseURL }) => {
+test("resets workspace ownership when switching between an account and Demo", async ({ page, context, baseURL }) => {
   const requests = await configureBackend(page);
   await seedAccountSession(context, baseURL);
   const cookiesBefore = await context.cookies();
@@ -195,7 +195,7 @@ test("switching between account and demo resets workspace ownership", async ({ p
   expect(requests.some((request) => request.url.includes("/auth/v1/user"))).toBe(true);
 });
 
-test("demo settings and AI restrictions work without Supabase configuration", async ({ page }) => {
+test("enforces Demo Settings and Auto-fill restrictions without backend configuration", async ({ page }) => {
   const requests = await configureBackend(page, { configured: false });
   await page.goto("/#/demo");
   await page.getByRole("button", { name: "Settings", exact: true }).click();
@@ -213,7 +213,7 @@ test("demo settings and AI restrictions work without Supabase configuration", as
   expect(requests).toEqual([]);
 });
 
-test("auto-fill waiting for a session cannot send after entering demo", async ({ page, context, baseURL }) => {
+test("blocks pending Auto-fill after entering Demo", async ({ page, context, baseURL }) => {
   const requests = await configureBackend(page);
   await seedAccountSession(context, baseURL);
   await page.goto("/");

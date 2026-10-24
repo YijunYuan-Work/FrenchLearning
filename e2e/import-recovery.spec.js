@@ -1,11 +1,82 @@
 import { expect, test } from "@playwright/test";
-import { VOCABULARY_CSV_HEADERS } from "../src/utils/importParsers.js";
 import { ids, setupAccounts, go } from "./fixtures/accounts.js";
 import { importCsv, importRow, uploadCsv, expectBatch, noteCreates } from "./fixtures/imports.js";
+import { VOCABULARY_CSV_HEADERS } from "../src/utils/importParsers.js";
 import { aiRequests } from "./helpers/backend-state.js";
+import { capturePage } from "./helpers/screenshots.js";
+
+test("shows Import previews, progress and recovery states for both CSV modes", async ({ page, context, baseURL }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const backend = await setupAccounts({ page, context, baseURL });
+  await page.goto("/");
+  await go(page, "Import");
+  await capturePage(page, testInfo, "import-initial", true);
+  for (const mode of ["vocabulary", "phrases"]) {
+    if (mode === "phrases") await page.getByRole("main").getByRole("button", { name: "Short phrases", exact: true }).click();
+    const firstWord = `${mode}-premier`;
+    const badWord = `${mode}-reessayer`;
+    const thirdWord = `${mode}-troisieme`;
+    await capturePage(page, testInfo, `import-${mode}-mode`, true);
+    await uploadCsv(page, 'french,translation\n"not closed,broken', "malformed.csv");
+    await expect(page.getByRole("alert")).toBeVisible();
+    await capturePage(page, testInfo, `import-${mode}-malformed`, true);
+    await uploadCsv(page, importCsv(mode, [firstWord, badWord, thirdWord, `${mode}-quatre`, `${mode}-cinq`, firstWord].map((word) => importRow(word, { tags: "A1;école,日常" }))));
+    await expect(page.locator(".import-preview tbody tr")).toHaveCount(5);
+    await expect(page.locator(".import-preview tbody tr").first()).toContainText("A1, école, 日常");
+    await capturePage(page, testInfo, `import-${mode}-preview`, true);
+    backend.failedCreates.add(badWord);
+    const first = backend.hold(`${ids.A}:notes:POST:${firstWord}`);
+    await go(page, "Start import");
+    await backend.waitFor(`${ids.A}:notes:POST:${firstWord}`);
+    await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0");
+    await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "6");
+    await expect(page.locator('input[type="file"]')).toBeDisabled();
+    await expect(page.getByRole("main").getByRole("button", { name: "Short phrases", exact: true })).toBeDisabled();
+    await capturePage(page, testInfo, `import-${mode}-running`, true);
+    if (mode === "vocabulary") {
+      await go(page, "简体中文");
+      await page.setViewportSize({ width: 370, height: 736 });
+      await page.getByRole("progressbar").scrollIntoViewIfNeeded();
+      await capturePage(page, testInfo, "import-mobile-running-zh", true);
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await go(page, "English");
+    }
+    await go(page, "Cancel import");
+    await capturePage(page, testInfo, `import-${mode}-cancelling`, true);
+    first.resolve();
+    await expectBatch(page, 1, 0, 0, 5);
+    await capturePage(page, testInfo, `import-${mode}-partial`, true);
+    const third = backend.hold(`${ids.A}:notes:POST:${thirdWord}`);
+    await go(page, "Resume unprocessed rows");
+    await backend.waitFor(`${ids.A}:notes:POST:${thirdWord}`);
+    await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+    await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "5");
+    await capturePage(page, testInfo, `import-${mode}-resume`, true);
+    third.resolve();
+    await expectBatch(page, 4, 1, 1, 0);
+    await capturePage(page, testInfo, `import-${mode}-failures`, true);
+    if (mode === "vocabulary") {
+      await page.setViewportSize({ width: 370, height: 736 });
+      await page.locator(".import-result-title").scrollIntoViewIfNeeded();
+      await capturePage(page, testInfo, "import-mobile-results-en", true);
+      await page.setViewportSize({ width: 1280, height: 900 });
+    }
+    const retry = backend.hold(`${ids.A}:notes:POST:${badWord}`);
+    backend.failedCreates.delete(badWord);
+    await go(page, "Retry failed only");
+    await backend.waitFor(`${ids.A}:notes:POST:${badWord}`);
+    await expect(page.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "1");
+    await capturePage(page, testInfo, `import-${mode}-retry`, true);
+    retry.resolve();
+    await expectBatch(page, 5, 1, 0, 0);
+    await capturePage(page, testInfo, `import-${mode}-complete`, true);
+    expect(noteCreates(backend).filter((entry) => entry.body.french === firstWord)).toHaveLength(1);
+    expect(backend.accounts[ids.A].notes.filter((note) => note.category === mode && note.french.startsWith(mode))).toHaveLength(5);
+  }
+});
 
 for (const mode of ["vocabulary", "phrases"]) {
-  test(`${mode} import rejects case, whitespace and decomposed-accent duplicates against saved notes`, async ({ page, context, baseURL }) => {
+  test(`skips ${mode} Import duplicates differing by case, whitespace or accents`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     backend.accounts[ids.A].notes[0] = { ...backend.accounts[ids.A].notes[0], category: mode, french: " ÉCOLE " };
     await page.goto("/");
@@ -20,7 +91,7 @@ for (const mode of ["vocabulary", "phrases"]) {
 }
 
 for (const mode of ["vocabulary", "phrases"]) {
-  test(`${mode} cancel and repeated resume preserve the original batch and never resubmit successes`, async ({ page, context, baseURL }) => {
+  test(`preserves the ${mode} Import batch across repeated cancel and resume`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     if (mode === "phrases") backend.accounts[ids.A].notes.push({ ...backend.accounts[ids.A].notes[0], id: "A-existing-phrase", category: "phrases" });
     const rows = ["import-un", "import-deux", "import-trois", "import-quatre", "import-cinq", "IMPORT-UN", "A-word-1"].map((word) => importRow(word));
@@ -58,7 +129,7 @@ for (const mode of ["vocabulary", "phrases"]) {
     await expect(page.getByRole("button", { name: "Resume unprocessed rows", exact: true })).toHaveCount(0);
   });
 
-  test(`${mode} retries failed rows independently and retains untouched failures if retry is cancelled`, async ({ page, context, baseURL }) => {
+  test(`retries only failed ${mode} Import rows and preserves failures after cancellation`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     backend.failedCreates.add("retry-deux");
     backend.failedCreates.add("retry-trois");
@@ -91,7 +162,7 @@ for (const mode of ["vocabulary", "phrases"]) {
     expect(backend.writes(ids.A).filter((entry) => entry.resource === "daily_learning_state" && entry.body?.add_note)).toHaveLength(1);
   });
 
-  test(`${mode} rejects malformed structure before writes and clears previously uploaded rows`, async ({ page, context, baseURL }) => {
+  test(`rejects malformed ${mode} CSV before writes and clears the previous upload`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     await page.goto("/");
     await go(page, "Import");
@@ -116,7 +187,7 @@ for (const mode of ["vocabulary", "phrases"]) {
     expect(noteCreates(backend)).toHaveLength(1);
   });
 
-  test(`${mode} supports quoted multiline Unicode data and retains physical rows for semantic failures`, async ({ page, context, baseURL }) => {
+  test(`preserves multiline Unicode ${mode} CSV data and semantic-error row numbers`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -142,7 +213,7 @@ for (const mode of ["vocabulary", "phrases"]) {
   });
 }
 
-test("a delayed old file read cannot restore rows after a newer malformed upload or a mode change", async ({ page, context, baseURL }) => {
+test("ignores an old CSV read after a newer invalid upload or Import mode change", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
   await go(page, "Import");
@@ -171,7 +242,7 @@ test("a delayed old file read cannot restore rows after a newer malformed upload
   expect(noteCreates(backend)).toEqual([]);
 });
 
-test("demo import preview cannot start a write in either mode", async ({ page, context, baseURL }) => {
+test("allows Demo Import previews without saving either CSV mode", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const original = structuredClone(backend.accounts);
   await page.goto("/#/demo");
@@ -187,7 +258,7 @@ test("demo import preview cannot start a write in either mode", async ({ page, c
   expect(backend.ledger).toEqual([]);
 });
 
-test("resuming an import on the next local day earns its Add Note goal without per-row goal writes", async ({ page, context, baseURL }) => {
+test("completes the new day's Add Note goal when Import resumes overnight", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { sessionLifetimeSeconds: 7 * 24 * 3600 });
   await page.clock.install({ time: new Date(`${backend.date}T12:00:00`) });
   const first = backend.hold(`${ids.A}:notes:POST:overnight-first`);

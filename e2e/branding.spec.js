@@ -48,7 +48,7 @@ async function inspectBrand(page) {
   return geometry;
 }
 
-test("approved logo assets and browser icons are served unchanged", async ({ page }) => {
+test("serves approved logo assets and browser icons unchanged", async ({ page }) => {
   for (const [name, size, hash] of assets) {
     const original = await readFile(new URL(`../public/brand/${name}`, import.meta.url));
     expect(createHash("sha256").update(original).digest("hex")).toBe(hash);
@@ -69,7 +69,7 @@ test("approved logo assets and browser icons are served unchanged", async ({ pag
 });
 
 for (const demo of [true, false]) {
-  test(`${demo ? "Demo" : "authenticated"} branding fits desktop, collapsed rail and mobile in both languages`, async ({ page, context, baseURL }, testInfo) => {
+  test(`keeps ${demo ? "Demo" : "authenticated"} branding aligned across viewports and languages`, async ({ page, context, baseURL }, testInfo) => {
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
@@ -86,16 +86,16 @@ for (const demo of [true, false]) {
         await page.setViewportSize({ width, height: 900 });
         measurements.push({ language, width, ...await inspectBrand(page) });
         if ((language === "en" && [1440, 768, 390].includes(width)) || (language === "zh" && width === 320)) {
-          await page.screenshot({ path: testInfo.outputPath(`${language}-${width}.png`) });
+          await page.screenshot({ path: testInfo.outputPath(`branding-${language}-${width}.png`) });
         }
       }
     }
-    await testInfo.attach("brand-geometry", { body: JSON.stringify(measurements, null, 2), contentType: "application/json" });
+    await testInfo.attach("branding-layout.json", { body: JSON.stringify(measurements, null, 2), contentType: "application/json" });
     expect(errors).toEqual([]);
   });
 }
 
-test("login and signup keep the shared logo aligned on desktop and narrow mobile", async ({ page, context, baseURL }, testInfo) => {
+test("aligns shared branding on sign-in and sign-up screens", async ({ page, context, baseURL }, testInfo) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
@@ -115,7 +115,7 @@ test("login and signup keep the shared logo aligned on desktop and narrow mobile
         await page.setViewportSize({ width, height: 900 });
         await inspectBrand(page);
         if ((language === "en" && [1440, 390].includes(width)) || (language === "zh" && width === 320)) {
-          await page.screenshot({ path: testInfo.outputPath(`${language}-${mode}-${width}.png`) });
+          await page.screenshot({ path: testInfo.outputPath(`authentication-branding-${language}-${mode}-${width}.png`) });
         }
       }
     }

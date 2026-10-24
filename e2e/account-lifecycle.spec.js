@@ -10,7 +10,7 @@ async function addNote(page, french) {
   await editor.getByRole("button", { name: "Save note", exact: true }).click();
 }
 
-test("late initial Auth and account A hydration cannot replace account B", async ({ page, context, baseURL }) => {
+test("preserves Account B after delayed Account A authentication and hydration", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL }, { delayInitialSession: true });
   const daily = backend.hold(`${ids.A}:daily_learning_state:GET`);
   const notes = backend.hold(`${ids.A}:notes:GET`);
@@ -34,7 +34,7 @@ test("late initial Auth and account A hydration cannot replace account B", async
   expect(backend.writes(ids.B)).toEqual([]);
 });
 
-test("pending A progress, Quiz, and Study writes remain owned by A", async ({ page, context, baseURL }) => {
+test("keeps pending Daily Learning, Quiz and Study writes owned by Account A", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const originalB = structuredClone(backend.accounts[ids.B].daily);
   const writeGate = backend.hold(`${ids.A}:daily_learning_state:POST`);
@@ -59,7 +59,7 @@ test("pending A progress, Quiz, and Study writes remain owned by A", async ({ pa
   expect(backend.writes(ids.B)).toEqual([]);
 });
 
-test("queued A Study changes are not sent after an account switch", async ({ page, context, baseURL }) => {
+test("discards queued Account A Study changes after an account switch", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const originalB = structuredClone(backend.accounts[ids.B].daily);
   const gate = backend.hold(`${ids.A}:daily_learning_state:PATCH`);
@@ -81,7 +81,7 @@ test("queued A Study changes are not sent after an account switch", async ({ pag
 });
 
 for (const fail of [false, true]) {
-  test(`a late A editor save ${fail ? "failure" : "success"} cannot affect B's editor or progress`, async ({ page, context, baseURL }) => {
+  test(`preserves Account B after a late Account A Editor save ${fail ? "failure" : "success"}`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL }, { sync: false });
     const gate = backend.hold(`${ids.A}:notes:POST`);
     if (fail) backend.failures.add(`${ids.A}:notes:POST`);
@@ -117,7 +117,7 @@ async function goAfterClosingEditor(page) {
   await go(page, "Today");
 }
 
-test("a late A confidence failure cannot roll back B's notes or show A's error", async ({ page, context, baseURL }) => {
+test("preserves Account B Notes after a late Account A confidence failure", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:notes:PATCH`);
   backend.failures.add(`${ids.A}:notes:PATCH`);
@@ -139,7 +139,7 @@ test("a late A confidence failure cannot roll back B's notes or show A's error",
 });
 
 for (const [destination, mode] of [["B", "phrases"], ["A", "phrases"], ["B", "vocabulary"]]) {
-  test(`an old ${mode} import stops on account change and cannot finish a new ${destination} import`, async ({ page, context, baseURL }) => {
+  test(`isolates a new Account ${destination} ${mode} Import from an old job`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     const oldGate = backend.hold(`${ids.A}:notes:POST`);
     await page.goto("/");
@@ -169,7 +169,7 @@ for (const [destination, mode] of [["B", "phrases"], ["A", "phrases"], ["B", "vo
   });
 }
 
-test("late A auto-fill cannot replace B's draft or use B's token", async ({ page, context, baseURL }) => {
+test("protects Account B drafts and tokens from late Account A Auto-fill", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:ai:POST`);
   await page.goto("/");
@@ -188,7 +188,7 @@ test("late A auto-fill cannot replace B's draft or use B's token", async ({ page
 });
 
 for (const operation of ["profile", "profile-write", "password"]) {
-  test(`pending A ${operation} cannot change credentials or adopt A after B signs in`, async ({ page, context, baseURL }) => {
+  test(`protects Account B from a pending Account A ${operation === "profile-write" ? "profile save" : operation === "profile" ? "profile read" : "password verification"}`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     await page.goto("/");
     await go(page, "Settings");
@@ -222,7 +222,7 @@ for (const operation of ["profile", "profile-write", "password"]) {
   });
 }
 
-test("same-account refresh preserves study and drafts, and profile saves remain functional", async ({ page, context, baseURL }) => {
+test("preserves Study and Editor drafts through session refresh and saves account changes", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
   await go(page, "Study");
@@ -253,7 +253,7 @@ test("same-account refresh preserves study and drafts, and profile saves remain 
   await expect(page.getByRole("heading", { name: /Bonjour, A-saved-profile\./ })).toBeVisible();
 });
 
-test("mobile More keeps the real account settings and sign-out reachable", async ({ page, context, baseURL }) => {
+test("keeps account Settings and sign-out reachable through mobile navigation", async ({ page, context, baseURL }) => {
   await setupAccounts({ page, context, baseURL });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");

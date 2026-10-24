@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("Today task rows navigate without completing goals, then reflect real Study and Quiz completion", async ({ page }) => {
+test("reflects Study and Quiz completion in Today goals", async ({ page }) => {
   await page.goto("/#/demo");
   await expect(page.getByRole("status", { name: "1 of 3 tasks done", exact: true })).toBeVisible();
   await page.getByRole("button", { name: /^Add a note Capture/ }).click();
@@ -26,7 +26,7 @@ test("Today task rows navigate without completing goals, then reflect real Study
   await expect(page.getByText("Tout est fait.", { exact: true })).toBeVisible();
 });
 
-test("mobile navigation sheets provide every destination, language controls, and keyboard dismissal", async ({ page }) => {
+test("supports mobile navigation destinations, language controls and keyboard dismissal", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/demo");
   const notes = page.getByRole("button", { name: "Notes", exact: true });
@@ -60,7 +60,7 @@ test("mobile navigation sheets provide every destination, language controls, and
   await expect(page.getByRole("dialog", { name: "Add learning note" })).toBeVisible();
 });
 
-test("Today shell stays within narrow, tablet and wide viewports in both languages", async ({ page }) => {
+test("keeps Today content within the viewport in both languages", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.emulateMedia({ reducedMotion: "reduce" });

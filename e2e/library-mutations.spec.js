@@ -6,7 +6,7 @@ import { answerQuiz } from "./helpers/quiz.js";
 
 const noteDeletes = (backend, owner = ids.A) => backend.writes(owner).filter((entry) => entry.resource === "notes" && entry.method === "DELETE");
 
-test("library search, type, tags, sort and pagination preserve cross-page selection and confirmed deletion", async ({ page, context, baseURL }) => {
+test("preserves cross-page Note selection through library filters, sorting and deletion", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.accounts[ids.A].notes = libraryRows(ids.A);
   await page.goto("/");
@@ -55,7 +55,7 @@ test("library search, type, tags, sort and pagination preserve cross-page select
   await expect(entries.first().locator(".library-forms")).toContainText("legacy form");
 });
 
-test("grammar reader follows filters, deletion and confidence without changing sanitized HTML", async ({ page, context, baseURL }) => {
+test("preserves grammar HTML through reader navigation and confidence changes", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.accounts[ids.A].notes = libraryRows(ids.A);
   await page.goto("/");
@@ -81,7 +81,7 @@ test("grammar reader follows filters, deletion and confidence without changing s
   expect(backend.accounts[ids.A].notes.some((note) => note.id === "grammar-3")).toBe(false);
 });
 
-test("a library confirmation cancels safely on Escape and account change before any delete", async ({ page, context, baseURL }) => {
+test("cancels Note deletion on Escape or account change before any write", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   await page.goto("/");
   await go(page, "Vocabulary");
@@ -97,7 +97,7 @@ test("a library confirmation cancels safely on Escape and account change before 
   expect(noteDeletes(backend, ids.B)).toEqual([]);
 });
 
-test("mobile bilingual libraries retain filter sheets, actions, reader navigation and bottom tabs", async ({ page, context, baseURL }) => {
+test("keeps mobile Notes filters, actions and reader navigation usable in Chinese", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.accounts[ids.A].notes = libraryRows(ids.A);
   backend.accounts[ids.A].preferences.language = "zh";
@@ -156,7 +156,7 @@ async function deleteSelection(page) {
 }
 
 for (const fails of [false, true]) {
-  test(`bulk deletion ${fails ? "keeps every failed note selected" : "removes every successful note and survives refresh"}`, async ({ page, context, baseURL }) => {
+  test(`bulk deletion ${fails ? "keeps failed Notes selected for retry" : "removes saved Notes and persists after refresh"}`, async ({ page, context, baseURL }) => {
     const backend = await setupAccounts({ page, context, baseURL });
     if (fails) for (const note of backend.accounts[ids.A].notes) backend.failedDeletes.add(`${ids.A}:${note.id}`);
     const original = structuredClone(backend.accounts[ids.A].notes);
@@ -184,7 +184,7 @@ for (const fails of [false, true]) {
   });
 }
 
-test("partial deletion reconciles successes before the last response and retries only failures", async ({ page, context, baseURL }, testInfo) => {
+test("reconciles partial Note deletion and retries only failures", async ({ page, context, baseURL }, testInfo) => {
   const backend = await setupAccounts({ page, context, baseURL });
   await page.setViewportSize({ width: 1280, height: 900 });
   backend.failedDeletes.add(`${ids.A}:A-2`);
@@ -213,7 +213,7 @@ test("partial deletion reconciles successes before the last response and retries
   expect(noteDeletes(backend).map((entry) => entry.noteId).sort()).toEqual(["A-1", "A-2", "A-2", "A-3"]);
 });
 
-test("rapid repeated delete actions issue one job and stay locked across navigation", async ({ page, context, baseURL }) => {
+test("starts one bulk deletion and keeps controls locked across navigation", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:notes:DELETE`);
   await page.goto("/");
@@ -236,7 +236,7 @@ test("rapid repeated delete actions issue one job and stay locked across navigat
   expect(backend.accounts[ids.A].notes).toEqual([]);
 });
 
-test("late deletes never affect another account and rehydration waits for the original account's deletes", async ({ page, context, baseURL }) => {
+test("isolates pending Note deletion across account switches and rehydration", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const originalB = structuredClone(backend.accounts[ids.B]);
   const gate = backend.hold(`${ids.A}:notes:DELETE:A-2`);
@@ -266,7 +266,7 @@ test("late deletes never affect another account and rehydration waits for the or
   expect(backend.writes(ids.B)).toEqual([]);
 });
 
-test("bulk deletes wait for pending Quiz updates and removed notes stay out of Quiz and Study after refresh", async ({ page, context, baseURL }) => {
+test("keeps deleted Notes out of Quiz and Study after pending confidence saves and refresh", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
   await page.goto("/");
@@ -301,7 +301,7 @@ test("bulk deletes wait for pending Quiz updates and removed notes stay out of Q
   expect(notePatches(backend, "A-2")).toHaveLength(1);
 });
 
-test("a delete queued behind an update is cancelled if the account changes before it starts", async ({ page, context, baseURL }) => {
+test("cancels queued Note deletion on account change", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
   const originalB = structuredClone(backend.accounts[ids.B]);
@@ -327,7 +327,7 @@ test("a delete queued behind an update is cancelled if the account changes befor
   expect(backend.writes(ids.B)).toEqual([]);
 });
 
-test("a pending editor response cannot restore a note deleted in the same bulk job", async ({ page, context, baseURL }) => {
+test("prevents a late Editor response from restoring a deleted Note", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const gate = backend.hold(`${ids.A}:notes:PATCH:A-2`);
   await page.goto("/");
@@ -352,7 +352,7 @@ test("a pending editor response cannot restore a note deleted in the same bulk j
   await expect(page.getByRole("article")).toHaveCount(1);
 });
 
-test("a lost delete response is reported as a failure and can be retried idempotently", async ({ page, context, baseURL }) => {
+test("reports an uncertain Note deletion and allows idempotent retry", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   backend.lostDeleteResponses.add(`${ids.A}:A-2`);
   await page.goto("/");
@@ -369,7 +369,7 @@ test("a lost delete response is reported as a failure and can be retried idempot
   expect(noteDeletes(backend)).toHaveLength(2);
 });
 
-test("demo bulk deletion changes only temporary notes, not the ambient account or storage", async ({ page, context, baseURL }) => {
+test("keeps Demo bulk deletion temporary and separate from account data", async ({ page, context, baseURL }) => {
   const backend = await setupAccounts({ page, context, baseURL });
   const original = structuredClone(backend.accounts);
   await page.goto("/#/demo");

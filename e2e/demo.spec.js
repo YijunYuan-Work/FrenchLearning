@@ -4,7 +4,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/#/demo");
 });
 
-test("demo loads and navigates to vocabulary", async ({ page }) => {
+test("loads Demo and opens Vocabulary", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: /Bonjour, Demo\./ })
   ).toBeVisible();
@@ -20,7 +20,7 @@ test("demo loads and navigates to vocabulary", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "organiser" })).toBeVisible();
 });
 
-test("vocabulary search filters demo notes", async ({ page }) => {
+test("filters and restores Demo Notes through Vocabulary search", async ({ page }) => {
   await page.getByRole("button", { name: "Vocabulary", exact: true }).click();
   const search = page.getByPlaceholder(
     "Search words, phrases, grammar, tags..."
@@ -41,7 +41,7 @@ test("vocabulary search filters demo notes", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("demo vocabulary can be created, edited, and deleted", async ({ page }) => {
+test("creates, edits and deletes Demo Vocabulary Notes", async ({ page }) => {
   const french = "qualite-e2e";
 
   await page.getByRole("button", { name: "Add note", exact: true }).click();
@@ -65,7 +65,7 @@ test("demo vocabulary can be created, edited, and deleted", async ({ page }) => 
   await expect(page.getByRole("heading", { name: french })).toHaveCount(0);
 });
 
-test("demo quiz reveals an answer and advances", async ({ page }) => {
+test("reveals a Demo Quiz answer and advances without changing confidence", async ({ page }) => {
   await page.getByRole("button", { name: "Quiz", exact: true }).click();
 
   await expect(page.getByText("Vocabulary quiz")).toBeVisible();
@@ -80,7 +80,7 @@ test("demo quiz reveals an answer and advances", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("demo study reveals a card and advances", async ({ page }) => {
+test("reveals a Demo Study card and advances", async ({ page }) => {
   await page.getByRole("button", { name: "Study", exact: true }).click();
 
   await expect(

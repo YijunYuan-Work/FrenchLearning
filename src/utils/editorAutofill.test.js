@@ -11,7 +11,7 @@ const result = {
   example: "Bonjour !", partOfSpeech: "interjection", ipa: "/bɔ̃.ʒuʁ/", gender: "",
 };
 
-test("an explicit new autofill replaces previous fields without changing confidence", () => {
+test("explicit Auto-fill replaces generated fields without changing confidence", () => {
   const merged = mergeVocabularyAutofill(current, result, new Set());
   assert.equal(merged.french, "Bonjour");
   assert.equal(merged.english, "hello");
@@ -21,7 +21,7 @@ test("an explicit new autofill replaces previous fields without changing confide
   assert.equal(merged.conjugation.je, "");
 });
 
-test("fields manually edited or cleared during autofill are preserved", () => {
+test("preserves fields manually edited or cleared during Auto-fill", () => {
   const edited = { ...current, english: "my translation", notes: "", tags: "my topic" };
   const merged = mergeVocabularyAutofill(edited, result, new Set(["english", "notes", "tags"]));
   assert.equal(merged.english, "my translation");
@@ -31,7 +31,7 @@ test("fields manually edited or cleared during autofill are preserved", () => {
   assert.equal(merged.ipa, result.ipa);
 });
 
-test("manual word type or form edits preserve the related morphology as a group", () => {
+test("preserves related morphology after manual word type or form edits", () => {
   for (const field of ["partOfSpeech", "gender", "conjugation", "adjectiveForms"]) {
     const merged = mergeVocabularyAutofill(current, result, new Set([field]));
     assert.equal(merged.partOfSpeech, "verb");
